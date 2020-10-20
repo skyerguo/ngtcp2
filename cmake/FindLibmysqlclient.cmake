@@ -1,0 +1,38 @@
+# - Try to find libmysqlclient
+# Once done this will define
+#  LIBMYSQLCLIENT_FOUND        - System has libmysqlclient
+#  LIBMYSQLCLIENT_INCLUDE_DIRS - The libmysqlclient include directories
+#  LIBMYSQLCLIENT_LIBRARIES    - The libraries needed to use libmysqlclient
+
+find_path(LIBMYSQLCLIENT_INCLUDE_DIR
+  NAMES mysql.h
+)
+find_library(LIBMYSQLCLIENT_LIBRARY
+  NAMES mysql
+)
+
+if(LIBMYSQLCLIENT_INCLUDE_DIR)
+  file(STRINGS "${LIBMYSQLCLIENT_INCLUDE_DIR}/mysql.h"
+    LIBMYSQLCLIENT_VERSION_MAJOR REGEX "^#define[ \t]+EV_VERSION_MAJOR[ \t]+[0-9]+")
+  file(STRINGS "${LIBMYSQLCLIENT_INCLUDE_DIR}/ev.h"
+    LIBMYSQLCLIENT_VERSION_MINOR REGEX "^#define[ \t]+EV_VERSION_MINOR[ \t]+[0-9]+")
+  string(REGEX REPLACE "[^0-9]+" "" LIBMYSQLCLIENT_VERSION_MAJOR "${LIBMYSQLCLIENT_VERSION_MAJOR}")
+  string(REGEX REPLACE "[^0-9]+" "" LIBMYSQLCLIENT_VERSION_MINOR "${LIBMYSQLCLIENT_VERSION_MINOR}")
+  set(LIBMYSQLCLIENT_VERSION "${LIBMYSQLCLIENT_VERSION_MAJOR}.${LIBMYSQLCLIENT_VERSION_MINOR}")
+  unset(LIBMYSQLCLIENT_VERSION_MINOR)
+  unset(LIBMYSQLCLIENT_VERSION_MAJOR)
+endif()
+
+include(FindPackageHandleStandardArgs)
+# handle the QUIETLY and REQUIRED arguments and set LIBMYSQLCLIENT_FOUND to TRUE
+# if all listed variables are TRUE and the requested version matches.
+find_package_handle_standard_args(Libev REQUIRED_VARS
+                                  LIBMYSQLCLIENT_LIBRARY LIBMYSQLCLIENT_INCLUDE_DIR
+                                  VERSION_VAR LIBMYSQLCLIENT_VERSION)
+
+if(LIBMYSQLCLIENT_FOUND)
+  set(LIBMYSQLCLIENT_LIBRARIES     ${LIBMYSQLCLIENT_LIBRARY})
+  set(LIBMYSQLCLIENT_INCLUDE_DIRS  ${LIBMYSQLCLIENT_INCLUDE_DIR})
+endif()
+
+mark_as_advanced(LIBMYSQLCLIENT_INCLUDE_DIR LIBMYSQLCLIENT_LIBRARY)

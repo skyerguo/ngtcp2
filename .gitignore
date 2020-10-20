@@ -1,0 +1,7 @@
+*.log
+*.trs
+
+.idea
+cmake-build-debug
+
+.vscode
