@@ -256,11 +256,11 @@ nslookup 10.128.0.8 10.128.0.9
   - sudo apt install libmysqlclient-dev=5.7.21-1ubuntu1
 - 若有用apt安装发现有冲突，可以手动安装
     ```vim
-    sudo apt install libmysql++3v5
+    sudo apt install -y libmysql++3v5
     wget http://launchpadlibrarian.net/355857431/libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
-    sudo apt install ./libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
+    sudo apt install -y ./libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
     wget http://launchpadlibrarian.net/355857415/libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
-    sudo apt install ./libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
+    sudo apt install -y ./libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
     ```
 
 ## 4.3. openssl/build/lib/pkgconfig 在这个目录下创建一个文件mysqlclient.pc
