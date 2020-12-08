@@ -255,7 +255,7 @@ CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CUNIT_CFLAGS = 
-CUNIT_LIBS = 
+CUNIT_LIBS = -lcunit
 CXX = g++
 CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
@@ -285,8 +285,8 @@ LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = -Wl,-rpath,/home/gtc/ngtcp2/../openssl/build/lib
 LIBEV_CFLAGS = 
 LIBEV_LIBS = -lev
-LIBMYSQLCLIENT_CFLAGS = 
-LIBMYSQLCLIENT_LIBS = -L/usr/lib/x86_64-linux-gnu/ -L -lmysqlclient ssl
+LIBMYSQLCLIENT_CFLAGS = -I/home/gtc/openssl/build/include -I/usr/include/mysql
+LIBMYSQLCLIENT_LIBS = -lmysqlclient
 LIBOBJS = 
 LIBS = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -394,7 +394,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/third-party \
 	-I/home/gtc/openssl/build/include \
 	 \
-	 \
+	-I/home/gtc/openssl/build/include -I/usr/include/mysql \
 	-DHAVE_CONFIG_H
 
 AM_LDFLAGS = -no-install
@@ -402,7 +402,7 @@ LDADD = $(top_builddir)/lib/libngtcp2.la \
 	$(top_builddir)/third-party/libhttp-parser.la \
 	-L/home/gtc/openssl/build/lib -lssl -lcrypto \
 	-lev \
-	-L/usr/lib/x86_64-linux-gnu/ -L -lmysqlclient ssl
+	-lmysqlclient
 
 client_SOURCES = client.cc client.h \
 	template.h \

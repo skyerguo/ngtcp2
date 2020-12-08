@@ -112,8 +112,8 @@ POST_UNINSTALL = :
 build_triplet = x86_64-pc-linux-gnu
 host_triplet = x86_64-pc-linux-gnu
 target_triplet = x86_64-pc-linux-gnu
-#check_PROGRAMS = main$(EXEEXT)
-#TESTS = main$(EXEEXT)
+check_PROGRAMS = main$(EXEEXT)
+TESTS = main$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -139,24 +139,24 @@ am__main_SOURCES_DIST = ngtcp2_pkt_test.h ngtcp2_upe_test.h \
 	ngtcp2_conn_test.c ngtcp2_ringbuf_test.c ngtcp2_conv_test.c \
 	ngtcp2_test_helper.c ngtcp2_upe.c
 am__objects_1 =
-#am__objects_2 = main.$(OBJEXT) \
-#	ngtcp2_pkt_test.$(OBJEXT) \
-#	ngtcp2_upe_test.$(OBJEXT) \
-#	ngtcp2_range_test.$(OBJEXT) \
-#	ngtcp2_rob_test.$(OBJEXT) \
-#	ngtcp2_acktr_test.$(OBJEXT) \
-#	ngtcp2_map_test.$(OBJEXT) \
-#	ngtcp2_crypto_test.$(OBJEXT) \
-#	ngtcp2_rtb_test.$(OBJEXT) \
-#	ngtcp2_idtr_test.$(OBJEXT) \
-#	ngtcp2_conn_test.$(OBJEXT) \
-#	ngtcp2_ringbuf_test.$(OBJEXT) \
-#	ngtcp2_conv_test.$(OBJEXT) \
-#	ngtcp2_test_helper.$(OBJEXT) \
-#	ngtcp2_upe.$(OBJEXT)
-#am_main_OBJECTS = $(am__objects_1) $(am__objects_2)
+am__objects_2 = main.$(OBJEXT) \
+	ngtcp2_pkt_test.$(OBJEXT) \
+	ngtcp2_upe_test.$(OBJEXT) \
+	ngtcp2_range_test.$(OBJEXT) \
+	ngtcp2_rob_test.$(OBJEXT) \
+	ngtcp2_acktr_test.$(OBJEXT) \
+	ngtcp2_map_test.$(OBJEXT) \
+	ngtcp2_crypto_test.$(OBJEXT) \
+	ngtcp2_rtb_test.$(OBJEXT) \
+	ngtcp2_idtr_test.$(OBJEXT) \
+	ngtcp2_conn_test.$(OBJEXT) \
+	ngtcp2_ringbuf_test.$(OBJEXT) \
+	ngtcp2_conv_test.$(OBJEXT) \
+	ngtcp2_test_helper.$(OBJEXT) \
+	ngtcp2_upe.$(OBJEXT)
+am_main_OBJECTS = $(am__objects_1) $(am__objects_2)
 main_OBJECTS = $(am_main_OBJECTS)
-#main_DEPENDENCIES = ${top_builddir}/lib/.libs/*.o
+main_DEPENDENCIES = ${top_builddir}/lib/.libs/*.o
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
@@ -445,7 +445,7 @@ CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CUNIT_CFLAGS = 
-CUNIT_LIBS = 
+CUNIT_LIBS = -lcunit
 CXX = g++
 CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
@@ -475,8 +475,8 @@ LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = -Wl,-rpath,/home/gtc/ngtcp2/../openssl/build/lib
 LIBEV_CFLAGS = 
 LIBEV_LIBS = -lev
-LIBMYSQLCLIENT_CFLAGS = 
-LIBMYSQLCLIENT_LIBS = -L/usr/lib/x86_64-linux-gnu/ -L -lmysqlclient ssl
+LIBMYSQLCLIENT_CFLAGS = -I/home/gtc/openssl/build/include -I/usr/include/mysql
+LIBMYSQLCLIENT_LIBS = -lmysqlclient
 LIBOBJS = 
 LIBS = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -576,53 +576,53 @@ target_vendor = pc
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-#OBJECTS = \
-#	main.c \
-#	ngtcp2_pkt_test.c \
-#	ngtcp2_upe_test.c \
-#	ngtcp2_range_test.c \
-#	ngtcp2_rob_test.c \
-#	ngtcp2_acktr_test.c \
-#	ngtcp2_map_test.c \
-#	ngtcp2_crypto_test.c \
-#	ngtcp2_rtb_test.c \
-#	ngtcp2_idtr_test.c \
-#	ngtcp2_conn_test.c \
-#	ngtcp2_ringbuf_test.c \
-#	ngtcp2_conv_test.c \
-#	ngtcp2_test_helper.c \
-#	ngtcp2_upe.c
+OBJECTS = \
+	main.c \
+	ngtcp2_pkt_test.c \
+	ngtcp2_upe_test.c \
+	ngtcp2_range_test.c \
+	ngtcp2_rob_test.c \
+	ngtcp2_acktr_test.c \
+	ngtcp2_map_test.c \
+	ngtcp2_crypto_test.c \
+	ngtcp2_rtb_test.c \
+	ngtcp2_idtr_test.c \
+	ngtcp2_conn_test.c \
+	ngtcp2_ringbuf_test.c \
+	ngtcp2_conv_test.c \
+	ngtcp2_test_helper.c \
+	ngtcp2_upe.c
 
-#HFILES = \
-#	ngtcp2_pkt_test.h \
-#	ngtcp2_upe_test.h \
-#	ngtcp2_range_test.h \
-#	ngtcp2_rob_test.h \
-#	ngtcp2_acktr_test.h \
-#	ngtcp2_map_test.h \
-#	ngtcp2_crypto_test.h \
-#	ngtcp2_rtb_test.h \
-#	ngtcp2_idtr_test.h \
-#	ngtcp2_conn_test.h \
-#	ngtcp2_ringbuf_test.h \
-#	ngtcp2_conv_test.h \
-#	ngtcp2_test_helper.h \
-#	ngtcp2_upe.h
+HFILES = \
+	ngtcp2_pkt_test.h \
+	ngtcp2_upe_test.h \
+	ngtcp2_range_test.h \
+	ngtcp2_rob_test.h \
+	ngtcp2_acktr_test.h \
+	ngtcp2_map_test.h \
+	ngtcp2_crypto_test.h \
+	ngtcp2_rtb_test.h \
+	ngtcp2_idtr_test.h \
+	ngtcp2_conn_test.h \
+	ngtcp2_ringbuf_test.h \
+	ngtcp2_conv_test.h \
+	ngtcp2_test_helper.h \
+	ngtcp2_upe.h
 
-#main_SOURCES = $(HFILES) $(OBJECTS)
+main_SOURCES = $(HFILES) $(OBJECTS)
 
 # With static lib disabled and symbol hiding enabled, we have to link object
 # files directly because the tests use symbols not included in public API.
-#main_LDADD = ${top_builddir}/lib/.libs/*.o \
-#	 $(am__empty)
-#main_LDFLAGS = -static
-#AM_CFLAGS = $(WARNCFLAGS) \
-#	-I${top_srcdir}/lib \
-#	-I${top_srcdir}/lib/includes \
-#	-I${top_builddir}/lib/includes \
-#	 -DHAVE_CONFIG_H
+main_LDADD = ${top_builddir}/lib/.libs/*.o \
+	-lcunit $(am__empty)
+main_LDFLAGS = -static
+AM_CFLAGS = $(WARNCFLAGS) \
+	-I${top_srcdir}/lib \
+	-I${top_srcdir}/lib/includes \
+	-I${top_builddir}/lib/includes \
+	 -DHAVE_CONFIG_H
 
-#AM_LDFLAGS = -no-install
+AM_LDFLAGS = -no-install
 all: all-am
 
 .SUFFIXES:
