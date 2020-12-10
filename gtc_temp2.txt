@@ -1,15 +1,0 @@
-127.0.0.7
-bind fd_ with 127.0.0.7
-migrate server's address to 10.128.0.3
-bind fd2_ with 10.128.0.3
-[33mt=0.003494[0m QUIC handshake has completed
-handshake time: 3295
-PLT: 81093 microseconds
-PLT: 135157 microseconds
-PLT: 573755 microseconds
-PLT: 884191 microseconds
-PLT: 2127598 microseconds
-PLT: 2438007 microseconds
-PLT: 2567717 microseconds
-PLT: 4065441 microseconds
-PLT: 4246654 microseconds

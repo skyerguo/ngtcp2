@@ -125,7 +125,7 @@ PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.1.1],
 if test "x${have_openssl}" = "xno"; then
   AC_MSG_NOTICE($OPENSSL_PKG_ERRORS)
 fi
-PKG_CHECK_MODULES([LIBMYSQLCLIENT], [mysqlclient >= 5.6.47],
+PKG_CHECK_MODULES([LIBMYSQLCLIENT], [mysqlclient >= 5.7.23],
                   [have_libmysqlclient=yes], [have_libmysqlclient=no])
 if test "x${have_libmysqlclient}" = "xno"; then
   AC_MSG_NOTICE($LIBMYSQLCLIENT_PKG_ERRORS)
