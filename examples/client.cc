@@ -260,7 +260,7 @@ void timeoutcb(struct ev_loop *loop, ev_timer *w, int revents) {
   }
 
   c->disconnect();
-  exit(1);
+  exit(0);
 }
 } // namespace
 

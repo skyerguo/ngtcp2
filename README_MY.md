@@ -2,7 +2,7 @@
   - [1.1. Pipline](#11-pipline)
     - [1.1.1. 数据流方向](#111-数据流方向)
     - [1.1.2. experiment deploy](#112-experiment-deploy)
-- [2.  HTML applications](#2--html-applications)
+- [2.  HTML applications](#2-html-applications)
   - [2.1. how to install ``lexbor`` library](#21-how-to-install-lexbor-library)
   - [2.2. how to add the ``lexbor`` library](#22-how-to-add-the-lexbor-library)
   - [2.3. dynamic link error](#23-dynamic-link-error)
@@ -26,7 +26,7 @@
   - [3.2. 去另一台机子test上进行配置](#32-去另一台机子test上进行配置)
       - [3.2.0.1. sudo vim /etc/resolvconf/resolv.conf.d/head](#3201-sudo-vim-etcresolvconfresolvconfdhead)
       - [3.2.0.2. sudo vim /etc/resolv.conf](#3202-sudo-vim-etcresolvconf)
-      - [3.2.0.3. nameserver  10.128.0.9](#3203-nameserver--1012809)
+      - [3.2.0.3. nameserver  10.128.0.9](#3203-nameserver-1012809)
       - [3.2.0.4. sudo resolvconf -u](#3204-sudo-resolvconf--u)
   - [3.3. 进行测试](#33-进行测试)
 - [4. ngtcp2 loadbalancer](#4-ngtcp2-loadbalancer)
@@ -257,7 +257,7 @@ nslookup 10.128.0.8 10.128.0.9
   - sudo apt install libmysqlclient-dev=5.7.21-1ubuntu1
 - 若有用apt安装发现有冲突，可以手动安装
     ```vim
-    sudo apt install -y libmysql++3v5
+    sudo apt install libmysql++3v5
     wget http://launchpadlibrarian.net/355857431/libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
     sudo apt install ./libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
     wget http://launchpadlibrarian.net/355857415/libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
