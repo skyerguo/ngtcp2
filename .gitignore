@@ -37,3 +37,4 @@ test-driver
 cmake-build-debug
 
 third-party/http-parser/.dirstamp
+websites/wordpress.com/.DS_Store
