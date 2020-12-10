@@ -95,6 +95,7 @@ apt install liblexbor-dev
 ## 2.2. how to add the ``lexbor`` library
 - in configure running:
   - ./configure PKG_CONFIG_PATH=$PWD/../../openssl/build/lib/pkgconfig LDFLAGS="-Wl,-rpath,$PWD/../../openssl/build/lib -llexbor" --host=arm
+  - ./configure PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/:$PWD/../openssl/build/lib/pkgconfig LDFLAGS="-Wl,-rpath,$PWD/../openssl/build/lib -llexbor" --host=arm
   - this means you need add ``llexbor`` and ``--host=arm``
 ## 2.3. dynamic link error 
 - echo $LD_LIBRARY_PATH
@@ -258,9 +259,9 @@ nslookup 10.128.0.8 10.128.0.9
     ```vim
     sudo apt install -y libmysql++3v5
     wget http://launchpadlibrarian.net/355857431/libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
-    sudo apt install -y ./libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
+    sudo apt install ./libmysqlclient20_5.7.21-1ubuntu1_amd64.deb
     wget http://launchpadlibrarian.net/355857415/libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
-    sudo apt install -y ./libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
+    sudo apt install ./libmysqlclient-dev_5.7.21-1ubuntu1_amd64.deb
     ```
 
 ## 4.3. openssl/build/lib/pkgconfig 在这个目录下创建一个文件mysqlclient.pc
