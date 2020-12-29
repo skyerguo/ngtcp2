@@ -78,6 +78,9 @@ struct Config {
   const char *password = "root";
   const char *mysql_ip = "127.0.0.1";
   const char *datacenter = "test";
+  bool cpu_sensitive = 0;
+  bool throughput_sensitive = 0;
+  bool latency_sensitive = 0;
 };
 
 struct Buffer {

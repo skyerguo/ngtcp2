@@ -810,6 +810,7 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
   settings.omit_connection_id = 0;
   settings.max_packet_size = NGTCP2_MAX_PKT_SIZE;
   settings.ack_delay_exponent = NGTCP2_DEFAULT_ACK_DELAY_EXPONENT;
+  settings.test_metadata = 233;
 
   auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
   std::generate(std::begin(settings.stateless_reset_token),
@@ -1794,183 +1795,176 @@ int Server::on_read(int fd, bool forwarded) {
       std::ostringstream sql;
 
       // select balancer
-      sql.str("");
-      sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
-      std::cerr << "executing sql1: " << sql.str() << std::endl;
-      std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
-      mysql_query(mysql_, sql.str().c_str());
-      std::cerr << "mysql query finished" << std::endl;
-      result = mysql_store_result(mysql_);
-      std::cerr << result << std::endl;
-      std::vector<LatencyDC> latencies;
-      if (result) {
-          row = mysql_fetch_row(result);
-          while (row != NULL) {
-              LatencyDC dc {row[0], atoi(row[1])};
-              latencies.push_back(dc);
-              row = mysql_fetch_row(result);
-              std::cerr << "sql1: " << row << std::endl;
-          }
-      } else {
-          std::cerr << "ERROR: No measurement result is found for client " << sender_ip << std::endl;
-      }
-      std::chrono::high_resolution_clock::time_point end_ts1 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> time_span1 = end_ts1 - start_ts1;
-      std::cerr << "Executing sql 1 costs " << time_span1.count() << " milliseconds." << std::endl;
-      // when no measurement query results
-      if (row == NULL){
-          std::cerr << "sql1 == null: " << row << std::endl;
-      }
-      std::sort(latencies.begin(), latencies.end(), LatencyDCCmp());
-      sql.str("");
-      sql << "select datacenter, loadbalancer from deployment where domain = '" << h->hostname() << "'";
-      std::cerr << "executing sql2: " << sql.str() << std::endl;
-      std::chrono::high_resolution_clock::time_point start_ts2 = std::chrono::high_resolution_clock::now();
-      mysql_query(mysql_, sql.str().c_str());
-      result2 = mysql_store_result(mysql_);
-      std::map<std::string, std::string> dcs;
-      if (result2) {
-          row = mysql_fetch_row(result2);
-          while (row != NULL) {
-              dcs[row[0]] = row[1];
-              row = mysql_fetch_row(result2);
-          }
-      } else {
-          std::cerr << "ERROR: No data center is deployed with the server for " << h->hostname() << std::endl;
-      }
-      std::chrono::high_resolution_clock::time_point end_ts2 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
-      std::cerr << "Executing sql 2 costs " << time_span2.count() << " milliseconds." << std::endl;
-      bool forwarded = false;
-      if (latencies.empty()) {
-        // std::cerr << "latencies vector is empty. forward to local data center" << std::endl;
-        // // scheme 1
-        // LatencyDC dc {"server", 1};
-        // latencies.push_back(dc);
-
-        // scheme 2
-        struct sockaddr_in sa;
-        memset(&sa, 0, sizeof(sa));
-        sa.sin_family = AF_INET;
-        sa.sin_port = udph->dest;
-        sa.sin_addr.s_addr = iph->daddr;
-        std::cerr << "latencies vector is empty. forward to local data center" << std::endl;
-        std::map<std::string, int>::iterator iter;
-        iter = server_fd_map_.begin();
-        while(iter != server_fd_map_.end()) {
-            std::cerr << "server_fd_map_" << std::endl;
-            std::cerr << iter->first << " : " << iter->second << std::endl;
-            iter++;
-        }
-        auto fd = server_fd_map_["server"];
-        std::cerr << "fd: " << fd << std::endl;
-        std::cerr << "iph:" << iph << std::endl;
-        std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
-        std::cerr << "sa:" << &sa << std::endl;
-        forwarded = true;
-        if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-          perror("Failed to forward ip packet");
-        } else {
-          std::cerr << "Forwarded to local dc: "<< std::endl;
-        }
-        /*if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-          perror("second Failed to forward ip packet");
-        } else {
-          std::cerr << "second Forwarded to local dc: "<< std::endl;
-          }*/
-      }
-      /*
-      std::cerr << "=====latency info START=====" << std::endl;
-      for (auto ldc : latencies) {
-        std::cerr << ldc.dc << ": " << ldc.latency << std::endl;
-      }
-      std::cerr << "=====latency info END=====" << std::endl << std::endl;
-      */
-        
-      std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
-      auto count_latencies = 0;
-      for (auto ldc : latencies) {
-        std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
-        std::cerr << "count_latencies: " << count_latencies << std::endl;
-
-        if (ldc.latency <= 0) {
-          continue;
-        }
-        if (dcs.find(ldc.dc) == dcs.end()) {
-          std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
-          continue;
-        }
-        struct sockaddr_in sa;
-        memset(&sa, 0, sizeof(sa));
-        sa.sin_family = AF_INET;
-        sa.sin_port = udph->dest;
-        sa.sin_addr.s_addr = iph->daddr;
-        if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
-          std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
-          auto interface = dcs[ldc.dc];
-          auto fd = balancer_fd_map_[interface];
-          forwarded = true;
-          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            perror("Failed to forward ip packet");
-          } else {
-            std::cerr << "Forwarded to balancer: " << interface << " in " << ldc.dc << std::endl;
-          }
-          /*if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            perror("Failed to forward ip packet");
-          } else {
-            std::cerr << "Forwarded to balancer: " << interface << " in " << ldc.dc << std::endl;
-          }*/
-        } else {
-          std::cerr << "The current dc is the best, choose server to forward" << std::endl; 
-          // select server
-          /*sql.str("");
-          sql << "select server from intra where domain = '" << h->hostname() << "' and datacenter = '" << ldc.dc.c_str() << "'";
-          std::cerr << "executing sql: " << sql.str() << std::endl;
-          mysql_query(mysql_, sql.str().c_str());
-          result = mysql_store_result(mysql_);
-          std::vector<std::string> servers;
-          row = mysql_fetch_row(result);
-          while (row != NULL) {
-            std::cerr << "server candidate: " << row[0] << std::endl;
-            servers.push_back(row[0]);
+      if (config.cpu_sensitive == 0 && cpu.throughput_sensitive == 0) {
+        sql.str("");
+        sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
+        std::cerr << "executing sql1: " << sql.str() << std::endl;
+        std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
+        mysql_query(mysql_, sql.str().c_str());
+        std::cerr << "mysql query finished" << std::endl;
+        result = mysql_store_result(mysql_);
+        std::cerr << result << std::endl;
+        std::vector<LatencyDC> latencies;
+        if (result) {
             row = mysql_fetch_row(result);
-          }
-//          auto server = servers[std::rand() % servers.size()];
-          auto server = servers[0]; */
-          std::string server = "server";
-          std::cerr << "selected server: " << server << std::endl;
-          mysql_free_result(result);
+            while (row != NULL) {
+                LatencyDC dc {row[0], atoi(row[1])};
+                latencies.push_back(dc);
+                row = mysql_fetch_row(result);
+                std::cerr << "sql1: " << row << std::endl;
+            }
+        } else {
+            std::cerr << "ERROR: No measurement result is found for client " << sender_ip << std::endl;
+        }
+        std::chrono::high_resolution_clock::time_point end_ts1 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> time_span1 = end_ts1 - start_ts1;
+        std::cerr << "Executing sql 1 costs " << time_span1.count() << " milliseconds." << std::endl;
+        // when no measurement query results
+        if (row == NULL){
+            std::cerr << "sql1 == null: " << row << std::endl;
+        }
+        std::sort(latencies.begin(), latencies.end(), LatencyDCCmp());
+        sql.str("");
+        sql << "select datacenter, loadbalancer from deployment where domain = '" << h->hostname() << "'";
+        std::cerr << "executing sql2: " << sql.str() << std::endl;
+        std::chrono::high_resolution_clock::time_point start_ts2 = std::chrono::high_resolution_clock::now();
+        mysql_query(mysql_, sql.str().c_str());
+        result2 = mysql_store_result(mysql_);
+        std::map<std::string, std::string> dcs;
+        if (result2) {
+            row = mysql_fetch_row(result2);
+            while (row != NULL) {
+                dcs[row[0]] = row[1];
+                row = mysql_fetch_row(result2);
+            }
+        } else {
+            std::cerr << "ERROR: No data center is deployed with the server for " << h->hostname() << std::endl;
+        }
+        std::chrono::high_resolution_clock::time_point end_ts2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
+        std::cerr << "Executing sql 2 costs " << time_span2.count() << " milliseconds." << std::endl;
+        bool forwarded = false;
+        if (latencies.empty()) {
+          // std::cerr << "latencies vector is empty. forward to local data center" << std::endl;
+          // // scheme 1
+          // LatencyDC dc {"server", 1};
+          // latencies.push_back(dc);
 
-          auto fd = server_fd_map_[server];
+          // scheme 2
+          struct sockaddr_in sa;
+          memset(&sa, 0, sizeof(sa));
+          sa.sin_family = AF_INET;
+          sa.sin_port = udph->dest;
+          sa.sin_addr.s_addr = iph->daddr;
+          std::cerr << "latencies vector is empty. forward to local data center" << std::endl;
+          std::map<std::string, int>::iterator iter;
+          iter = server_fd_map_.begin();
+          while(iter != server_fd_map_.end()) {
+              std::cerr << "server_fd_map_" << std::endl;
+              std::cerr << iter->first << " : " << iter->second << std::endl;
+              iter++;
+          }
+          auto fd = server_fd_map_["server"];
+          std::cerr << "fd: " << fd << std::endl;
+          std::cerr << "iph:" << iph << std::endl;
+          std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+          std::cerr << "sa:" << &sa << std::endl;
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "Forwarded to server: " << server << std::endl;
+            std::cerr << "Forwarded to local dc: "<< std::endl;
           }
-          /*if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            perror("Failed to forward ip packet");
-          } else {
-            std::cerr << "Forwarded to server: " << server << std::endl;
-          }*/
         }
-//        break;
-        count_latencies++;
-        if (count_latencies >= 2) {
-            break;
-        }        
-      }
-      std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
-      std::chrono::high_resolution_clock::time_point end_ts = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> time_span = end_ts - start_ts;
-      std::cerr << "Packet forwarding costs " << time_span.count() << " milliseconds." << std::endl;
+        /*
+        std::cerr << "=====latency info START=====" << std::endl;
+        for (auto ldc : latencies) {
+          std::cerr << ldc.dc << ": " << ldc.latency << std::endl;
+        }
+        std::cerr << "=====latency info END=====" << std::endl << std::endl;
+        */
+          
+        std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
+        auto count_latencies = 0;
+        for (auto ldc : latencies) {
+          std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
+          std::cerr << "count_latencies: " << count_latencies << std::endl;
 
-      if (!forwarded) {
-        std::cerr << "Failed to find server/balancer to forward" << std::endl;
-      }
+          if (ldc.latency <= 0) {
+            continue;
+          }
+          if (dcs.find(ldc.dc) == dcs.end()) {
+            std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
+            continue;
+          }
+          struct sockaddr_in sa;
+          memset(&sa, 0, sizeof(sa));
+          sa.sin_family = AF_INET;
+          sa.sin_port = udph->dest;
+          sa.sin_addr.s_addr = iph->daddr;
+          if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
+            std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
+            auto interface = dcs[ldc.dc];
+            auto fd = balancer_fd_map_[interface];
+            forwarded = true;
+            if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+              perror("Failed to forward ip packet");
+            } else {
+              std::cerr << "Forwarded to balancer: " << interface << " in " << ldc.dc << std::endl;
+            }
+          } else {
+            std::cerr << "The current dc is the best, choose server to forward" << std::endl; 
+            // select server
+            /*sql.str("");
+            sql << "select server from intra where domain = '" << h->hostname() << "' and datacenter = '" << ldc.dc.c_str() << "'";
+            std::cerr << "executing sql: " << sql.str() << std::endl;
+            mysql_query(mysql_, sql.str().c_str());
+            result = mysql_store_result(mysql_);
+            std::vector<std::string> servers;
+            row = mysql_fetch_row(result);
+            while (row != NULL) {
+              std::cerr << "server candidate: " << row[0] << std::endl;
+              servers.push_back(row[0]);
+              row = mysql_fetch_row(result);
+            }
+  //          auto server = servers[std::rand() % servers.size()];
+            auto server = servers[0]; */
+            std::string server = "server";
+            std::cerr << "selected server: " << server << std::endl;
+            mysql_free_result(result);
 
-      //mysql_free_result(result);
-      mysql_free_result(result2);
+            auto fd = server_fd_map_[server];
+            forwarded = true;
+            if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+              perror("Failed to forward ip packet");
+            } else {
+              std::cerr << "Forwarded to server: " << server << std::endl;
+            }
+          }
+          //break;
+          count_latencies++;
+          if (count_latencies >= 2 ) {
+              break;
+          }
+        }
+        std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
+        std::chrono::high_resolution_clock::time_point end_ts = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> time_span = end_ts - start_ts;
+        std::cerr << "Packet forwarding costs " << time_span.count() << " milliseconds." << std::endl;
+
+        if (!forwarded) {
+          std::cerr << "Failed to find server/balancer to forward" << std::endl;
+        }
+
+        //mysql_free_result(result);
+        mysql_free_result(result2);
+      }
+      else if (config.cpu_sensitive == 1) {
+
+      }
+      else if (config.throughput_sensitive == 1) {
+        
+      }
 
       rv = h->on_write();
       switch (rv) {
@@ -2274,6 +2268,10 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     std::cerr << "; TransportParameter received in ClientHello" << std::endl;
     debug::print_transport_params(&params,
                                   NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  }
+
+  if (params.cpu_sensitive == 1) {
+    config.cpu_sensitive = 1;
   }
 
   rv = ngtcp2_conn_set_remote_transport_params(

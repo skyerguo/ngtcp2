@@ -122,6 +122,13 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
   if (params->server_unicast_ttl) {
     len += 8;
   }
+  if (params->test_metadata) {
+    len += 8;
+  }
+
+  if (params->cpu_sensitive) {
+    len += 8;
+  }
 
   if (destlen < len) {
     return NGTCP2_ERR_NOBUF;
@@ -203,6 +210,18 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
     p = ngtcp2_put_uint32be(p, params->server_unicast_ttl);
   }
 
+  if (params->test_metadata) {
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_TEST_METADATA);
+    p = ngtcp2_put_uint16be(p, 4);
+    p = ngtcp2_put_uint32be(p, params->test_metadata);
+  }
+
+  if (params->cpu_sensitive) {
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE);
+    p = ngtcp2_put_uint16be(p, 4);
+    p = ngtcp2_put_uint32be(p, params->cpu_sensitive);
+  }
+
   if (params->ack_delay_exponent != NGTCP2_DEFAULT_ACK_DELAY_EXPONENT) {
     p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_ACK_DELAY_EXPONENT);
     p = ngtcp2_put_uint16be(p, 1);
@@ -255,8 +274,7 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
 
   p = data;
   end = data + datalen;
-  printf("data start %u %u %u\n",*data,*(data+1),*(data+2));
-  printf("datalen %d\n",datalen);
+
   switch (exttype) {
   case NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO:
     if ((size_t)(end - p) < sizeof(uint32_t)) {
@@ -417,6 +435,30 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       params->server_unicast_ttl = ngtcp2_get_uint32(p);
+      p += sizeof(uint32_t);
+      break;
+    case NGTCP2_TRANSPORT_PARAM_TEST_METADATA:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_TEST_METADATA;
+      if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      p += sizeof(uint16_t);
+      if ((size_t)(end - p) < sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      params->test_metadata = ngtcp2_get_uint32(p);
+      p += sizeof(uint32_t);
+      break;
+    case NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE;
+      if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      p += sizeof(uint16_t);
+      if ((size_t)(end - p) < sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      params->cpu_sensitive = ngtcp2_get_uint32(p);
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_ACK_DELAY_EXPONENT:

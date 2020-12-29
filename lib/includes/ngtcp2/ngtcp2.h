@@ -445,7 +445,9 @@ typedef enum {
   NGTCP2_TRANSPORT_PARAM_ACK_DELAY_EXPONENT = 7,
   NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_ID_UNI = 8,
   NGTCP2_TRANSPORT_PARAM_SERVER_UNICAST_IP = 9,
-  NGTCP2_TRANSPORT_PARAM_SERVER_UNICAST_TTL = 10
+  NGTCP2_TRANSPORT_PARAM_SERVER_UNICAST_TTL = 10, 
+  NGTCP2_TRANSPORT_PARAM_TEST_METADATA = 11,
+  NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE = 12,
 } ngtcp2_transport_param_id;
 
 typedef enum {
@@ -494,6 +496,8 @@ typedef struct {
   uint8_t ack_delay_exponent;
   uint32_t server_unicast_ip;
   uint32_t server_unicast_ttl;
+  uint32_t test_metadata;
+  uint32_t cpu_sensitive;
 } ngtcp2_transport_params;
 
 typedef struct {
@@ -508,6 +512,8 @@ typedef struct {
   uint8_t ack_delay_exponent;
   uint32_t server_unicast_ip;
   uint32_t server_unicast_ttl;
+  uint32_t test_metadata;
+  uint32_t cpu_sensitive;
 } ngtcp2_settings;
 
 /**
