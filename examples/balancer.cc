@@ -2274,6 +2274,10 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     config.cpu_sensitive = 1;
   }
 
+  if (params.throughput_sensitive == 1) {
+    config.throughput_sensitive = 1;
+  }
+
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
   if (rv != 0) {
