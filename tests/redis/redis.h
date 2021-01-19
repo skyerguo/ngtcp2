@@ -46,7 +46,7 @@ public:
 
     void auth(std::string auth_password)
     {
-	redisCommand(this->_connect, "auth %s", auth_password.c_str());
+	    redisCommand(this->_connect, "auth %s", auth_password.c_str());
     }
  
 private:

@@ -1621,6 +1621,12 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 }
 } // namespace
 
+namespace {
+  void test_command(std::stirng cmd) {
+    char Line
+  }
+} // namespace
+
 Server::Server(struct ev_loop *loop, SSL_CTX *ssl_ctx)
     : loop_(loop), ssl_ctx_(ssl_ctx), fd_(-1) {
   ev_io_init(&wev_, swritecb, 0, EV_WRITE);
@@ -1695,6 +1701,7 @@ int Server::on_write() {
 
   return NETWORK_ERR_OK;
 }
+
 
 int Server::on_read(int fd, bool forwarded) {
   sockaddr_union su;
@@ -1960,7 +1967,7 @@ int Server::on_read(int fd, bool forwarded) {
         mysql_free_result(result2);
       }
       else if (config.cpu_sensitive == 1) {
-
+        
       }
       else if (config.throughput_sensitive == 1) {
         

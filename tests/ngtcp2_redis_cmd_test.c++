@@ -11,7 +11,7 @@ using namespace std;
 int main() {
     // system("ls");
     string s = "redis-cli -h 10.142.0.4 -a 'Hestia123456' set foo bar";
-    s = "ls";
-    system(s); 
+    // s = "pwd";
+    system(s.c_str()); 
     return 0;
 }
