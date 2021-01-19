@@ -1623,7 +1623,7 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 
 namespace {
   void test_command(std::stirng cmd) {
-    char Line
+    
   }
 } // namespace
 
