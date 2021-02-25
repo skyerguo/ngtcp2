@@ -1,1 +1,3 @@
 sudo ./examples/server 10.128.0.2 4433 --interface ens4 --unicast 10.128.0.2 server.key server.crt -q
+sudo /home/gtc/data/server 110.142.15.230 4433 --interface ens4 --unicast 10.142.15.230 /home/gtc/data/server.key /home/gtc/data/server.crt
+sudo LD_LIBRARY_PATH=/home/gtc/data /home/gtc/data/server --interface=ens4 --unicast=10.142.15.230 0.0.0.0 4433 /home/gtc/data/server.key /home/gtc/data/server.crt
