@@ -44,3 +44,5 @@ websites/wordpress.com/.DS_Store
 resource/
 websites/crawl_har/browsermob-proxy-2.1.4/*
 websites/crawl_har/chromedriver
+websites_old/
+websites/video/
