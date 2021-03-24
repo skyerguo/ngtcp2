@@ -553,7 +553,7 @@ int http_req_resourse (std::map<uint32_t, std::shared_ptr<Stream>> *streams_, ng
             value = lxb_dom_attr_value(attr, NULL);
 
             if (value != NULL) {
-                std::cout << value << std::endl;
+                // std::cout << value << std::endl;
                 std::string req;
                 std::string url = std::string((char *) value);
                 std::string::size_type idx = url.find("//");

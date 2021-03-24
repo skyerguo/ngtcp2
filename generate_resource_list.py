@@ -4,8 +4,7 @@ from shutil import copyfile, copytree, copy
 
 HOME = expanduser("~")
 Data_src_path = '%s/ngtcp2/resource/global500/' % HOME
-Data_des_path = '%s/ngtcp2/websites/normal/' % HOME
-
+Data_des_path = ['%s/ngtcp2/websites/normal_1/' % HOME, '%s/ngtcp2/websites/normal_2/' % HOME]
 cnt_res = 500 # 留下的网站数量最大值
 for first_file_name in os.listdir(Data_src_path):
     flag = 0
@@ -27,17 +26,19 @@ for first_file_name in os.listdir(Data_src_path):
             break
 
     if flag:
-        des_file = os.path.join(Data_des_path, first_file_name)
+        des_file = os.path.join(Data_des_path[flag - 1], first_file_name)
         if os.path.exists(des_file):
             os.system("rm -r " + des_file)
         copytree(src_file, des_file)
         # print(src_file)
         cnt_res -= 1
+    
     if not cnt_res:
         break
 
-f_out = open(Data_des_path + 'resource_list.txt', 'w')
-for file_name in os.listdir(Data_des_path):
-    if not file_name.endswith('.txt'):
-        f_out.write(file_name + '\n')
-f_out.close()
+for i in range(2):
+    f_out = open(Data_des_path[i] + 'resource_list.txt', 'w')
+    for file_name in os.listdir(Data_des_path[i]):
+        if not file_name.endswith('.txt'):
+            f_out.write(file_name + '\n')
+    f_out.close()
