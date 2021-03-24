@@ -467,6 +467,8 @@ struct message {
   std::map<uint32_t, std::shared_ptr<Stream>> *streams_;
   ngtcp2_conn *conn_;
   std::string prefix;
+  std::string website_root_path;
+  uint32_t website_www_opt;
 
   int message_complete_cb_called;
 };
@@ -503,7 +505,7 @@ int http_resq(std::map<uint32_t, std::shared_ptr<Stream>> *streams_,  ngtcp2_con
 }
 
 
-int http_req_resourse (std::map<uint32_t, std::shared_ptr<Stream>> *streams_, ngtcp2_conn *conn_, std::string& prefix, char *body) {
+int http_req_resourse (std::map<uint32_t, std::shared_ptr<Stream>> *streams_, ngtcp2_conn *conn_, std::string& prefix, char *body, std::string& root_path, uint32_t opt) {
     lxb_status_t status;
     lxb_dom_attr_t *attr;
     lxb_dom_node_t *node;
@@ -551,19 +553,22 @@ int http_req_resourse (std::map<uint32_t, std::shared_ptr<Stream>> *streams_, ng
             value = lxb_dom_attr_value(attr, NULL);
 
             if (value != NULL) {
-            // std::cout << value << std::endl;
+                std::cout << value << std::endl;
                 std::string req;
                 std::string url = std::string((char *) value);
                 std::string::size_type idx = url.find("//");
                 if (idx != std::string::npos) { 
                   url =  prefix + "/" + url.substr(idx+2);
                 } else {
+                  std::string www_site;
+                  www_site = opt? "/www.": "/";
                   if (url.substr(0,1) == "/")
-                    url =  prefix + "/www." + prefix + url;
+                    url =  prefix + www_site + prefix + url;
                   else 
-                    url =  prefix + "/www." + prefix + "/" + url;
+                    url =  prefix + www_site + prefix + "/" + url;
                 }
-                req = "GET /websites/" + url + " HTTP/1.1\r\n\r\n";
+                req = "GET /websites/" + root_path + "/" + url + " HTTP/1.1\r\n\r\n";
+                // std::cerr << "\rreq " << req <<  std::endl;
                 http_resq(streams_, conn_, req);
             }
         }
@@ -586,11 +591,11 @@ int body_cb (http_parser *parser, const char *p, size_t len) {
 }
 
 int message_complete_cb (http_parser *parser) {
-  // std::cerr << "num_messages body " << messages[num_messages].body_len  << std::endl;   
-  // std::cerr << "num_messages body " << messages[num_messages].body  << std::endl; 
+  // std::cerr << "num_messages website_root_path " << messages[num_messages].website_root_path  << std::endl;   
+  // std::cerr << "num_messages website_www_opt " << messages[num_messages].website_www_opt  << std::endl; 
   if (messages[num_messages].message_complete_cb_called != 1){
     messages[num_messages].message_complete_cb_called = 1;
-    if (http_req_resourse(messages[num_messages].streams_, messages[num_messages].conn_, messages[num_messages].prefix, messages[num_messages].body) != 0){
+    if (http_req_resourse(messages[num_messages].streams_, messages[num_messages].conn_, messages[num_messages].prefix, messages[num_messages].body, messages[num_messages].website_root_path, messages[num_messages].website_www_opt) != 0){
       return 1;
     }
   }
@@ -1550,8 +1555,11 @@ int Client::start_interactive_input() {
 
   ev_io_set(&stdinrev_, datafd_, EV_READ);
   ev_io_start(loop_, &stdinrev_);
-
-  std::string req = "GET /websites/" +  messages[num_messages].prefix + "/www." + messages[num_messages].prefix + "/index.html HTTP/1.1\r\n\r\n";
+  std::string www_site;
+  www_site = messages[num_messages].website_www_opt? "/www.": "/";
+  std::string req = "GET /websites/" + messages[num_messages].website_root_path + "/" 
+                    + messages[num_messages].prefix + www_site + messages[num_messages].prefix + "/index.html HTTP/1.1\r\n\r\n";
+  // std::cerr << "req_send: " << req << std::endl;
   last_stream_id_ = http_resq(&streams_, conn_, req);
   // set connection info into message
   messages[num_messages].streams_ = &streams_;
@@ -2094,6 +2102,8 @@ void config_set_default(Config &config) {
   config.version = NGTCP2_PROTO_VER_D8;
   config.timeout = 3;
   config.website = "";
+  config.website_root_path = "";
+  config.website_www_opt = 1;
 }
 } // namespace
 
@@ -2124,6 +2134,12 @@ Options:
               of streams to send the data specified by --data.
   -w, --website=<website domain name>
               Specify website domain name to use in string.
+              Default: ""
+  -p, --website_root_path=<website root path>
+              Specify website root path to use in string.
+              Default: ""
+  -o, --website_www_opt=<website www opt>
+              Specify www opt name to use in int32.
               Default: ""
   -v, --version=<HEX>
               Specify QUIC version to use in hex string.
@@ -2168,6 +2184,8 @@ int main(int argc, char **argv) {
         {"interactive", no_argument, nullptr, 'i'},
         {"data", required_argument, nullptr, 'd'},
         {"website", required_argument, nullptr, 'w'},
+        {"website_root_path", required_argument, nullptr, 'p'},
+        {"website_www_opt", required_argument, nullptr, 'o'},
         {"concurrency", required_argument, nullptr, 'c'},
         {"nstreams", required_argument, nullptr, 'n'},
         {"version", required_argument, nullptr, 'v'},
@@ -2182,7 +2200,7 @@ int main(int argc, char **argv) {
     };
 
     auto optidx = 0;
-    auto c = getopt_long(argc, argv, "d:w:hin:qr:t:v:", long_opts, &optidx);
+    auto c = getopt_long(argc, argv, "d:w:p:o:hin:qr:t:v:", long_opts, &optidx);
     if (c == -1) {
       break;
     }
@@ -2194,6 +2212,14 @@ int main(int argc, char **argv) {
     case 'w':
       // -website
       config.website = optarg;
+      break;
+    case 'p':
+      // --root_path
+      config.website_root_path = optarg;
+      break;
+    case 'o':
+      // --www_opt
+      config.website_www_opt = strtol(optarg, nullptr, 10);
       break;
     case 'a':
       // --remote
@@ -2322,6 +2348,8 @@ int main(int argc, char **argv) {
   std::cerr << addr << std::endl;
 
   messages[0].prefix = config.website;
+  messages[0].website_root_path = config.website_root_path;
+  messages[0].website_www_opt = config.website_www_opt;
   std::vector<Client*> clients;
   for (int i = 0; i < config.concurrency; ++i) {
     Client *client = new Client(EV_DEFAULT, ssl_ctx);
