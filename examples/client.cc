@@ -2362,11 +2362,11 @@ int main(int argc, char **argv) {
   ev_run(EV_DEFAULT, 0);
 
   for (auto client: clients) {
-      close(*client);
+    close(*client);
   }
 //  close(c);
   // 用以获取PLT打印时 flush 的最后结果显示
-  std::cerr <<  std::endl;
+  std::cerr << std::endl;
 
   return EXIT_SUCCESS;
 }

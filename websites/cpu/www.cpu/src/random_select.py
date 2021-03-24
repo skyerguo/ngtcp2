@@ -1,5 +1,6 @@
 import pymongo
 import random
+import time
 
 client = pymongo.MongoClient('localhost', 27017)
 db = client['motivation_index']
