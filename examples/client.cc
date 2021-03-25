@@ -567,8 +567,12 @@ int http_req_resourse (std::map<uint32_t, std::shared_ptr<Stream>> *streams_, ng
                   else 
                     url =  prefix + www_site + prefix + "/" + url;
                 }
-                req = "GET /websites/" + root_path + "/" + url + " HTTP/1.1\r\n\r\n";
-                // std::cerr << "\rreq " << req <<  std::endl;
+                if (url.find(".py") != std::string::npos) {
+                  req = "GET /websites" + root_path + "/" + url + " HTTP/1.1\r\n\r\n";
+                }else{
+                  req = "GET /websites/" + root_path + "/" + url + " HTTP/1.1\r\n\r\n";
+                }
+                std::cerr << "\rreq: " << req <<  std::endl;
                 http_resq(streams_, conn_, req);
             }
         }

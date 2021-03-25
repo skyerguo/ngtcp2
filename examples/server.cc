@@ -403,6 +403,17 @@ int Stream::start_response() {
   http_minor = htp.http_minor;
 
   auto req_path = request_path(uri, htp.method == HTTP_CONNECT);
+  if (req_path.find(".py") != std::string::npos) {
+      std::cout << "found python!!" << '\n';
+      std::cerr << req_path << std::endl;
+      // std::string str(req_path);
+      str = "python3 ." + str;
+      const char * python_cmd = str.c_str();
+      std::cerr << python_cmd << std::endl;
+      system(python_cmd);
+  }
+
+  // std::cout << "outer!!" << '\n';
   // std::cerr << req_path << std::endl;
   auto path = resolve_path(req_path);
   if (path.empty() || open_file(path) != 0) {
