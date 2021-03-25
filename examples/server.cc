@@ -405,8 +405,8 @@ int Stream::start_response() {
   auto req_path = request_path(uri, htp.method == HTTP_CONNECT);
   if (req_path.find(".py") != std::string::npos) {
       std::cout << "found python!!" << '\n';
-      std::cerr << req_path << std::endl;
-      // std::string str(req_path);
+      // std::cerr << req_path << std::endl;
+      std::string str(req_path);
       str = "python3 ." + str;
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
