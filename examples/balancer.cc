@@ -1621,12 +1621,6 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 }
 } // namespace
 
-namespace {
-  void test_command(std::stirng cmd) {
-    
-  }
-} // namespace
-
 Server::Server(struct ev_loop *loop, SSL_CTX *ssl_ctx)
     : loop_(loop), ssl_ctx_(ssl_ctx), fd_(-1) {
   ev_io_init(&wev_, swritecb, 0, EV_WRITE);
