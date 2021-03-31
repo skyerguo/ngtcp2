@@ -448,6 +448,8 @@ typedef enum {
   NGTCP2_TRANSPORT_PARAM_SERVER_UNICAST_TTL = 10, 
   NGTCP2_TRANSPORT_PARAM_TEST_METADATA = 11,
   NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE = 12,
+  NGTCP2_TRANSPORT_PARAM_THROUGHPUT_SENSITIVE = 13,
+  NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE = 14,
 } ngtcp2_transport_param_id;
 
 typedef enum {
@@ -498,6 +500,8 @@ typedef struct {
   uint32_t server_unicast_ttl;
   uint32_t test_metadata;
   uint32_t cpu_sensitive;
+  uint32_t throughput_sensitive;
+  uint32_t rtt_sensitive;
 } ngtcp2_transport_params;
 
 typedef struct {
@@ -514,6 +518,8 @@ typedef struct {
   uint32_t server_unicast_ttl;
   uint32_t test_metadata;
   uint32_t cpu_sensitive;
+  uint32_t throughput_sensitive;
+  uint32_t rtt_sensitive;
 } ngtcp2_settings;
 
 /**
