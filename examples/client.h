@@ -84,6 +84,8 @@ struct Config {
   // parameters.
   const char *tp_file;
   const char *website;
+  const char *website_root_path;
+  uint32_t website_www_opt;
 
   const char *remote_ip;
   const char *addr;
