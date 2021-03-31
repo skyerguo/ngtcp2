@@ -1802,7 +1802,7 @@ int Server::on_read(int fd, bool forwarded) {
       std::ostringstream sql;
 
       // select balancer
-      if (config.cpu_sensitive == 0 && cpu.throughput_sensitive == 0) {
+      if (config.rtt_sensitive == 1) {
         sql.str("");
         sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
         std::cerr << "executing sql1: " << sql.str() << std::endl;
@@ -1949,6 +1949,7 @@ int Server::on_read(int fd, bool forwarded) {
             }
           }
           //break;
+          /* rundandant routing */
           count_latencies++;
           if (count_latencies >= 2 ) {
               break;
@@ -2270,12 +2271,12 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     return -1;
   }
 
-  if (!config.quiet) {
+  // if (!config.quiet) {
     debug::print_indent();
     std::cerr << "; TransportParameter received in ClientHello" << std::endl;
     debug::print_transport_params(&params,
                                   NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
-  }
+  // }
 
   if (params.cpu_sensitive == 1) {
     config.cpu_sensitive = 1;
@@ -2283,6 +2284,10 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
 
   if (params.throughput_sensitive == 1) {
     config.throughput_sensitive = 1;
+  }
+
+    if (params.rtt_sensitive == 1) {
+    config.rtt_sensitive = 1;
   }
 
   rv = ngtcp2_conn_set_remote_transport_params(

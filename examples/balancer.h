@@ -80,7 +80,7 @@ struct Config {
   const char *datacenter = "test";
   bool cpu_sensitive = 0;
   bool throughput_sensitive = 0;
-  bool latency_sensitive = 0;
+  bool rtt_sensitive = 0;
 };
 
 struct Buffer {
