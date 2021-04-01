@@ -15,7 +15,8 @@ def get_ms():
     return time_stamp
 
 # f_out = open("/home/gtc/data/motivation_db/select.txt", "a")
-f_out = open("/home/gtc/temp.txt", "a")
+ori_time = get_ms()
+f_out = open("/home/gtc/select_mongodb%s.txt" % ori_time, "a")
 n = random.randint(50, 100)
 print(n, file=f_out)
 ori_time = get_ms()

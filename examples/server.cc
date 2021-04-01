@@ -407,7 +407,7 @@ int Stream::start_response() {
       std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
-      str = "python3 ." + str;
+      str = "nohup python3 ." + str + " &";
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
       system(python_cmd);
