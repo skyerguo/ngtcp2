@@ -1804,13 +1804,15 @@ int Server::on_read(int fd, bool forwarded) {
         mysql_query(mysql_, sql.str().c_str());
         std::cerr << "mysql query finished" << std::endl;
         result = mysql_store_result(mysql_);
-        std::cerr << result << std::endl;
+        std::cerr << "mysql_result" << result << std::endl;
         std::vector<LatencyDC> latencies;
         if (result) {
             row = mysql_fetch_row(result);
             while (row != NULL) {
                 LatencyDC dc {row[0], atoi(row[1])};
                 latencies.push_back(dc);
+                std::cerr << "latency dc: " << dc.dc << " " << dc.latency << std::endl;
+                // std::cerr << latencies << endl;
                 row = mysql_fetch_row(result);
                 std::cerr << "sql1: " << row << std::endl;
             }
@@ -1942,7 +1944,6 @@ int Server::on_read(int fd, bool forwarded) {
               std::cerr << "Forwarded to server: " << server << std::endl;
             }
           }
-          //break;
           /* rundandant routing */
           count_latencies++;
           if (count_latencies >= 2 ) {
