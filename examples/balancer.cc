@@ -1810,7 +1810,7 @@ int Server::on_read(int fd, bool forwarded) {
         sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
         std::cerr << "executing sql1: " << sql.str() << std::endl;
         std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
-ß
+
         mysql_query(mysql_, sql.str().c_str());
         std::cerr << mysql_error(mysql_) << std::endl;
         std::cerr << "mysql query finished" << std::endl;
