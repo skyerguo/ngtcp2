@@ -48,6 +48,7 @@
 #include "crypto.h"
 #include "shared.h"
 #include "http.h"
+#include <unistd.h>
 
 
 
@@ -1668,6 +1669,12 @@ int Server::init(int fd, const char *user, const char *password, const char *mys
   mysql_ = mysql_connect(user, password, mysql_ip);
   mysql_query(mysql_, "select * from clients");
 
+  MYSQL_RES *result;
+
+  std::cerr << mysql_error(mysql_) << std::endl;
+  result = mysql_store_result(mysql_);
+  std::cerr << "mysql_result*" << result << std::endl;
+
   ev_io_set(&wev_, fd_, EV_WRITE);
   ev_io_set(&rev_, fd_, EV_READ);
 
@@ -1738,7 +1745,9 @@ int Server::on_read(int fd, bool forwarded) {
   if (udph->dest != htons(config.port)) {
     return 0;
   }
-  std::cerr << "Got packet of size: " << udp_size << " from " << sender_ip << std::endl;
+  if (!config.quiet) {
+    std::cerr << "Got packet of size: " << udp_size << " from " << sender_ip << std::endl;
+  }
 
   rv = ngtcp2_pkt_decode_hd(&hd, quic, nread);
   if (rv < 0) {
@@ -1801,7 +1810,9 @@ int Server::on_read(int fd, bool forwarded) {
         sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
         std::cerr << "executing sql1: " << sql.str() << std::endl;
         std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
+ß
         mysql_query(mysql_, sql.str().c_str());
+        std::cerr << mysql_error(mysql_) << std::endl;
         std::cerr << "mysql query finished" << std::endl;
         result = mysql_store_result(mysql_);
         std::cerr << "mysql_result" << result << std::endl;
@@ -1833,6 +1844,7 @@ int Server::on_read(int fd, bool forwarded) {
         std::chrono::high_resolution_clock::time_point start_ts2 = std::chrono::high_resolution_clock::now();
         mysql_query(mysql_, sql.str().c_str());
         result2 = mysql_store_result(mysql_);
+        std::cerr << "mysql_result2" << result2 << std::endl;
         std::map<std::string, std::string> dcs;
         if (result2) {
             row = mysql_fetch_row(result2);
@@ -1842,6 +1854,9 @@ int Server::on_read(int fd, bool forwarded) {
             }
         } else {
             std::cerr << "ERROR: No data center is deployed with the server for " << h->hostname() << std::endl;
+        }
+        if (row == NULL){
+            std::cerr << "sql2 == null: " << row << std::endl;
         }
         std::chrono::high_resolution_clock::time_point end_ts2 = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
@@ -1959,7 +1974,7 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "Failed to find server/balancer to forward" << std::endl;
         }
 
-        //mysql_free_result(result);
+        // mysql_free_result(result);
         mysql_free_result(result2);
       }
       else if (config.cpu_sensitive == 1) {
@@ -2273,18 +2288,12 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
                                   NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
   // }
 
-  if (params.cpu_sensitive == 1) {
+  if (params.cpu_sensitive == 1) 
     config.cpu_sensitive = 1;
-  }
-
-  if (params.throughput_sensitive == 1) {
+  else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
-  }
-
-    if (params.rtt_sensitive == 1) {
+  else 
     config.rtt_sensitive = 1;
-  }
-
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
   if (rv != 0) {

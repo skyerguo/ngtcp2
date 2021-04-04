@@ -1243,7 +1243,9 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
     //ngtcp2_conn_get_domain_name(conn_, data, datalen);
     
   }
-  std::cout<<"ok"<<std::endl;
+  if (!config.quiet) {
+    std::cout<<"ok"<<std::endl;
+  }
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
@@ -1769,7 +1771,9 @@ int Server::on_read(int fd) {
       recvfrom(fd, buf.data(), buf.size(), MSG_DONTWAIT, &su.sa, &addrlen);
   char str[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &(su.in.sin_addr), str, INET_ADDRSTRLEN);
-  std::cerr << "Got packet from " << str << ":" << ntohs(su.in.sin_port) << ", " << fd << std::endl;
+  if (!config.quiet) {
+    std::cerr << "Got packet from " << str << ":" << ntohs(su.in.sin_port) << ", " << fd << std::endl;
+  }
   if (nread == -1) {
     std::cerr << "recvfrom: " << strerror(errno) << std::endl;
     // TODO Handle running out of fd
@@ -1880,7 +1884,9 @@ int Server::on_read(int fd) {
   remote_addr->len = addrlen;
   memcpy(&remote_addr->su.sa, &su.sa, addrlen);
   inet_ntop(AF_INET, &(remote_addr->su.in.sin_addr), str, INET_ADDRSTRLEN);
-  std::cerr << "update fd: " << fd << ", " << str << ":" << ntohs(remote_addr->su.in.sin_port) << std::endl;
+  if (!config.quiet) {
+    std::cerr << "update fd: " << fd << ", " << str << ":" << ntohs(remote_addr->su.in.sin_port) << std::endl;
+  }
   rv = h->on_read(buf.data(), nread);
   if (rv != 0) {
     if (rv != NETWORK_ERR_CLOSE_WAIT) {
