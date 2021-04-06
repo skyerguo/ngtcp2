@@ -117,10 +117,31 @@ struct LatencyDC {
 
     LatencyDC(std::string d, int l) : dc(d), latency(l) {}
 };
-
 struct LatencyDCCmp {
     inline bool operator () (const LatencyDC& l1, const LatencyDC& l2) {
       return (l1.latency < l2.latency);
+    }
+};
+
+struct CpuDC {
+  std::string dc;
+  int cpu_avail;
+  CpuDC(std::string d, int c) : dc(d), cpu_avail(c) {}
+};
+struct CpuDCCmp {
+    inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
+      return (l1.cpu_avail < l2.cpu_avail);
+    }
+};
+
+struct ThroughputDC {
+  std::string dc;
+  int throughput;
+  ThroughputDC(std::string d, int t) : dc(d), throughput(t) {}
+};
+struct ThroughputDCCmp {
+    inline bool operator () (const ThroughputDC& l1, const ThroughputDC& l2) {
+      return (l1.throughput > l2.throughput);
     }
 };
 

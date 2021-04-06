@@ -49,6 +49,7 @@
 #include "shared.h"
 #include "http.h"
 #include <unistd.h>
+#include "redis.h"
 
 
 
@@ -1978,7 +1979,18 @@ int Server::on_read(int fd, bool forwarded) {
         mysql_free_result(result2);
       }
       else if (config.cpu_sensitive == 1) {
-        
+        std::vector<CpuDC> cpus;
+        Redis *r = new Redis();
+        if(r->connect("127.0.0.1", 6379))
+        {
+          r->auth("Hestia123456");
+          r->set("name", "Andy");
+          // std::cerr << "Get the name is " << r->get("name").c_str() << std::endl;
+        }
+        else {
+          std::cerr << "redis connect error!\n" << std::endl;
+        }
+        delete r;
       }
       else if (config.throughput_sensitive == 1) {
         
