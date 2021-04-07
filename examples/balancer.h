@@ -82,6 +82,7 @@ struct Config {
   bool throughput_sensitive = 0;
   bool rtt_sensitive = 0;
   std::vector<std::string> server_ip;
+  std::vector<std::string> server_name;
 };
 
 struct Buffer {

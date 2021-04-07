@@ -1682,16 +1682,39 @@ int Server::init(int fd, const char *user, const char *password, const char *mys
 
   // read servers ip from machine.json
   config.server_ip.clear();
+  config.server_name.clear();
+
   std::ifstream in("/home/gtc/machine.json");
   std::ostringstream tmp;
   tmp << in.rdbuf();
   std::string machines = tmp.str();
-  std::cerr << "machines: " << machines << std::endl;
+  // std::cerr << "machines: " << machines << std::endl;
   neb::CJsonObject oJson;
-  // if (oJson.Parse(machines))
-  // {
-  //     std::cout << oJson.ToString() << std::endl;
-  // }
+  oJson.Parse(machines);
+  std::string machine_key;
+  while (oJson.GetKey(machine_key)) 
+  {
+    std::string start_key = "hestia";
+    std::string end_key = "server";
+    
+    if (strncmp(machine_key.c_str(), start_key.c_str(), start_key.size()) != 0 ||
+        strncmp(machine_key.substr(machine_key.size() - end_key.size()).c_str(), end_key.c_str(), end_key.size()) != 0) 
+      continue;
+    
+    std::cerr << machine_key << std::endl;
+    std::string server_name = machine_key.substr(0, machine_key.size() - end_key.size() - 1);
+    server_name = server_name.substr(start_key.size() + 1, server_name.size());
+
+    std::string server_ip;
+    oJson[machine_key].Get("external_ip1", server_ip);
+    
+    config.server_ip.push_back(server_ip);
+    config.server_name.push_back(server_name);
+  }
+  for (int i = 0; i < config.server_ip.size(); i++) {
+    std::cerr << "server_ip: " << config.server_ip[i] << std::endl;
+    std::cerr << "server_name: " << config.server_name[i] << std::endl;
+  }
   
   ev_io_set(&wev_, fd_, EV_WRITE);
   ev_io_set(&rev_, fd_, EV_READ);
