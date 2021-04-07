@@ -58,6 +58,10 @@ bool numeric_host(const char *hostname, int family);
 // Dumps |src| of length |len| in the format similar to `hexdump -C`.
 void hexdump(FILE *out, const uint8_t *src, size_t len);
 
+double stringToDouble(std::string num);
+
+std::string getStdLocation(std::string dc);
+
 inline char lowcase(char c) {
   constexpr static unsigned char tbl[] = {
       0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,

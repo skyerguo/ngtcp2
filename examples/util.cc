@@ -149,6 +149,68 @@ void hexdump(FILE *out, const uint8_t *src, size_t len) {
     fputs("|\n", out);
   }
 }
+double stringToDouble(std::string num)
+{
+    bool minus = false;      //标记是否是负数
+    std::string real = num;       //real表示num的绝对值
+    if (num.at(0) == '-')
+    {
+        minus = true;
+        real = num.substr(1, num.size()-1);
+    }
+
+    char c;
+    int i = 0;
+    double result = 0.0 , dec = 10.0;
+    bool isDec = false;       //标记是否有小数
+    unsigned long size = real.size();
+    while(i < size)
+    {
+        c = real.at(i);
+        if (c == '.')
+        {//包含小数
+            isDec = true;
+            i++;
+            continue;
+        }
+        if (!isDec)
+        {
+            result = result*10 + c - '0';
+        }
+        else
+        {//识别小数点之后都进入这个分支
+            result = result + (c - '0')/dec;
+            dec *= 10;
+        }
+        i++;
+    }
+    if (minus == true) {
+        result = -result;
+    }
+
+    return result;
+}
+
+std::string getStdLocation(std::string dc) {
+  /* 对应bash python3 -c "import os; print('-'.join([''.join((t[:2], t[-2:])) for t in '${dc}'.split('-')[:2]])) */
+  std::string res = "";
+  std::string pre[2] = {"", ""};
+  int fx[4] = {-1, 0, 0, 1};
+  int n = dc.size();
+  int cnt = 0, last_pos = 0;
+  for (int i = 0; i < n; ++i) {
+    if (dc[i] == '-') {
+      pre[cnt] = dc.substr(last_pos, i - last_pos);
+      last_pos = i + 1;
+      if (++cnt > 1) break;
+     }
+  }
+  // std::cout << pre[0] << std::endl;
+  // std::cout << pre[1] << std::endl;
+  res = pre[0].substr(0, 2) + pre[0].substr(pre[0].size() - 2, pre[0].size()) + "-";
+  res += pre[1].substr(0, 2) + pre[1].substr(pre[1].size() - 2, pre[0].size());
+  return res;
+}
 
 } // namespace util
 

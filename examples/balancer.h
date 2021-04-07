@@ -127,8 +127,8 @@ struct LatencyDCCmp {
 
 struct CpuDC {
   std::string dc;
-  int cpu_avail;
-  CpuDC(std::string d, int c) : dc(d), cpu_avail(c) {}
+  double cpu_avail;
+  CpuDC(std::string d, double c) : dc(d), cpu_avail(c) {}
 };
 struct CpuDCCmp {
     inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
@@ -138,8 +138,8 @@ struct CpuDCCmp {
 
 struct ThroughputDC {
   std::string dc;
-  int throughput;
-  ThroughputDC(std::string d, int t) : dc(d), throughput(t) {}
+  double throughput;
+  ThroughputDC(std::string d, double t) : dc(d), throughput(t) {}
 };
 struct ThroughputDCCmp {
     inline bool operator () (const ThroughputDC& l1, const ThroughputDC& l2) {
