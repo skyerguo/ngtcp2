@@ -1845,7 +1845,7 @@ int Server::on_read(int fd, bool forwarded) {
       MYSQL_RES *result, *result2, *result3;
       std::ostringstream sql;
 
-      // select balancer
+      /* select balancer */
       if (config.rtt_sensitive == 1) {
         sql.str("");
         sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
@@ -1864,7 +1864,6 @@ int Server::on_read(int fd, bool forwarded) {
                 LatencyDC dc {row[0], atoi(row[1])};
                 latencies.push_back(dc);
                 std::cerr << "latency dc: " << dc.dc << " " << dc.latency << std::endl;
-                // std::cerr << latencies << endl;
                 row = mysql_fetch_row(result);
                 std::cerr << "sql1: " << row << std::endl;
             }
@@ -1902,14 +1901,11 @@ int Server::on_read(int fd, bool forwarded) {
         std::chrono::high_resolution_clock::time_point end_ts2 = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
         std::cerr << "Executing sql 2 costs " << time_span2.count() << " milliseconds." << std::endl;
+
+        /* forward */
         bool forwarded = false;
         if (latencies.empty()) {
-          // std::cerr << "latencies vector is empty. forward to local data center" << std::endl;
-          // // scheme 1
-          // LatencyDC dc {"server", 1};
-          // latencies.push_back(dc);
 
-          // scheme 2
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
           sa.sin_family = AF_INET;
@@ -1935,13 +1931,6 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "Forwarded to local dc: "<< std::endl;
           }
         }
-        /*
-        std::cerr << "=====latency info START=====" << std::endl;
-        for (auto ldc : latencies) {
-          std::cerr << ldc.dc << ": " << ldc.latency << std::endl;
-        }
-        std::cerr << "=====latency info END=====" << std::endl << std::endl;
-        */
           
         std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
         auto count_latencies = 0;
@@ -1973,21 +1962,7 @@ int Server::on_read(int fd, bool forwarded) {
             }
           } else {
             std::cerr << "The current dc is the best, choose server to forward" << std::endl; 
-            // select server
-            /*sql.str("");
-            sql << "select server from intra where domain = '" << h->hostname() << "' and datacenter = '" << ldc.dc.c_str() << "'";
-            std::cerr << "executing sql: " << sql.str() << std::endl;
-            mysql_query(mysql_, sql.str().c_str());
-            result = mysql_store_result(mysql_);
-            std::vector<std::string> servers;
-            row = mysql_fetch_row(result);
-            while (row != NULL) {
-              std::cerr << "server candidate: " << row[0] << std::endl;
-              servers.push_back(row[0]);
-              row = mysql_fetch_row(result);
-            }
-  //          auto server = servers[std::rand() % servers.size()];
-            auto server = servers[0]; */
+            /* select server */
             std::string server = "server";
             std::cerr << "selected server: " << server << std::endl;
             mysql_free_result(result);
@@ -2014,26 +1989,42 @@ int Server::on_read(int fd, bool forwarded) {
         if (!forwarded) {
           std::cerr << "Failed to find server/balancer to forward" << std::endl;
         }
-
         // mysql_free_result(result);
         mysql_free_result(result2);
       }
       else if (config.cpu_sensitive == 1) {
-        std::vector<CpuDC> cpus;
+        
+      }
+      else if (config.throughput_sensitive == 1) {
+        std::cerr << "user requires throughput_sensitive!" << std::endl; 
+        std::vector<ThroughputDC> throughputs;
+
         Redis *r = new Redis();
         if(r->connect("127.0.0.1", 6379))
         {
           r->auth("Hestia123456");
-          r->set("name", "Andy");
-          std::cerr << "Get the name is " << r->get("name").c_str() << std::endl;
+          // std::cerr << "redis auth successful!" << std::endl;
+          std::cerr << config.server_name.size() << std::endl;
+          for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
+          {
+            std::cerr << config.server_name[server_name_index] << std::endl;
+            std::string redis_key = "throughput_hestia-" + config.server_name[server_name_index] + "-server";
+            std::cerr << "redis_key: " << redis_key << std::endl;
+            if (!r->existsKey(redis_key.c_str())) {
+              std::cerr << "server " <<  config.server_name[server_name_index] << "has measurement errors" << std::endl;
+            }
+            else {
+              std::string redis_value = r->get(redis_key).c_str();
+              std::cerr << "redis_value: " << redis_value << std::endl;
+            }
+          }
+          // r->set("name", "Andy");
+          // std::cerr << "Get the name is " << r->get("name").c_str() << std::endl;
         }
         else {
           std::cerr << "redis connect error!\n" << std::endl;
         }
         delete r;
-      }
-      else if (config.throughput_sensitive == 1) {
-        
       }
 
       rv = h->on_write();
@@ -2333,19 +2324,17 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     return -1;
   }
 
-  // if (!config.quiet) {
-    debug::print_indent();
-    std::cerr << "; TransportParameter received in ClientHello" << std::endl;
-    debug::print_transport_params(&params,
-                                  NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
-  // }
+  debug::print_indent();
+  std::cerr << "; TransportParameter received in ClientHello" << std::endl;
+  debug::print_transport_params(&params,
+                                NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
 
   if (params.cpu_sensitive == 1) 
     config.cpu_sensitive = 1;
   else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
   else 
-    config.cpu_sensitive = 1;
+    config.throughput_sensitive = 1;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

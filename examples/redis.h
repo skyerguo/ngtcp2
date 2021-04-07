@@ -48,6 +48,17 @@ public:
     {
 	    redisCommand(this->_connect, "auth %s", auth_password.c_str());
     }
+
+    int existsKey(const char* ID){
+        redisReply * reply = (redisReply*)redisCommand(this->_connect,"exists %s",ID);
+        int res = 0;
+        if(reply->type == REDIS_REPLY_INTEGER){
+            if(reply->integer == 1L)
+                res  = 1;
+        }
+        freeReplyObject(reply);
+        return res;
+    }
  
 private:
  
