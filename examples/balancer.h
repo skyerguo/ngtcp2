@@ -81,6 +81,7 @@ struct Config {
   bool cpu_sensitive = 0;
   bool throughput_sensitive = 0;
   bool rtt_sensitive = 0;
+  std::vector<std::string> server_ip;
 };
 
 struct Buffer {

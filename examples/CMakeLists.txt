@@ -63,6 +63,8 @@ if(LIBEV_FOUND AND OPENSSL_FOUND AND LIBMYSQLCLIENT_FOUND)
     crypto_openssl.cc
     crypto.cc
     http.cc
+    CJsonObject.cpp
+    cJSON.c
   )
 
   set(balancer2_SOURCES

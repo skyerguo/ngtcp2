@@ -50,10 +50,14 @@
 #include "http.h"
 #include <unistd.h>
 #include "redis.h"
-
+#include <fstream>
+#include <sstream>
+#include "CJsonObject.hpp"
+#include "cJSON.h"
 
 
 using namespace ngtcp2;
+// using namespace neb;
 
 namespace {
 auto randgen = util::make_mt19937();
@@ -1676,6 +1680,19 @@ int Server::init(int fd, const char *user, const char *password, const char *mys
   result = mysql_store_result(mysql_);
   std::cerr << "mysql_result*" << result << std::endl;
 
+  // read servers ip from machine.json
+  config.server_ip.clear();
+  std::ifstream in("/home/gtc/machine.json");
+  std::ostringstream tmp;
+  tmp << in.rdbuf();
+  std::string machines = tmp.str();
+  std::cerr << "machines: " << machines << std::endl;
+  neb::CJsonObject oJson;
+  // if (oJson.Parse(machines))
+  // {
+  //     std::cout << oJson.ToString() << std::endl;
+  // }
+  
   ev_io_set(&wev_, fd_, EV_WRITE);
   ev_io_set(&rev_, fd_, EV_READ);
 
@@ -1985,7 +2002,7 @@ int Server::on_read(int fd, bool forwarded) {
         {
           r->auth("Hestia123456");
           r->set("name", "Andy");
-          // std::cerr << "Get the name is " << r->get("name").c_str() << std::endl;
+          std::cerr << "Get the name is " << r->get("name").c_str() << std::endl;
         }
         else {
           std::cerr << "redis connect error!\n" << std::endl;
@@ -2305,7 +2322,8 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
   else 
-    config.rtt_sensitive = 1;
+    config.cpu_sensitive = 1;
+
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
   if (rv != 0) {
@@ -2466,7 +2484,9 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         tmp = tmp->ifa_next;
         continue;
       }
-      s.add_fd(tmp->ifa_name, fd);
+      // s.add_fd(tmp->ifa_name, fd);
+      // std::cerr << "123456789" << std::endl;
+      std::cerr << tmp->ifa_name << " " << fd << std:: endl;
       printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
     } else {
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);

@@ -64,7 +64,9 @@ balancer_SOURCES = balancer.cc balancer.h \
 	shared.h \
 	crypto_openssl.cc \
 	crypto.cc \
-	http.cc http.h
+	http.cc http.h \
+	CJsonObject.cpp CJsonObject.h \
+	cJSON.c cJSON.h
 
 balancer2_SOURCES = balancer2.cc balancer.h \
 	template.h \
