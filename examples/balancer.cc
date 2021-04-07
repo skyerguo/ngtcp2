@@ -1981,7 +1981,7 @@ int Server::on_read(int fd, bool forwarded) {
             auto fd = balancer_fd_map_[interface];
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-              perror("Failed to forward ip packet");
+              perror("Failed to forward ip packet to balancer");
             } else {
               std::cerr << "Forwarded to balancer: " << interface << " in " << ldc.dc << std::endl;
             }
@@ -1995,7 +1995,7 @@ int Server::on_read(int fd, bool forwarded) {
             auto fd = server_fd_map_[server];
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-              perror("Failed to forward ip packet");
+              perror("Failed to forward ip packet to server");
             } else {
               std::cerr << "Forwarded to server: " << server << std::endl;
             }
@@ -2461,7 +2461,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
   else 
-    config.throughput_sensitive = 1;
+    config.rtt_sensitive = 1;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
