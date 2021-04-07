@@ -1869,7 +1869,10 @@ int Server::on_read(int fd, bool forwarded) {
       std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
       std::cerr << "Executing sql 2 costs " << time_span2.count() << " milliseconds." << std::endl;
       mysql_free_result(result2);
+      
       /* select balancer */
+
+      /* rtt sensitive request */
       if (config.rtt_sensitive == 1) {
         sql.str("");
         sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
@@ -1902,30 +1905,6 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "sql1 == null: " << row << std::endl;
         }
         std::sort(latencies.begin(), latencies.end(), LatencyDCCmp());
-        // sql.str("");
-        // sql << "select datacenter, loadbalancer from deployment where domain = '" << h->hostname() << "'";
-        // std::cerr << "executing sql2: " << sql.str() << std::endl;
-        // std::chrono::high_resolution_clock::time_point start_ts2 = std::chrono::high_resolution_clock::now();
-        // mysql_query(mysql_, sql.str().c_str());
-        // result2 = mysql_store_result(mysql_);
-        // std::cerr << "mysql_result2" << result2 << std::endl;
-        // std::map<std::string, std::string> dcs;
-        // if (result2) {
-        //     row = mysql_fetch_row(result2);
-        //     while (row != NULL) {
-        //         dcs[row[0]] = row[1];
-        //         row = mysql_fetch_row(result2);
-        //     }
-        // } else {
-        //     std::cerr << "ERROR: No data center is deployed with the server for " << h->hostname() << std::endl;
-        // }
-        // if (row == NULL){
-        //     std::cerr << "sql2 == null: " << row << std::endl;
-        // }
-        // std::chrono::high_resolution_clock::time_point end_ts2 = std::chrono::high_resolution_clock::now();
-        // std::chrono::duration<double, std::milli> time_span2 = end_ts2 - start_ts2;
-        // std::cerr << "Executing sql 2 costs " << time_span2.count() << " milliseconds." << std::endl;
-        // mysql_free_result(result2);
 
         /* forward */
         bool forwarded = false;
@@ -2016,8 +1995,126 @@ int Server::on_read(int fd, bool forwarded) {
         }
         // mysql_free_result(result);
       }
+      /* cpu sensitive request  */
       else if (config.cpu_sensitive == 1) {
+        std::cerr << "user requires cpu_sensitive!" << std::endl; 
+        std::vector<CpuDC> cpus;
+
+        /* search measures using redis */
+        Redis *r = new Redis();
+        if(r->connect("127.0.0.1", 6379))
+        {
+          r->auth("Hestia123456");
+          // std::cerr << "redis auth successful!" << std::endl;
+          std::cerr << config.server_name.size() << std::endl;
+          for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
+          {
+            std::cerr << config.server_name[server_name_index] << std::endl;
+            std::string redis_key = "cpu_idle_hestia-" + config.server_name[server_name_index] + "-server";
+            std::cerr << "redis_key: " << redis_key << std::endl;
+            if (!r->existsKey(redis_key.c_str())) {
+              std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors" << std::endl;
+              continue;
+            }
+            std::string redis_value = r->get(redis_key).c_str();
+            double cpu_idle = util::stringToDouble(redis_value);
+            std::cerr << "redis_value: " << redis_value << std::endl;
+            CpuDC dc {util::getStdLocation(config.server_name[server_name_index]), cpu_idle};
+            cpus.push_back(dc);
+          }
+        }
+        else {
+          std::cerr << "redis connect error!\n" << std::endl;
+        }
+        delete r;
+
+        /* forward */
+        bool forwarded = false;
+        if (cpus.empty()) {
+
+          struct sockaddr_in sa;
+          memset(&sa, 0, sizeof(sa));
+          sa.sin_family = AF_INET;
+          sa.sin_port = udph->dest;
+          sa.sin_addr.s_addr = iph->daddr;
+          std::cerr << "cpus vector is empty. forward to local data center" << std::endl;
+          std::map<std::string, int>::iterator iter;
+          iter = server_fd_map_.begin();
+          while(iter != server_fd_map_.end()) {
+              std::cerr << "server_fd_map_" << std::endl;
+              std::cerr << iter->first << " : " << iter->second << std::endl;
+              iter++;
+          }
+          auto fd = server_fd_map_["server"];
+          std::cerr << "fd: " << fd << std::endl;
+          std::cerr << "iph:" << iph << std::endl;
+          std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+          std::cerr << "sa:" << &sa << std::endl;
+          forwarded = true;
+          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+            perror("Failed to forward ip packet");
+          } else {
+            std::cerr << "Forwarded to local dc: "<< std::endl;
+          }
+        }
         
+        std::sort(cpus.begin(), cpus.end(), CpuDCCmp());
+        std::cerr << "=====cpu optimized routing and forwarding selecting START=====" << std::endl;
+        auto count_cpus = 0;
+        for (auto ldc : cpus) {
+          std::cerr << "cpu info: " << ldc.dc << ", " << ldc.cpu << std::endl;
+          std::cerr << "count_cpus: " << count_cpus << std::endl;
+
+          if (ldc.cpu <= 0) {
+            continue;
+          }
+          if (dcs.find(ldc.dc) == dcs.end()) {
+            std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
+            continue;
+          }
+          struct sockaddr_in sa;
+          memset(&sa, 0, sizeof(sa));
+          sa.sin_family = AF_INET;
+          sa.sin_port = udph->dest;
+          sa.sin_addr.s_addr = iph->daddr;
+          if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
+            std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
+            auto interface = dcs[ldc.dc];
+            auto fd = balancer_fd_map_[interface];
+            forwarded = true;
+            if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+              perror("Failed to forward ip packet");
+            } else {
+              std::cerr << "Forwarded to balancer: " << interface << " in " << ldc.dc << std::endl;
+            }
+          } else {
+            std::cerr << "The current dc is the best, choose server to forward" << std::endl; 
+            /* select server */
+            std::string server = "server";
+            std::cerr << "selected server: " << server << std::endl;
+
+            auto fd = server_fd_map_[server];
+            forwarded = true;
+            if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+              perror("Failed to forward ip packet");
+            } else {
+              std::cerr << "Forwarded to server: " << server << std::endl;
+            }
+          }
+          /* rundandant routing */
+          count_cpus++;
+          if (count_cpus >= 2 ) {
+              break;
+          }
+        }
+        std::cerr << "=====cpu optimized routing and forwarding selecting END=====" << std::endl;
+        std::chrono::high_resolution_clock::time_point end_ts = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> time_span = end_ts - start_ts;
+        std::cerr << "Packet forwarding costs " << time_span.count() << " milliseconds." << std::endl;
+
+        if (!forwarded) {
+          std::cerr << "Failed to find server/balancer to forward" << std::endl;
+        }
       }
       /* throughput sensitive request */
       else if (config.throughput_sensitive == 1) {
@@ -2095,7 +2192,8 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "Forwarded to local dc: "<< std::endl;
           }
         }
-          
+        
+        std::sort(throughputs.begin(), throughputs.end(), ThroughputDCCmp());
         std::cerr << "=====throughput optimized routing and forwarding selecting START=====" << std::endl;
         auto count_throughputs = 0;
         for (auto ldc : throughputs) {
@@ -2461,7 +2559,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
   else 
-    config.rtt_sensitive = 1;
+    config.cpu_sensitive = 1;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

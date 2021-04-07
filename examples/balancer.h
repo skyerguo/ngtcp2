@@ -127,12 +127,12 @@ struct LatencyDCCmp {
 
 struct CpuDC {
   std::string dc;
-  double cpu_avail;
-  CpuDC(std::string d, double c) : dc(d), cpu_avail(c) {}
+  double cpu;
+  CpuDC(std::string d, double c) : dc(d), cpu(c) {}
 };
 struct CpuDCCmp {
     inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
-      return (l1.cpu_avail < l2.cpu_avail);
+      return (l1.cpu > l2.cpu);
     }
 };
 
