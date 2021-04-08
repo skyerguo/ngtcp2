@@ -353,28 +353,28 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       switch (param_type) {
-      case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_DATA:
-        params->initial_max_stream_data = ngtcp2_get_uint32(p);
-        break;
-      case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_DATA:
-        params->initial_max_data = ngtcp2_get_uint32(p);
-        break;
-      case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_ID_BIDI: {
-        uint32_t val = ngtcp2_get_uint32(p);
-        if (!valid_stream_id_bidi(val, exttype)) {
-          return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+        case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_DATA:
+          params->initial_max_stream_data = ngtcp2_get_uint32(p);
+          break;
+        case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_DATA:
+          params->initial_max_data = ngtcp2_get_uint32(p);
+          break;
+        case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_ID_BIDI: {
+          uint32_t val = ngtcp2_get_uint32(p);
+          if (!valid_stream_id_bidi(val, exttype)) {
+            return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+          }
+          params->initial_max_stream_id_bidi = val;
+          break;
         }
-        params->initial_max_stream_id_bidi = val;
-        break;
-      }
-      case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_ID_UNI: {
-        uint32_t val = ngtcp2_get_uint32(p);
-        if (!valid_stream_id_uni(val, exttype)) {
-          return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+        case NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_STREAM_ID_UNI: {
+          uint32_t val = ngtcp2_get_uint32(p);
+          if (!valid_stream_id_uni(val, exttype)) {
+            return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+          }
+          params->initial_max_stream_id_uni = val;
+          break;
         }
-        params->initial_max_stream_id_uni = val;
-        break;
-      }
       }
       p += sizeof(uint32_t);
       break;
@@ -449,11 +449,14 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
       if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
+      // printf("UNICAST_TTL: %lld %lld\n", p, *p);
       p += sizeof(uint16_t);
+      // printf("UNICAST_TTL: %lld %lld\n", p, *p);
       if ((size_t)(end - p) < sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       params->server_unicast_ttl = ngtcp2_get_uint32(p);
+      // printf("UNICAST_TTL: %lld %lld %lld\n", p, *p, ngtcp2_get_uint32(p));
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_TEST_METADATA:
@@ -473,11 +476,13 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
       if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
+      printf("decode cpu sensitive: %lld %lld\n", p, *p);
       p += sizeof(uint16_t);
       if ((size_t)(end - p) < sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       params->cpu_sensitive = ngtcp2_get_uint32(p);
+      printf("decode cpu sensitive: %lld %lld %lld\n", p, *p, ngtcp2_get_uint32(p));
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_THROUGHPUT_SENSITIVE:

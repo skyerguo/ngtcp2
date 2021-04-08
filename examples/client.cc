@@ -932,6 +932,21 @@ int Client::init(int fd, const Address &remote_addr, const char *addr,
 //  settings.server_unicast_ttl = 0;
   settings.ack_delay_exponent = NGTCP2_DEFAULT_ACK_DELAY_EXPONENT;
 
+  if (strcmp(config.website_root_path, "normal_1") == 0 || 
+      strcmp(config.website_root_path, "normal_2") == 0) {
+    std::cerr << "config sets params begin." << std::endl;
+    settings.rtt_sensitive = 1;
+    settings.throughput_sensitive = 2, settings.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path,"video") == 0) {
+    settings.throughput_sensitive = 1;
+    settings.rtt_sensitive = 2, settings.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path, "cpu") == 0) {
+    settings.cpu_sensitive = 1;
+    settings.rtt_sensitive = 2, settings.throughput_sensitive = 2;
+  }
+
   rv = ngtcp2_conn_client_new(&conn_, conn_id, version, &callbacks, &settings,
                               this);
   if (rv != 0) {
@@ -1725,6 +1740,15 @@ int read_transport_params(const char *path, ngtcp2_transport_params *params) {
     } else if (util::istarts_with_l(line, "initial_max_data=")) {
       params->initial_max_data =
           strtoul(line.c_str() + str_size("initial_max_data="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "cpu_sensitive=")) {
+      params->cpu_sensitive =
+          strtoul(line.c_str() + str_size("cpu_sensitive="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "throughput_sensitive=")) {
+      params->throughput_sensitive =
+          strtoul(line.c_str() + str_size("throughput_sensitive="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "rtt_sensitive=")) {
+      params->rtt_sensitive =
+          strtoul(line.c_str() + str_size("rtt_sensitive="), nullptr, 10);
     }
   }
 
@@ -1843,12 +1867,33 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
 
   rv = ngtcp2_conn_get_local_transport_params(
       conn, &params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  /* 这里不能等于0，否则在ngtcp2_encode_transport_params会无法encode */
+  if (strcmp(config.website_root_path, "normal_1") == 0 || 
+      strcmp(config.website_root_path, "normal_2") == 0) {
+    std::cerr << "config sets params begin." << std::endl;
+    params.rtt_sensitive = 1;
+    params.throughput_sensitive = 2, params.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path,"video") == 0) {
+    params.throughput_sensitive = 1;
+    params.rtt_sensitive = 2, params.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path, "cpu") == 0) {
+    params.cpu_sensitive = 1;
+    params.rtt_sensitive = 2, params.throughput_sensitive = 2;
+  }
+
+  if (!config.quiet) {
+    debug::print_indent();
+    std::cerr << "; TransportParameter received in Clinet Hello";
+    debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  }
   if (rv != 0) {
     *al = SSL_AD_INTERNAL_ERROR;
     return -1;
   }
 
-  constexpr size_t bufsize = 64;
+  constexpr size_t bufsize = 128;
   auto buf = std::make_unique<uint8_t[]>(bufsize);
 
   auto nwrite = ngtcp2_encode_transport_params(
@@ -1858,6 +1903,11 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
               << std::endl;
     *al = SSL_AD_INTERNAL_ERROR;
     return -1;
+  }
+  if (!config.quiet) {
+    debug::print_indent();
+    std::cerr << "; TransportParameter received in Clinet Hello encoded";
+    debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
   }
 
   *out = buf.release();
@@ -1904,6 +1954,22 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   inet_ntop(AF_INET, &(sa.sin_addr), str, INET_ADDRSTRLEN);
   c->OnMigration(params.server_unicast_ip);
 
+  if (strcmp(config.website_root_path, "normal_1") == 0 || 
+      strcmp(config.website_root_path, "normal_2") == 0) {
+    std::cerr << "config sets params begin." << std::endl;
+    params.rtt_sensitive = 1;
+    params.throughput_sensitive = 2, params.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path,"video") == 0) {
+    params.throughput_sensitive = 1;
+    params.rtt_sensitive = 2, params.cpu_sensitive = 2;
+  }
+  else if (strcmp(config.website_root_path, "cpu") == 0) {
+    params.cpu_sensitive = 1;
+    params.rtt_sensitive = 2, params.throughput_sensitive = 2;
+  }
+
+  printf("%s\n", config.website_root_path);
   if (!config.quiet) {
     debug::print_indent();
     std::cerr << "; TransportParameter received in "

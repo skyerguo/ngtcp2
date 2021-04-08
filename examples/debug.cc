@@ -501,16 +501,24 @@ void print_transport_params(const ngtcp2_transport_params *params, int type) {
   fprintf(outfile, "; server_unicast_ttl=%u\n", params->server_unicast_ttl);
 
   switch (type) {
-  case NGTCP2_TRANSPORT_PARAMS_TYPE_ENCRYPTED_EXTENSIONS:
-  case NGTCP2_TRANSPORT_PARAMS_TYPE_NEW_SESSION_TICKET:
-    print_indent();
-    fprintf(outfile, "; stateless_reset_token=%s\n",
-            util::format_hex(params->stateless_reset_token).c_str());
-    break;
+    case NGTCP2_TRANSPORT_PARAMS_TYPE_ENCRYPTED_EXTENSIONS:
+    case NGTCP2_TRANSPORT_PARAMS_TYPE_NEW_SESSION_TICKET:
+      print_indent();
+      fprintf(outfile, "; stateless_reset_token=%s\n",
+              util::format_hex(params->stateless_reset_token).c_str());
+      break;
   }
 
   print_indent();
   fprintf(outfile, "; ack_delay_exponent=%u\n", params->ack_delay_exponent);
+
+  print_indent();
+  fprintf(outfile, "; cpu_sensitive=%u\n", params->cpu_sensitive);
+  print_indent();
+  fprintf(outfile, "; throughput_sensitive=%u\n", params->throughput_sensitive);
+  print_indent();
+  fprintf(outfile, "; rtt_sensitive=%u\n", params->rtt_sensitive);
+
 }
 
 void print_stream_data(uint64_t stream_id, const uint8_t *data,

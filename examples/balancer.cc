@@ -816,7 +816,7 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
   settings.omit_connection_id = 0;
   settings.max_packet_size = NGTCP2_MAX_PKT_SIZE;
   settings.ack_delay_exponent = NGTCP2_DEFAULT_ACK_DELAY_EXPONENT;
-  settings.test_metadata = 233;
+  // settings.test_metadata = 233; 
 
   auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
   std::generate(std::begin(settings.stateless_reset_token),
@@ -2539,7 +2539,12 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   int rv;
 
   ngtcp2_transport_params params;
-
+  
+  debug::print_indent();
+  std::cerr << "; TransportParameter received in ClientHello before decode" << std::endl;
+  debug::print_transport_params(&params,
+                                NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+                              
   rv = ngtcp2_decode_transport_params(
       &params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, in, inlen);
   if (rv != 0) {
@@ -2559,7 +2564,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   else if (params.throughput_sensitive == 1) 
     config.throughput_sensitive = 1;
   else 
-    config.cpu_sensitive = 1;
+    config.rtt_sensitive = 1;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

@@ -80,8 +80,7 @@ struct Config {
   uint32_t timeout;
   // session_file is a path to a file to write, and read TLS session.
   const char *session_file;
-  // tp_file is a path to a fie to write, and read QUIC transport
-  // parameters.
+  // tp_file is a path to a file to write, and read QUIC transport parameters.
   const char *tp_file;
   const char *website;
   const char *website_root_path;
