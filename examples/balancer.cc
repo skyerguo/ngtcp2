@@ -1627,6 +1627,14 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 }
 } // namespace
 
+namespace {
+/* 性能差>10%，延迟>30ms都不可以 */
+bool check_redundant_suitable(std::string dc, const double &best_result, const double &now_result)
+  if (fabs(best_result - now_result) / best_result > 0.1) return false;
+  
+  return true;
+} //
+
 Server::Server(struct ev_loop *loop, SSL_CTX *ssl_ctx)
     : loop_(loop), ssl_ctx_(ssl_ctx), fd_(-1) {
   ev_io_init(&wev_, swritecb, 0, EV_WRITE);
@@ -1938,9 +1946,12 @@ int Server::on_read(int fd, bool forwarded) {
           
         std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
         auto count_latencies = 0;
+        auto minimun_latency = 0;
         for (auto ldc : latencies) {
           std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
           std::cerr << "count_latencies: " << count_latencies << std::endl;
+          if (!minimun_latency) minimun_latency = ldc.latency;
+          else check_suitable();
 
           if (ldc.latency <= 0) {
             continue;
