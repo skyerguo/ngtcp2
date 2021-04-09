@@ -115,7 +115,7 @@ struct Buffer {
 
 struct LatencyDC {
     std::string dc;
-    int latency;
+    double latency;
 
     LatencyDC(std::string d, int l) : dc(d), latency(l) {}
 };

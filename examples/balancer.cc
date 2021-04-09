@@ -1629,11 +1629,21 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 
 namespace {
 /* 性能差>10%，延迟>30ms都不可以 */
-bool check_redundant_suitable(std::string dc, const double &best_result, const double &now_result)
+bool check_redundant_suitable(const std::string &dc, const double &best_result, const double &now_result, const std::vector<LatencyDC> &latencies) {
   if (fabs(best_result - now_result) / best_result > 0.1) return false;
-  
-  return true;
-} //
+
+  double least_latency = 0;
+  for (auto ldc: latencies) {
+    if (!least_latency) least_latency = ldc.latency;
+
+    if (strcmp(ldc.dc.c_str(), dc.c_str()) == 0) {
+     if (fabs(least_latency - ldc.latency) > 30) return false;
+     else return true; 
+    }
+  }
+  return false;
+}
+} //namespace
 
 Server::Server(struct ev_loop *loop, SSL_CTX *ssl_ctx)
     : loop_(loop), ssl_ctx_(ssl_ctx), fd_(-1) {
@@ -1880,39 +1890,40 @@ int Server::on_read(int fd, bool forwarded) {
       
       /* select balancer */
 
+      sql.str("");
+      sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
+      std::cerr << "executing sql1: " << sql.str() << std::endl;
+      std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
+
+      mysql_query(mysql_, sql.str().c_str());
+      std::cerr << mysql_error(mysql_) << std::endl;
+      std::cerr << "mysql query finished" << std::endl;
+      result = mysql_store_result(mysql_);
+      std::cerr << "mysql_result" << result << std::endl;
+      std::vector<LatencyDC> latencies;
+      if (result) {
+          row = mysql_fetch_row(result);
+          while (row != NULL) {
+              LatencyDC dc {row[0], atoi(row[1])};
+              latencies.push_back(dc);
+              std::cerr << "latency dc: " << dc.dc << " " << dc.latency << std::endl;
+              row = mysql_fetch_row(result);
+              std::cerr << "sql1: " << row << std::endl;
+          }
+      } else {
+          std::cerr << "ERROR: No measurement result is found for client " << sender_ip << std::endl;
+      }
+      std::chrono::high_resolution_clock::time_point end_ts1 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double, std::milli> time_span1 = end_ts1 - start_ts1;
+      std::cerr << "Executing sql 1 costs " << time_span1.count() << " milliseconds." << std::endl;
+      // when no measurement query results
+      if (row == NULL) {
+          std::cerr << "sql1 == null: " << row << std::endl;
+      }
+      std::sort(latencies.begin(), latencies.end(), LatencyDCCmp());
+
       /* rtt sensitive request */
       if (config.rtt_sensitive == 1) {
-        sql.str("");
-        sql << "select dc, latency from measurements where id in (select max(id) from measurements where client = '" << sender_ip << "' group by dc, client)";
-        std::cerr << "executing sql1: " << sql.str() << std::endl;
-        std::chrono::high_resolution_clock::time_point start_ts1 = std::chrono::high_resolution_clock::now();
-
-        mysql_query(mysql_, sql.str().c_str());
-        std::cerr << mysql_error(mysql_) << std::endl;
-        std::cerr << "mysql query finished" << std::endl;
-        result = mysql_store_result(mysql_);
-        std::cerr << "mysql_result" << result << std::endl;
-        std::vector<LatencyDC> latencies;
-        if (result) {
-            row = mysql_fetch_row(result);
-            while (row != NULL) {
-                LatencyDC dc {row[0], atoi(row[1])};
-                latencies.push_back(dc);
-                std::cerr << "latency dc: " << dc.dc << " " << dc.latency << std::endl;
-                row = mysql_fetch_row(result);
-                std::cerr << "sql1: " << row << std::endl;
-            }
-        } else {
-            std::cerr << "ERROR: No measurement result is found for client " << sender_ip << std::endl;
-        }
-        std::chrono::high_resolution_clock::time_point end_ts1 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> time_span1 = end_ts1 - start_ts1;
-        std::cerr << "Executing sql 1 costs " << time_span1.count() << " milliseconds." << std::endl;
-        // when no measurement query results
-        if (row == NULL){
-            std::cerr << "sql1 == null: " << row << std::endl;
-        }
-        std::sort(latencies.begin(), latencies.end(), LatencyDCCmp());
 
         /* forward */
         bool forwarded = false;
@@ -1927,15 +1938,11 @@ int Server::on_read(int fd, bool forwarded) {
           std::map<std::string, int>::iterator iter;
           iter = server_fd_map_.begin();
           while(iter != server_fd_map_.end()) {
-              std::cerr << "server_fd_map_" << std::endl;
-              std::cerr << iter->first << " : " << iter->second << std::endl;
+              // std::cerr << "server_fd_map_" << std::endl;
+              // std::cerr << iter->first << " : " << iter->second << std::endl;
               iter++;
           }
           auto fd = server_fd_map_["server"];
-          std::cerr << "fd: " << fd << std::endl;
-          std::cerr << "iph:" << iph << std::endl;
-          std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
-          std::cerr << "sa:" << &sa << std::endl;
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
@@ -1945,21 +1952,22 @@ int Server::on_read(int fd, bool forwarded) {
         }
           
         std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
-        auto count_latencies = 0;
-        auto minimun_latency = 0;
+        uint8_t count_latencies = 0;
+        auto minimun_latency = 0.0;
         for (auto ldc : latencies) {
-          std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
-          std::cerr << "count_latencies: " << count_latencies << std::endl;
-          if (!minimun_latency) minimun_latency = ldc.latency;
-          else check_suitable();
-
-          if (ldc.latency <= 0) {
-            continue;
+          if (!config.quiet) {
+            std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
+            std::cerr << "count_latencies: " << count_latencies << std::endl;
           }
+          if (ldc.latency <= 0)
+            continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
             std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
             continue;
           }
+          if (!count_latencies) minimun_latency = ldc.latency;
+          else if (!check_redundant_suitable(ldc.dc, minimun_latency ,ldc.latency, latencies)) continue;
+
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
           sa.sin_family = AF_INET;
@@ -2071,18 +2079,23 @@ int Server::on_read(int fd, bool forwarded) {
         
         std::sort(cpus.begin(), cpus.end(), CpuDCCmp());
         std::cerr << "=====cpu optimized routing and forwarding selecting START=====" << std::endl;
-        auto count_cpus = 0;
+        uint8_t count_cpus = 0;
+        auto minimun_cpu = 0.0;
         for (auto ldc : cpus) {
-          std::cerr << "cpu info: " << ldc.dc << ", " << ldc.cpu << std::endl;
-          std::cerr << "count_cpus: " << count_cpus << std::endl;
-
-          if (ldc.cpu <= 0) {
-            continue;
+          if (!config.quiet) {
+            std::cerr << "cpu info: " << ldc.dc << ", " << ldc.cpu << std::endl;
+            std::cerr << "count_cpus: " << count_cpus << std::endl;
           }
+
+          if (ldc.cpu <= 0)
+            continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
             std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
             continue;
           }
+          if (!count_cpus) minimun_cpu = ldc.cpu;
+          else if (!check_redundant_suitable(ldc.dc, minimun_cpu ,ldc.cpu, latencies)) continue;
+
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
           sa.sin_family = AF_INET;
@@ -2206,18 +2219,23 @@ int Server::on_read(int fd, bool forwarded) {
         
         std::sort(throughputs.begin(), throughputs.end(), ThroughputDCCmp());
         std::cerr << "=====throughput optimized routing and forwarding selecting START=====" << std::endl;
-        auto count_throughputs = 0;
+        uint8_t count_throughputs = 0;
+        auto minimun_throughput = 0.0;
         for (auto ldc : throughputs) {
-          std::cerr << "throughput info: " << ldc.dc << ", " << ldc.throughput << std::endl;
-          std::cerr << "count_throughputs: " << count_throughputs << std::endl;
-
-          if (ldc.throughput <= 0) {
-            continue;
+          if (!config.quiet) {
+            std::cerr << "throughput info: " << ldc.dc << ", " << ldc.throughput << std::endl;
+            std::cerr << "count_throughputs: " << count_throughputs << std::endl;
           }
+
+          if (ldc.throughput <= 0) 
+            continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
             std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
             continue;
           }
+          if (!count_throughputs) minimun_throughput = ldc.throughput;
+          else if (!check_redundant_suitable(ldc.dc, minimun_throughput ,ldc.throughput, latencies)) continue;
+
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
           sa.sin_family = AF_INET;
