@@ -78,9 +78,12 @@ struct Config {
   const char *password = "root";
   const char *mysql_ip = "127.0.0.1";
   const char *datacenter = "test";
-  bool cpu_sensitive = 0;
-  bool throughput_sensitive = 0;
-  bool rtt_sensitive = 0;
+  uint32_t cpu_sensitive = 0;
+  uint32_t throughput_sensitive = 0;
+  uint32_t rtt_sensitive = 0;
+  uint32_t client_ip;
+  uint32_t client_process;
+  uint32_t time_stamp;
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
 };

@@ -450,6 +450,9 @@ typedef enum {
   NGTCP2_TRANSPORT_PARAM_CPU_SENSITIVE = 12,
   NGTCP2_TRANSPORT_PARAM_THROUGHPUT_SENSITIVE = 13,
   NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE = 14,
+  NGTCP2_TRANSPORT_PARAM_CLIENT_IP = 15,
+  NGTCP2_TRANSPORT_PARAM_CLIENT_PROCESS = 16,
+  NGTCP2_TRANSPORT_PARAM_TIME_STAMP = 17,
 } ngtcp2_transport_param_id;
 
 typedef enum {
@@ -502,12 +505,9 @@ typedef struct {
   uint32_t cpu_sensitive;
   uint32_t throughput_sensitive; 
   uint32_t rtt_sensitive; // 8 byes
-  char unique_identifier[64]; // 2bytes * 64 = 128bytes
-  // timestamp: "20210410100000" -- [0, 13] //14
-  // type: "cpu, normal_1, normal_2, video" -- [14, 21] //8
-  // client_ip: "192.168.128.128" -- [22, 36] // 15
-  // process: "100" -- [37, 39] // 3
-  // websites: "" -- [40, 63] // longest website 24
+  uint32_t client_ip;
+  uint32_t client_process;
+  uint32_t time_stamp;
 } ngtcp2_transport_params;
 
 typedef struct {
@@ -526,6 +526,9 @@ typedef struct {
   uint32_t cpu_sensitive;
   uint32_t throughput_sensitive;
   uint32_t rtt_sensitive;
+  uint32_t client_ip;
+  uint32_t client_process;
+  uint32_t time_stamp;
 } ngtcp2_settings;
 
 /**

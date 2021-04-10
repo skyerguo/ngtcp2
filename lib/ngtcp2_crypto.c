@@ -136,6 +136,15 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
   if (params->rtt_sensitive) {
     len += 8;
   }
+  if (params->client_ip) {
+    len += 8;
+  }
+  if (params->client_process) {
+    len += 8;
+  }
+  if (params->time_stamp) {
+    len += 8;
+  }
 
   if (destlen < len) {
     return NGTCP2_ERR_NOBUF;
@@ -239,6 +248,24 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
     p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE);
     p = ngtcp2_put_uint16be(p, 4);
     p = ngtcp2_put_uint32be(p, params->rtt_sensitive);
+  }
+
+  if (params->client_ip) {
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_CLIENT_IP);
+    p = ngtcp2_put_uint16be(p, 4);
+    p = ngtcp2_put_uint32be(p, params->client_ip);
+  }
+
+  if (params->client_process) {
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_CLIENT_PROCESS);
+    p = ngtcp2_put_uint16be(p, 4);
+    p = ngtcp2_put_uint32be(p, params->client_process);
+  }
+
+  if (params->time_stamp) {
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_TIME_STAMP);
+    p = ngtcp2_put_uint16be(p, 4);
+    p = ngtcp2_put_uint32be(p, params->time_stamp);
   }
 
   if (params->ack_delay_exponent != NGTCP2_DEFAULT_ACK_DELAY_EXPONENT) {
@@ -476,13 +503,13 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
       if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
-      printf("decode cpu sensitive: %lld %lld\n", p, *p);
+      // printf("decode cpu sensitive: %lld %lld\n", p, *p);
       p += sizeof(uint16_t);
       if ((size_t)(end - p) < sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       params->cpu_sensitive = ngtcp2_get_uint32(p);
-      printf("decode cpu sensitive: %lld %lld %lld\n", p, *p, ngtcp2_get_uint32(p));
+      // printf("decode cpu sensitive: %lld %lld %lld\n", p, *p, ngtcp2_get_uint32(p));
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_THROUGHPUT_SENSITIVE:
@@ -507,6 +534,42 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
       params->rtt_sensitive = ngtcp2_get_uint32(p);
+      p += sizeof(uint32_t);
+      break;
+    case NGTCP2_TRANSPORT_PARAM_CLIENT_IP:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_CLIENT_IP;
+      if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      p += sizeof(uint16_t);
+      if ((size_t)(end - p) < sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      params->client_ip = ngtcp2_get_uint32(p);
+      p += sizeof(uint32_t);
+      break;
+    case NGTCP2_TRANSPORT_PARAM_CLIENT_PROCESS:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_CLIENT_PROCESS;
+      if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      p += sizeof(uint16_t);
+      if ((size_t)(end - p) < sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      params->client_process = ngtcp2_get_uint32(p);
+      p += sizeof(uint32_t);
+      break;
+    case NGTCP2_TRANSPORT_PARAM_TIME_STAMP:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_TIME_STAMP;
+      if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      p += sizeof(uint16_t);
+      if ((size_t)(end - p) < sizeof(uint32_t)) {
+        return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
+      }
+      params->time_stamp = ngtcp2_get_uint32(p);
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_ACK_DELAY_EXPONENT:

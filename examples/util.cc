@@ -212,6 +212,40 @@ std::string getStdLocation(std::string dc) {
   return res;
 }
 
+uint32_t address2Int(const std::string &ip) {
+  uint32_t res = 0;
+  uint32_t last = 0;
+  int n = ip.size();
+  for (int i = 0; i < n; ++i) {
+    if (ip[i] == '.') {
+      res = res * 1000 + last;
+      last = 0;
+    }
+    else {
+      last = last * 10 + ip[i] - '0';
+    }
+  }
+  return res;
+}
+
+std::string int2Address(uint32_t ip_int) {
+  std::string res = "";
+  for (int i = 0; ip_int > 0; ++i) {
+    res = std::to_string(ip_int % 10) + res;
+    ip_int /= 10;
+    if (i % 3 == 0) res = "." + res;
+  }
+  return res;
+}
+
+std::string getUinque(const uint32_t &a, const uint32_t &b, const uint32_t &c) {
+  std::string res = "";
+  res = std::to_string(a) + '_';
+  res += std::to_string(b) + '_';
+  res += std::to_string(c);
+  return res;
+}
+
 } // namespace util
 
 } // namespace ngtcp2
