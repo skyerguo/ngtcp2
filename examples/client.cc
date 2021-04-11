@@ -1861,8 +1861,10 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
 
   rv = ngtcp2_conn_get_local_transport_params(
       conn, &params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  
   /* 这里不能等于0，否则在ngtcp2_encode_transport_params会无法encode */
-  std::cerr << "config sets params begin." << std::endl;
+
+  // std::cerr << "config sets params begin." << std::endl;
   if (strcmp(config.website_root_path, "normal_1") == 0 || 
       strcmp(config.website_root_path, "normal_2") == 0) {
     params.rtt_sensitive = 1;
@@ -1876,17 +1878,15 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
     params.cpu_sensitive = 1;
     params.rtt_sensitive = 2, params.throughput_sensitive = 2;
   }
-  std::cerr << "config sets params middle." << std::endl;
+  // std::cerr << "config sets params middle." << std::endl;
 
   
   params.client_ip = util::address2Int(std::string(config.client_ip));
   
   params.client_process = config.client_process;
-  std::cerr << "config.time_stamp" << config.time_stamp << std::endl;
   params.time_stamp = config.time_stamp;
-  std::cerr << "params.time_stamp" << params.time_stamp << std::endl;
 
-  std::cerr << "config sets params end." << std::endl;
+  // std::cerr << "config sets params end." << std::endl;
 
   if (!config.quiet) {
     debug::print_indent();
