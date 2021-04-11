@@ -504,10 +504,10 @@ typedef struct {
   uint32_t test_metadata;
   uint32_t cpu_sensitive;
   uint32_t throughput_sensitive; 
-  uint32_t rtt_sensitive; // 8 byes
-  uint32_t client_ip;
-  uint32_t client_process;
-  uint32_t time_stamp;
+  uint32_t rtt_sensitive; // 8 bytes
+  uint64_t client_ip;
+  uint64_t client_process;
+  uint64_t time_stamp;
 } ngtcp2_transport_params;
 
 typedef struct {
@@ -526,9 +526,9 @@ typedef struct {
   uint32_t cpu_sensitive;
   uint32_t throughput_sensitive;
   uint32_t rtt_sensitive;
-  uint32_t client_ip;
-  uint32_t client_process;
-  uint32_t time_stamp;
+  uint64_t client_ip;
+  uint64_t client_process;
+  uint64_t time_stamp;
 } ngtcp2_settings;
 
 /**

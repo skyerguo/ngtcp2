@@ -932,21 +932,6 @@ int Client::init(int fd, const Address &remote_addr, const char *addr,
 //  settings.server_unicast_ttl = 0;
   settings.ack_delay_exponent = NGTCP2_DEFAULT_ACK_DELAY_EXPONENT;
 
-  if (strcmp(config.website_root_path, "normal_1") == 0 || 
-      strcmp(config.website_root_path, "normal_2") == 0) {
-    std::cerr << "config sets params begin." << std::endl;
-    settings.rtt_sensitive = 1;
-    settings.throughput_sensitive = 2, settings.cpu_sensitive = 2;
-  }
-  else if (strcmp(config.website_root_path,"video") == 0) {
-    settings.throughput_sensitive = 1;
-    settings.rtt_sensitive = 2, settings.cpu_sensitive = 2;
-  }
-  else if (strcmp(config.website_root_path, "cpu") == 0) {
-    settings.cpu_sensitive = 1;
-    settings.rtt_sensitive = 2, settings.throughput_sensitive = 2;
-  }
-
   rv = ngtcp2_conn_client_new(&conn_, conn_id, version, &callbacks, &settings,
                               this);
   if (rv != 0) {
@@ -1749,6 +1734,15 @@ int read_transport_params(const char *path, ngtcp2_transport_params *params) {
     } else if (util::istarts_with_l(line, "rtt_sensitive=")) {
       params->rtt_sensitive =
           strtoul(line.c_str() + str_size("rtt_sensitive="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "client_ip=")) {
+      params->client_ip =
+          strtoul(line.c_str() + str_size("client_ip="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "client_process=")) {
+      params->client_process =
+          strtoul(line.c_str() + str_size("client_process="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "time_stamp=")) {
+      params->time_stamp =
+          strtoul(line.c_str() + str_size("time_stamp="), nullptr, 10);
     }
   }
 
@@ -1868,9 +1862,9 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
   rv = ngtcp2_conn_get_local_transport_params(
       conn, &params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
   /* 这里不能等于0，否则在ngtcp2_encode_transport_params会无法encode */
+  std::cerr << "config sets params begin." << std::endl;
   if (strcmp(config.website_root_path, "normal_1") == 0 || 
       strcmp(config.website_root_path, "normal_2") == 0) {
-    std::cerr << "config sets params begin." << std::endl;
     params.rtt_sensitive = 1;
     params.throughput_sensitive = 2, params.cpu_sensitive = 2;
   }
@@ -1882,6 +1876,17 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
     params.cpu_sensitive = 1;
     params.rtt_sensitive = 2, params.throughput_sensitive = 2;
   }
+  std::cerr << "config sets params middle." << std::endl;
+
+  
+  params.client_ip = util::address2Int(std::string(config.client_ip));
+  
+  params.client_process = config.client_process;
+  std::cerr << "config.time_stamp" << config.time_stamp << std::endl;
+  params.time_stamp = config.time_stamp;
+  std::cerr << "params.time_stamp" << params.time_stamp << std::endl;
+
+  std::cerr << "config sets params end." << std::endl;
 
   if (!config.quiet) {
     debug::print_indent();
@@ -1893,7 +1898,7 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
     return -1;
   }
 
-  constexpr size_t bufsize = 128;
+  constexpr size_t bufsize = 256;
   auto buf = std::make_unique<uint8_t[]>(bufsize);
 
   auto nwrite = ngtcp2_encode_transport_params(
@@ -1954,22 +1959,6 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   inet_ntop(AF_INET, &(sa.sin_addr), str, INET_ADDRSTRLEN);
   c->OnMigration(params.server_unicast_ip);
 
-  if (strcmp(config.website_root_path, "normal_1") == 0 || 
-      strcmp(config.website_root_path, "normal_2") == 0) {
-    std::cerr << "config sets params begin." << std::endl;
-    params.rtt_sensitive = 1;
-    params.throughput_sensitive = 2, params.cpu_sensitive = 2;
-  }
-  else if (strcmp(config.website_root_path,"video") == 0) {
-    params.throughput_sensitive = 1;
-    params.rtt_sensitive = 2, params.cpu_sensitive = 2;
-  }
-  else if (strcmp(config.website_root_path, "cpu") == 0) {
-    params.cpu_sensitive = 1;
-    params.rtt_sensitive = 2, params.throughput_sensitive = 2;
-  }
-
-  printf("%s\n", config.website_root_path);
   if (!config.quiet) {
     debug::print_indent();
     std::cerr << "; TransportParameter received in "
@@ -2231,6 +2220,12 @@ Options:
               Read/write QUIC transport parameters from/to <PATH>.  To
               send 0-RTT data, the  transport parameters received from
               the previous session must be supplied with this option.
+  --client_ip=<ipv4 address>
+              The client ip.
+  --client_process=<process ip>
+              The process of this scripts runs in main_start.sh.
+  --time_stamp=<timestamp>
+              The start timestamp(ms) when the client start a new requirement.
   -h, --help  Display this help and exit.
 )";
 }
@@ -2262,6 +2257,9 @@ int main(int argc, char **argv) {
         {"timeout", required_argument, &flag, 3},
         {"session-file", required_argument, &flag, 4},
         {"tp-file", required_argument, &flag, 5},
+        {"client_ip", required_argument, &flag, 6},
+        {"client_process", required_argument, &flag, 7},
+        {"time_stamp", required_argument, &flag, 8},
         {nullptr, 0, nullptr, 0},
     };
 
@@ -2349,6 +2347,18 @@ int main(int argc, char **argv) {
         // --tp-file
         config.tp_file = optarg;
         break;
+      case 6:
+        // --client_ip
+        config.client_ip = optarg;
+        break;
+      case 7:
+        // --client_process
+        config.client_process = strtoull(optarg, nullptr, 10);
+        break;
+      case 8:
+        // --time_stamp
+        config.time_stamp = strtoull(optarg, nullptr, 10);
+        break;
       }
       break;
     default:
@@ -2416,6 +2426,11 @@ int main(int argc, char **argv) {
   messages[0].prefix = config.website;
   messages[0].website_root_path = config.website_root_path;
   messages[0].website_www_opt = config.website_www_opt;
+
+  std::cerr << "website: " << config.website << std::endl;
+  std::cerr << "website_root_path: " << config.website_root_path << std::endl;
+  std::cerr << "website_www_opt: " << config.website_www_opt << std::endl;
+
   std::vector<Client*> clients;
   for (int i = 0; i < config.concurrency; ++i) {
     Client *client = new Client(EV_DEFAULT, ssl_ctx);

@@ -2524,7 +2524,7 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
     params.v.ee.supported_versions[0] = NGTCP2_PROTO_VER_D8;
   }
 
-  constexpr size_t bufsize = 128;
+  constexpr size_t bufsize = 256;
   auto buf = std::make_unique<uint8_t[]>(bufsize);
 
   auto nwrite =
@@ -2594,6 +2594,9 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     config.throughput_sensitive = 1;
   else 
     config.rtt_sensitive = 1;
+  config.client_ip = params.client_ip;
+  config.client_process = params.client_process;
+  config.time_stamp = params.time_stamp;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

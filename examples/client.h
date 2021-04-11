@@ -86,6 +86,10 @@ struct Config {
   const char *website_root_path;
   uint32_t website_www_opt;
 
+  const char *client_ip;
+  uint64_t client_process;
+  uint64_t time_stamp;
+
   const char *remote_ip;
   const char *addr;
   const char *port;

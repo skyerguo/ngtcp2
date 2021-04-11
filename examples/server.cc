@@ -407,7 +407,8 @@ int Stream::start_response() {
       std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
-      str = "nohup python3 ." + str + " &";
+      std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);
+      str = "nohup python3 ." + str + " >> " + unique_log_file + " &";
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
       system(python_cmd);
@@ -2094,7 +2095,7 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
     params.v.ee.supported_versions[0] = NGTCP2_PROTO_VER_D8;
   }
 
-  constexpr size_t bufsize = 128;
+  constexpr size_t bufsize = 256;
   auto buf = std::make_unique<uint8_t[]>(bufsize);
 
   auto nwrite =
@@ -2153,6 +2154,12 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     debug::print_transport_params(&params,
                                   NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
   }
+  config.client_ip = params.client_ip;
+  config.client_process = params.client_process;
+  config.time_stamp = params.time_stamp;
+  // std::cerr << config.client_ip << std::endl;
+  // std::cerr << config.client_process << std::endl;
+  // std::cerr << config.time_stamp << std::endl;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

@@ -62,9 +62,11 @@ double stringToDouble(std::string num);
 
 std::string getStdLocation(std::string dc);
 
-uint32_t address2Int(const std::string &ip);
-std::string int2Address(uint32_t ip_int);
-std::string getUinque(const uint32_t &a, const uint32_t &b, const uint32_t &c);
+uint64_t address2Int(const std::string &ip);
+std::string int2Address(uint64_t ip_int);
+
+std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c);
+std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 
 inline char lowcase(char c) {
   constexpr static unsigned char tbl[] = {

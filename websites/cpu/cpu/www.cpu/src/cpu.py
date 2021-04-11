@@ -16,22 +16,22 @@ def get_ms():
 
 # f_out = open("/home/gtc/data/motivation_db/select.txt", "a")
 ori_time = get_ms()
-f_out = open("/home/gtc/select_mongodb_%s.txt" % ori_time, "a")
+# f_out = open("/home/gtc/select_mongodb_%s.txt" % ori_time, "a")
 n = random.randint(50, 100)
 n = 20
-print(n, file=f_out)
+print(n)
 ori_time = get_ms()
-print("start_time: ", ori_time, file=f_out)
+print("start_time: ", ori_time)
 
 for i in range(n):
     for item in collection.find({"value": random.randint(0, 5000000)}):
         print(str(i + 1) + '/' + str(n))
         ori_time = get_ms()
-        print(ori_time, '+', item, file=f_out)
+        print(ori_time, '+', item)
 
 print("done")
 
 ori_time = get_ms()
-print("end_time: ",ori_time, file=f_out)
+print("end_time: ",ori_time)
 
-f_out.close()
+# f_out.close()

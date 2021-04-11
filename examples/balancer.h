@@ -81,9 +81,9 @@ struct Config {
   uint32_t cpu_sensitive = 0;
   uint32_t throughput_sensitive = 0;
   uint32_t rtt_sensitive = 0;
-  uint32_t client_ip;
-  uint32_t client_process;
-  uint32_t time_stamp;
+  uint64_t client_ip;
+  uint64_t client_process;
+  uint64_t time_stamp;
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
 };

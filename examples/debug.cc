@@ -520,11 +520,11 @@ void print_transport_params(const ngtcp2_transport_params *params, int type) {
   fprintf(outfile, "; rtt_sensitive=%u\n", params->rtt_sensitive);
   
   print_indent();
-  fprintf(outfile, "; client_ip=%u\n", params->client_ip);
+  fprintf(outfile, "; client_ip=%lu\n", params->client_ip);
   print_indent();
-  fprintf(outfile, "; client_process=%u\n", params->client_process);
+  fprintf(outfile, "; client_process=%lu\n", params->client_process);
   print_indent();
-  fprintf(outfile, "; time_stamp=%u\n", params->time_stamp);
+  fprintf(outfile, "; time_stamp=%lu\n", params->time_stamp);
 }
 
 void print_stream_data(uint64_t stream_id, const uint8_t *data,

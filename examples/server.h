@@ -73,6 +73,9 @@ struct Config {
     bool ipv6;
     const char *interface = "eth0";
     const char *unicast_ip = "127.0.0.1";
+    uint64_t client_ip;
+    uint64_t client_process;
+    uint64_t time_stamp;
 };
 
 struct Buffer {
