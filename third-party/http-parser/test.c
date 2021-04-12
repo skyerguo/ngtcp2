@@ -3975,6 +3975,7 @@ create_large_chunked_message (int body_size_in_kb, const char* headers)
 
   memcpy(buf, headers, headers_len);
   wrote += headers_len;
+  
 
   for (i = 0; i < body_size_in_kb; i++) {
     // write 1kb chunk into the body.
