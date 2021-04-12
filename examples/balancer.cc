@@ -1879,7 +1879,7 @@ int Server::on_read(int fd, bool forwarded) {
       if (result2) {
           row = mysql_fetch_row(result2);
           while (row != NULL) {
-            std::cerr << "row: " << row[0] << " " << row[1] << std::endl;
+            // std::cerr << "row: " << row[0] << " " << row[1] << std::endl;
             dcs[row[0]] = row[1];
             row = mysql_fetch_row(result2);
           }
@@ -1940,16 +1940,16 @@ int Server::on_read(int fd, bool forwarded) {
         std::cerr << config.server_name.size() << std::endl;
         for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
         {
-          std::cerr << config.server_name[server_name_index] << std::endl;
+          // std::cerr << config.server_name[server_name_index] << std::endl;
           std::string redis_key = "cpu_idle_hestia-" + config.server_name[server_name_index] + "-server";
-          std::cerr << "redis_key: " << redis_key << std::endl;
+          // std::cerr << "redis_key: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors" << std::endl;
             continue;
           }
           std::string redis_value = r1->get(redis_key).c_str();
           double cpu_idle = util::stringToDouble(redis_value);
-          std::cerr << "redis_value: " << redis_value << std::endl;
+          // std::cerr << "redis_value: " << redis_value << std::endl;
           CpuDC dc {util::getStdLocation(config.server_name[server_name_index]), cpu_idle};
           cpus.push_back(dc);
         }
@@ -1972,9 +1972,9 @@ int Server::on_read(int fd, bool forwarded) {
         std::cerr << config.server_name.size() << std::endl;
         for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
         {
-          std::cerr << config.server_name[server_name_index] << std::endl;
+          // std::cerr << config.server_name[server_name_index] << std::endl;
           std::string redis_key = "throughput_hestia-" + config.server_name[server_name_index] + "-server";
-          std::cerr << "redis_key: " << redis_key << std::endl;
+          // std::cerr << "redis_key: " << redis_key << std::endl;
           if (!r2->existsKey(redis_key.c_str())) {
             std::cerr << "server " <<  config.server_name[server_name_index] << "has measurement errors" << std::endl;
             continue;
@@ -2118,22 +2118,19 @@ int Server::on_read(int fd, bool forwarded) {
             /* select server */
             std::string server = "server";
             std::cerr << "selected server: " << server << std::endl;
-
-            auto fd = server_fd_map_[server];      
-            std::map<std::string, int>::iterator iter;    
-            iter = server_fd_map_.begin();
-            while(iter != server_fd_map_.end()) {
-                std::cerr << "server_fd_map_" << std::endl;
-                std::cerr << iter->first << " : " << iter->second << std::endl;
-                iter++;
-            }
-            // std::cerr << server << std::endl;
-            std::cerr << "fd: " << fd << std::endl;
-            std::cerr << fd << " " << iph << " " << ntohs(iph->tot_len) << " " << std::endl;
-            std::cerr << iph->tot_len << " " << iph->daddr << std::endl;
-            std::cerr << (struct sockaddr *)&sa << " " << sizeof(sa)  << std::endl;
-
-            std::cerr << sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+            
+            // std::map<std::string, int>::iterator iter;    
+            // iter = server_fd_map_.begin();
+            // while(iter != server_fd_map_.end()) {
+            //     std::cerr << "server_fd_map_" << std::endl;
+            //     std::cerr << iter->first << " : " << iter->second << std::endl;
+            //     iter++;
+            // }
+            auto fd = server_fd_map_["server"];
+            // std::cerr << "fd: " << fd << std::endl;
+            // std::cerr << "iph:" << iph << std::endl;
+            // std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+            // std::cerr << "sa:" << &sa << std::endl;
 
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
