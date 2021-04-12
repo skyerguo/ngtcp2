@@ -1787,6 +1787,7 @@ int Server::on_read(int fd, bool forwarded) {
   }
 
   uint8_t *data = buf.data();
+  // std::cerr << "data " << *data << std::endl;
   ether_header *eh = (ether_header *) data;
   iphdr *iph = (iphdr *) (data + sizeof(ether_header));
   udphdr *udph = (udphdr *) (data + sizeof(iphdr) + sizeof(ether_header));
@@ -1804,6 +1805,7 @@ int Server::on_read(int fd, bool forwarded) {
   if (udph->dest != htons(config.port)) {
     return 0;
   }
+  // std::cerr << "iph->saddr: " << iph->saddr << std::endl;
   if (!config.quiet) {
     std::cerr << "Got packet of size: " << udp_size << " from " << sender_ip << std::endl;
   }
@@ -1872,13 +1874,14 @@ int Server::on_read(int fd, bool forwarded) {
       std::chrono::high_resolution_clock::time_point start_ts2 = std::chrono::high_resolution_clock::now();
       mysql_query(mysql_, sql.str().c_str());
       result2 = mysql_store_result(mysql_);
-      std::cerr << "mysql_result2" << result2 << std::endl;
+      std::cerr << "mysql_result2: " << result2 << std::endl;
       std::map<std::string, std::string> dcs;
       if (result2) {
           row = mysql_fetch_row(result2);
           while (row != NULL) {
-              dcs[row[0]] = row[1];
-              row = mysql_fetch_row(result2);
+            std::cerr << "row: " << row[0] << " " << row[1] << std::endl;
+            dcs[row[0]] = row[1];
+            row = mysql_fetch_row(result2);
           }
       } else {
           std::cerr << "ERROR: No data center is deployed with the server for " << h->hostname() << std::endl;
@@ -1915,6 +1918,7 @@ int Server::on_read(int fd, bool forwarded) {
       } else {
           std::cerr << "ERROR: No measurement result is found for client " << sender_ip << std::endl;
       }
+      mysql_free_result(result);
       std::chrono::high_resolution_clock::time_point end_log1 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log1 = end_log1 - start_log1;
       std::cerr << "Executing mysql costs " << time_span_log1.count() << " milliseconds." << std::endl;
@@ -2057,11 +2061,12 @@ int Server::on_read(int fd, bool forwarded) {
           std::map<std::string, int>::iterator iter;
           iter = server_fd_map_.begin();
           while(iter != server_fd_map_.end()) {
-              // std::cerr << "server_fd_map_" << std::endl;
-              // std::cerr << iter->first << " : " << iter->second << std::endl;
+              std::cerr << "server_fd_map_" << std::endl;
+              std::cerr << iter->first << " : " << iter->second << std::endl;
               iter++;
           }
           auto fd = server_fd_map_["server"];
+
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
@@ -2071,7 +2076,7 @@ int Server::on_read(int fd, bool forwarded) {
         }
           
         std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
-        uint8_t count_latencies = 0;
+        int count_latencies = 0;
         auto minimun_latency = 0.0;
         std::ofstream log_file;
         log_file.open(unique_log_file, std::ofstream::app);
@@ -2099,6 +2104,7 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
             auto interface = dcs[ldc.dc];
             auto fd = balancer_fd_map_[interface];
+
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
               perror("Failed to forward ip packet to balancer");
@@ -2112,9 +2118,23 @@ int Server::on_read(int fd, bool forwarded) {
             /* select server */
             std::string server = "server";
             std::cerr << "selected server: " << server << std::endl;
-            mysql_free_result(result);
 
-            auto fd = server_fd_map_[server];
+            auto fd = server_fd_map_[server];      
+            std::map<std::string, int>::iterator iter;    
+            iter = server_fd_map_.begin();
+            while(iter != server_fd_map_.end()) {
+                std::cerr << "server_fd_map_" << std::endl;
+                std::cerr << iter->first << " : " << iter->second << std::endl;
+                iter++;
+            }
+            // std::cerr << server << std::endl;
+            std::cerr << "fd: " << fd << std::endl;
+            std::cerr << fd << " " << iph << " " << ntohs(iph->tot_len) << " " << std::endl;
+            std::cerr << iph->tot_len << " " << iph->daddr << std::endl;
+            std::cerr << (struct sockaddr *)&sa << " " << sizeof(sa)  << std::endl;
+
+            std::cerr << sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
               perror("Failed to forward ip packet to server");
@@ -2812,7 +2832,7 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         tmp = tmp->ifa_next;
         continue;
       }
-      // s.add_fd(tmp->ifa_name, fd);
+      s.add_fd(tmp->ifa_name, fd);
       // std::cerr << "123456789" << std::endl;
       std::cerr << tmp->ifa_name << " " << fd << std:: endl;
       printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);

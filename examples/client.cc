@@ -1734,7 +1734,8 @@ int read_transport_params(const char *path, ngtcp2_transport_params *params) {
     } else if (util::istarts_with_l(line, "rtt_sensitive=")) {
       params->rtt_sensitive =
           strtoul(line.c_str() + str_size("rtt_sensitive="), nullptr, 10);
-    } else if (util::istarts_with_l(line, "client_ip=")) {
+    } 
+    else if (util::istarts_with_l(line, "client_ip=")) {
       params->client_ip =
           strtoul(line.c_str() + str_size("client_ip="), nullptr, 10);
     } else if (util::istarts_with_l(line, "client_process=")) {
@@ -1882,7 +1883,6 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
 
   
   params.client_ip = util::address2Int(std::string(config.client_ip));
-  
   params.client_process = config.client_process;
   params.time_stamp = config.time_stamp;
 

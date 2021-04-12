@@ -408,6 +408,7 @@ int Stream::start_response() {
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
       std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);
+      // std::string unique_log_file = "test.txt";
       str = "nohup python3 ." + str + " >> " + unique_log_file + " &";
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
