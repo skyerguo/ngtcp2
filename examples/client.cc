@@ -1156,8 +1156,14 @@ int Client::read_tls() {
 
 int Client::feed_data(uint8_t *data, size_t datalen) {
   int rv;
-  
+
+  std::cerr << "conn_: " << conn_ << std::endl;
+  std::cerr << "data: " << *data << std::endl;
+  std::cerr << "datalen: " << datalen << std::endl;
+  std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
+  std::cerr << "rv: " << rv << std::endl;
+  // std::cerr << ngtcp2_conn_recv(conn_, data, datalen, util::timestamp()) << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
     if (rv != NGTCP2_ERR_TLS_DECRYPT) {

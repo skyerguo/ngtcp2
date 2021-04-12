@@ -3813,7 +3813,9 @@ int ngtcp2_conn_recv(ngtcp2_conn *conn, const uint8_t *pkt, size_t pktlen,
       break;
     }
     if (conn->flags & NGTCP2_CONN_FLAG_HANDSHAKE_COMPLETED) {
+      // printf("NGTCP2_CONN_FLAG_HANDSHAKE_COMPLETED\n");
       rv = conn_handshake_completed(conn);
+      // printf("conn_handshake_completed: ", rv);
       if (rv != 0) {
         return rv;
       }
@@ -3823,6 +3825,7 @@ int ngtcp2_conn_recv(ngtcp2_conn *conn, const uint8_t *pkt, size_t pktlen,
         return NGTCP2_ERR_REQUIRED_TRANSPORT_PARAM;
       }
 
+      // printf()
       rv = conn_process_buffered_protected_pkt(conn, ts);
       if (rv != 0) {
         return rv;
