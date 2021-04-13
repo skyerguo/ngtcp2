@@ -1248,10 +1248,10 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
   if (!config.quiet) {
     std::cout<<"ok"<<std::endl;
   }
-  std::cerr << "conn_: " << conn_ << std::endl;
-  std::cerr << "data: " << *data << std::endl;
-  std::cerr << "datalen: " << datalen << std::endl;
-  std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
+  // std::cerr << "conn_: " << conn_ << std::endl;
+  // std::cerr << "data: " << *data << std::endl;
+  // std::cerr << "datalen: " << datalen << std::endl;
+  // std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
   std::cerr << "rv: " << rv << std::endl;
   if (rv != 0) {

@@ -2104,8 +2104,13 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
             auto interface = dcs[ldc.dc];
             auto fd = balancer_fd_map_[interface];
-
+            std::cerr << "balancer_interface: " << std::endl;
+            std::cerr << "balancer_fd: " << fd << std::endl;
             forwarded = true;
+            std::cerr << "fd: " << fd << std::endl;
+            std::cerr << "iph:" << iph << std::endl;
+            std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+            std::cerr << "sa:" << &sa << std::endl;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
               perror("Failed to forward ip packet to balancer");
             } else {
@@ -2127,10 +2132,10 @@ int Server::on_read(int fd, bool forwarded) {
             //     iter++;
             // }
             auto fd = server_fd_map_["server"];
-            // std::cerr << "fd: " << fd << std::endl;
-            // std::cerr << "iph:" << iph << std::endl;
-            // std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
-            // std::cerr << "sa:" << &sa << std::endl;
+            std::cerr << "fd: " << fd << std::endl;
+            std::cerr << "iph:" << iph << std::endl;
+            std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+            std::cerr << "sa:" << &sa << std::endl;
 
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
@@ -2144,6 +2149,8 @@ int Server::on_read(int fd, bool forwarded) {
           if (count_latencies >= 2 ) {
               break;
           }
+          /* no redundant */
+          // break;
         }
         log_file.close();
         std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
@@ -2215,6 +2222,7 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
             auto interface = dcs[ldc.dc];
             auto fd = balancer_fd_map_[interface];
+            
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
               perror("Failed to forward ip packet");
@@ -2830,7 +2838,6 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         continue;
       }
       s.add_fd(tmp->ifa_name, fd);
-      // std::cerr << "123456789" << std::endl;
       std::cerr << tmp->ifa_name << " " << fd << std:: endl;
       printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
     } else {
