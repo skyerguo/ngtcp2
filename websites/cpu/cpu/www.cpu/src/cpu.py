@@ -18,7 +18,7 @@ def get_ms():
 ori_time = get_ms()
 # f_out = open("/home/gtc/select_mongodb_%s.txt" % ori_time, "a")
 n = random.randint(50, 100)
-n = 20
+n = 1
 print(n)
 ori_time = get_ms()
 print("start_time: ", ori_time)

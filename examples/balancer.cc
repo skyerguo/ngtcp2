@@ -588,7 +588,7 @@ Handler::~Handler() {
 namespace {
 int recv_client_initial(ngtcp2_conn *conn, uint64_t conn_id, void *user_data) {
   auto h = static_cast<Handler *>(user_data);
-
+  // std::cerr << "recv_client_initial: " << std::endl;
   if (h->recv_client_initial(conn_id) != 0) {
     return NGTCP2_ERR_CALLBACK_FAILURE;
   }
@@ -711,6 +711,8 @@ int recv_stream0_data(ngtcp2_conn *conn, const uint8_t *data, size_t datalen,
                       void *user_data) {
   auto h = static_cast<Handler *>(user_data);
 
+  // std::cerr << "recv_stream0_data: " << std::endl;
+
   h->write_client_handshake(data, datalen);
 
   if (ngtcp2_conn_get_handshake_completed(h->conn())) {
@@ -728,6 +730,8 @@ int recv_stream_data(ngtcp2_conn *conn, uint64_t stream_id, uint8_t fin,
                      const uint8_t *data, size_t datalen, void *user_data,
                      void *stream_user_data) {
   auto h = static_cast<Handler *>(user_data);
+
+  // std::cerr << "recv_stream_data: " << std::endl;
 
   if (h->recv_stream_data(stream_id, fin, data, datalen) != 0) {
     return NGTCP2_ERR_CALLBACK_FAILURE;
@@ -2084,8 +2088,8 @@ int Server::on_read(int fd, bool forwarded) {
         for (auto ldc : latencies) {
           if (!config.quiet) {
             std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
-            std::cerr << "count_latencies: " << count_latencies << std::endl;
           }
+          std::cerr << "count_latencies: " << count_latencies << std::endl;
           if (ldc.latency <= 0)
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
@@ -2104,13 +2108,13 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
             auto interface = dcs[ldc.dc];
             auto fd = balancer_fd_map_[interface];
-            std::cerr << "balancer_interface: " << std::endl;
-            std::cerr << "balancer_fd: " << fd << std::endl;
+            // std::cerr << "balancer_interface: " << interface << std::endl;
+            // std::cerr << "balancer_fd: " << fd << std::endl;
             forwarded = true;
-            std::cerr << "fd: " << fd << std::endl;
-            std::cerr << "iph:" << iph << std::endl;
-            std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
-            std::cerr << "sa:" << &sa << std::endl;
+            // std::cerr << "fd: " << fd << std::endl;
+            // std::cerr << "iph:" << iph << std::endl;
+            // std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+            // std::cerr << "sa:" << &sa << std::endl;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
               perror("Failed to forward ip packet to balancer");
             } else {
@@ -2132,10 +2136,10 @@ int Server::on_read(int fd, bool forwarded) {
             //     iter++;
             // }
             auto fd = server_fd_map_["server"];
-            std::cerr << "fd: " << fd << std::endl;
-            std::cerr << "iph:" << iph << std::endl;
-            std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
-            std::cerr << "sa:" << &sa << std::endl;
+            // std::cerr << "fd: " << fd << std::endl;
+            // std::cerr << "iph:" << iph << std::endl;
+            // std::cerr << "ntohs:" << ntohs(iph->tot_len) << std::endl;
+            // std::cerr << "sa:" << &sa << std::endl;
 
             forwarded = true;
             if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
@@ -2150,7 +2154,7 @@ int Server::on_read(int fd, bool forwarded) {
               break;
           }
           /* no redundant */
-          // break;
+          break;
         }
         log_file.close();
         std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
@@ -2193,7 +2197,7 @@ int Server::on_read(int fd, bool forwarded) {
         }
         
         std::cerr << "=====cpu optimized routing and forwarding selecting START=====" << std::endl;
-        uint8_t count_cpus = 0;
+        auto count_cpus = 0;
         auto minimun_cpu = 0.0;
         std::ofstream log_file;
         log_file.open(unique_log_file, std::ofstream::app);
@@ -2250,6 +2254,8 @@ int Server::on_read(int fd, bool forwarded) {
           if (count_cpus >= 2 ) {
               break;
           }
+          /* no redundant */
+          break;
         }
         log_file.close();
         std::cerr << "=====cpu optimized routing and forwarding selecting END=====" << std::endl;
@@ -2292,7 +2298,7 @@ int Server::on_read(int fd, bool forwarded) {
         }
         
         std::cerr << "=====throughput optimized routing and forwarding selecting START=====" << std::endl;
-        uint8_t count_throughputs = 0;
+        auto count_throughputs = 0;
         auto minimun_throughput = 0.0;
         std::ofstream log_file;
         log_file.open(unique_log_file, std::ofstream::app);
@@ -2348,6 +2354,8 @@ int Server::on_read(int fd, bool forwarded) {
           if (count_throughputs >= 2 ) {
               break;
           }
+          /* no redundant */
+          break;
         }
         log_file.close();
         std::cerr << "=====throughput optimized routing and forwarding selecting END=====" << std::endl;

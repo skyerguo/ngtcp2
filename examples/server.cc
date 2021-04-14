@@ -779,7 +779,6 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
                   uint32_t version) {
   int rv;
 
-  std::cerr << "init handler" << std::endl;
   remote_addr_.len = salen;
   memcpy(&remote_addr_.su.sa, sa, salen);
 
@@ -1253,7 +1252,7 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
   // std::cerr << "datalen: " << datalen << std::endl;
   // std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
-  std::cerr << "rv: " << rv << std::endl;
+  // std::cerr << "rv: " << rv << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
     if (rv != NGTCP2_ERR_TLS_DECRYPT) {
@@ -1761,7 +1760,9 @@ void arp_add(sockaddr* sa) {
     if (ioctl(s, SIOCSARP, (caddr_t)&req) <0) {
       std::cerr << "Fail to set arp entry " << inet_ntoa(((sockaddr_in*)sa)->sin_addr) << " dev " << interface << ", " << strerror(errno) << std::endl;
     } else {
-      std::cerr << "Succeed to set arp entry " << inet_ntoa(((sockaddr_in*)sa)->sin_addr) << " dev " << interface << std::endl;
+      if (!config.quiet) {
+        std::cerr << "Succeed to set arp entry " << inet_ntoa(((sockaddr_in*)sa)->sin_addr) << " dev " << interface << std::endl;
+      }
     }
     close(s);
   }

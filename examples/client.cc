@@ -1162,7 +1162,7 @@ int Client::feed_data(uint8_t *data, size_t datalen) {
   // std::cerr << "datalen: " << datalen << std::endl;
   // std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
-  std::cerr << "rv: " << rv << std::endl;
+  // std::cerr << "rv: " << rv << std::endl;
   // std::cerr << ngtcp2_conn_recv(conn_, data, datalen, util::timestamp()) << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
