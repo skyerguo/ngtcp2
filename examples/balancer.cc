@@ -1984,22 +1984,7 @@ int Server::on_read(int fd, bool forwarded) {
             continue;
           }
           std::string redis_value = r2->get(redis_key).c_str();
-          // std::cerr << "redis_value: " << redis_value << std::endl;
-          uint32_t split_pos = redis_value.find("_");
-          double bandwidth = util::stringToDouble(redis_value.substr(0, split_pos));
-          char bandwidth_dimension = redis_value[split_pos + 1];
-          // std::cerr << bandwidth << std::endl;
-          // std::cerr << bandwidth_dimension << std::endl;
-          switch (bandwidth_dimension) {
-            case 'K':
-              bandwidth *= 1e3;
-            case 'M':
-              bandwidth *= 1e6;
-            case 'G':
-              bandwidth *= 1e9;
-            default:
-              break;
-          }
+          double bandwidth = util::stringToDouble(redis_value);
           ThroughputDC dc {util::getStdLocation(config.server_name[server_name_index]), bandwidth};
           throughputs.push_back(dc);
         }
