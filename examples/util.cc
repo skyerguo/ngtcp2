@@ -234,7 +234,7 @@ std::string int2Address(uint64_t ip_int) {
   for (int i = 0; ip_int > 0; ++i) {
     res = std::to_string(ip_int % 10) + res;
     ip_int /= 10;
-    if (i % 3 == 0) res = "." + res;
+    if (i % 3 == 2) res = "." + res;
   }
   return res;
 }
@@ -242,7 +242,7 @@ std::string int2Address(uint64_t ip_int) {
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
   std::string res = "";
   res = int2Address(a) + "_";
-  res += std::to_string(a) + "_";
+  res += std::to_string(b) + "_";
   res += std::to_string(c);
   return res;
 }
