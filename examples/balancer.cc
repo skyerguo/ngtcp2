@@ -2660,12 +2660,15 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   debug::print_transport_params(&params,
                                 NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
 
-  if (params.cpu_sensitive == 1) 
-    config.cpu_sensitive = 1;
-  else if (params.throughput_sensitive == 1) 
-    config.throughput_sensitive = 1;
-  else 
-    config.rtt_sensitive = 1;
+  // if (params.cpu_sensitive == 1) 
+  //   config.cpu_sensitive = 1;
+  // else if (params.throughput_sensitive == 1) 
+  //   config.throughput_sensitive = 1;
+  // else 
+  //   config.rtt_sensitive = 1;
+  config.cpu_sensitive = params.cpu_sensitive;
+  config.rtt_sensitive = params.rtt_sensitive;
+  config.throughput_sensitive = params.throughput_sensitive;
   config.client_ip = params.client_ip;
   config.client_process = params.client_process;
   config.time_stamp = params.time_stamp;
