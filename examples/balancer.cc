@@ -2139,7 +2139,7 @@ int Server::on_read(int fd, bool forwarded) {
               break;
           }
           /* no redundant */
-          break;
+          // break;
         }
         log_file.close();
         std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
@@ -2240,7 +2240,7 @@ int Server::on_read(int fd, bool forwarded) {
               break;
           }
           /* no redundant */
-          break;
+          // break;
         }
         log_file.close();
         std::cerr << "=====cpu optimized routing and forwarding selecting END=====" << std::endl;
@@ -2340,7 +2340,7 @@ int Server::on_read(int fd, bool forwarded) {
               break;
           }
           /* no redundant */
-          break;
+          // break;
         }
         log_file.close();
         std::cerr << "=====throughput optimized routing and forwarding selecting END=====" << std::endl;
