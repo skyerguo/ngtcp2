@@ -1634,6 +1634,7 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 namespace {
 /* 性能差>10%，延迟>30ms都不可以 */
 bool check_redundant_suitable(const std::string &dc, const double &best_result, const double &now_result, const std::vector<LatencyDC> &latencies) {
+  if (fabs(best_result) < 1e-7) return false;
   if (fabs(best_result - now_result) / best_result > 0.1) return false;
 
   double least_latency = 0;
@@ -2010,21 +2011,21 @@ int Server::on_read(int fd, bool forwarded) {
       for (auto ldc : latencies) {
         // printf("%d%d")
         log_file << "latencies-" << temp_cnt << " " << ldc.dc << ", " << ldc.latency << std::endl;
-        if (++temp_cnt>=2) break;
+        // if (++temp_cnt>=2) break;
       }
 
       temp_cnt = 0;
       for (auto ldc : cpus) {
         // printf("%d%d")
         log_file << "cpus-" << temp_cnt << " " << ldc.dc << ", " << ldc.cpu << std::endl;
-        if (++temp_cnt>=2) break;
+        // if (++temp_cnt>=2) break;
       }
 
       temp_cnt = 0;
       for (auto ldc : throughputs) {
         // printf("%d%d")
         log_file << "throughputs-" << temp_cnt << " " << ldc.dc << ", " << ldc.throughput << std::endl;
-        if (++temp_cnt>=2) break;
+        // if (++temp_cnt>=2) break;
       }
 
       log_file.close();
@@ -2036,7 +2037,9 @@ int Server::on_read(int fd, bool forwarded) {
       /* rtt sensitive request */
       if (config.rtt_sensitive == 1) {
         std::cerr << "user requires rtt_sensitive!" << std::endl; 
-
+        std::ofstream log_file;
+        log_file.open(unique_log_file, std::ofstream::app);
+        log_file << "request rtt_sensitive" << std::endl;
         /* forward */
         bool forwarded = false;
         if (latencies.empty()) {
@@ -2060,21 +2063,19 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "Forwarded to local dc: "<< std::endl;
+            log_file << "Forwarded to local dc: " << std::endl;
           }
         }
           
         std::cerr << "=====latency optimized routing and forwarding selecting START=====" << std::endl;
         int count_latencies = 0;
         auto minimun_latency = 0.0;
-        std::ofstream log_file;
-        log_file.open(unique_log_file, std::ofstream::app);
-        log_file << "request rtt_sensitive" << std::endl;
+        
         for (auto ldc : latencies) {
           if (!config.quiet) {
             std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
           }
-          std::cerr << "count_latencies: " << count_latencies << std::endl;
+          log_file << "count_latencies: " << count_latencies << std::endl;
           if (ldc.latency <= 0)
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
@@ -2154,7 +2155,9 @@ int Server::on_read(int fd, bool forwarded) {
       /* cpu sensitive request  */
       else if (config.cpu_sensitive == 1) {
         std::cerr << "user requires cpu_sensitive!" << std::endl; 
-
+        std::ofstream log_file;
+        log_file.open(unique_log_file, std::ofstream::app);
+        log_file << "request cpu_sensitive" << std::endl;
         /* forward */
         bool forwarded = false;
         if (cpus.empty()) {
@@ -2177,20 +2180,18 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "Forwarded to local dc: "<< std::endl;
+            log_file << "Forwarded to local dc: "<< std::endl;
           }
         }
         
         std::cerr << "=====cpu optimized routing and forwarding selecting START=====" << std::endl;
         auto count_cpus = 0;
         auto minimun_cpu = 0.0;
-        std::ofstream log_file;
-        log_file.open(unique_log_file, std::ofstream::app);
-        log_file << "request cpu_sensitive" << std::endl;
+        
         for (auto ldc : cpus) {
           if (!config.quiet) {
             std::cerr << "cpu info: " << ldc.dc << ", " << ldc.cpu << std::endl;
-            std::cerr << "count_cpus: " << count_cpus << std::endl;
+            log_file << "count_cpus: " << count_cpus << std::endl;
           }
 
           if (ldc.cpu <= 0)
@@ -2255,7 +2256,10 @@ int Server::on_read(int fd, bool forwarded) {
       /* throughput sensitive request */
       else if (config.throughput_sensitive == 1) {
         std::cerr << "user requires throughput_sensitive!" << std::endl; 
-        
+        std::ofstream log_file;
+        log_file.open(unique_log_file, std::ofstream::app);
+        log_file << "request throughput_sensitive" << std::endl;
+
         /* forward */
         bool forwarded = false;
         if (throughputs.empty()) {
@@ -2278,20 +2282,18 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "Forwarded to local dc: "<< std::endl;
+            log_file << "Forwarded to local dc: "<< std::endl;
           }
         }
         
         std::cerr << "=====throughput optimized routing and forwarding selecting START=====" << std::endl;
         auto count_throughputs = 0;
         auto minimun_throughput = 0.0;
-        std::ofstream log_file;
-        log_file.open(unique_log_file, std::ofstream::app);
-        log_file << "request throughput_sensitive" << std::endl;
+
         for (auto ldc : throughputs) {
           if (!config.quiet) {
             std::cerr << "throughput info: " << ldc.dc << ", " << ldc.throughput << std::endl;
-            std::cerr << "count_throughputs: " << count_throughputs << std::endl;
+            log_file << "count_throughputs: " << count_throughputs << std::endl;
           }
 
           if (ldc.throughput <= 0) 
