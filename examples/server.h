@@ -43,6 +43,8 @@
 #include <openssl/ssl.h>
 #include <ev.h>
 #include <http-parser/http_parser.h>
+#include <fstream>
+#include <sstream>
 
 #include "network.h"
 #include "crypto.h"

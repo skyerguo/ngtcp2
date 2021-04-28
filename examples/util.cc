@@ -253,6 +253,13 @@ std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_
   res += ".txt";
   return res;
 }
+
+std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
+  std::string res = "/home/gtc/experiment_results/deliver_info";
+  res += getUinque(a, b, c);
+  res += ".txt";
+  return res;
+}
 } // namespace util
 
 } // namespace ngtcp2

@@ -67,6 +67,7 @@ std::string int2Address(uint64_t ip_int);
 
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c);
+std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 
 inline char lowcase(char c) {
   constexpr static unsigned char tbl[] = {
