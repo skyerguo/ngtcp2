@@ -404,6 +404,13 @@ int Stream::start_response() {
   http_minor = htp.http_minor;
 
   auto req_path = request_path(uri, htp.method == HTTP_CONNECT);
+
+  std::string unique_log_file_deliver = util::getUniqueLogFileDeliver(config.client_ip, config.client_process, config.time_stamp);
+  std::ofstream log_file;
+  log_file.open(unique_log_file_deliver, std::ofstream::app);
+  log_file << "url: " << req_path << std::endl;
+  log_file.close();
+
   if (req_path.find(".py") != std::string::npos) {
       std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
@@ -2165,12 +2172,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   config.client_ip = params.client_ip;
   config.client_process = params.client_process;
   config.time_stamp = params.time_stamp;
-  std::string unique_log_file_deliver = util::getUniqueLogFileDeliver(config.client_ip, config.client_process, config.time_stamp);
-  std::ofstream log_file;
-  log_file.open(unique_log_file_deliver, std::ofstream::app);
-  log_file << "temp" << std::endl;
 
-  log_file.close();
   
   // std::cerr << config.client_ip << std::endl;
   // std::cerr << config.client_process << std::endl;
