@@ -1167,6 +1167,7 @@ int Client::feed_data(uint8_t *data, size_t datalen) {
   // std::cerr << ngtcp2_conn_recv(conn_, data, datalen, util::timestamp()) << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
+    exit(0);
     if (rv != NGTCP2_ERR_TLS_DECRYPT) {
       disconnect(rv);
       return -1;
@@ -1235,8 +1236,8 @@ int Client::on_write(bool primary) {
     }
     if (n < 0) {
       std::cerr << "ngtcp2_conn_write_pkt: " << ngtcp2_strerror(n) << std::endl;
-      disconnect(n);
       exit(0);
+      disconnect(n);
       return -1;
     }
     if (n == 0) {
