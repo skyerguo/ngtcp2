@@ -1236,8 +1236,8 @@ int Client::on_write(bool primary) {
     }
     if (n < 0) {
       std::cerr << "ngtcp2_conn_write_pkt: " << ngtcp2_strerror(n) << std::endl;
-      // exit(0);
       disconnect(n);
+      exit(0);
       return -1;
     }
     if (n == 0) {
