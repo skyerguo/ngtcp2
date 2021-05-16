@@ -2194,7 +2194,7 @@ int Server::on_read(int fd, bool forwarded) {
           }
           log_file << "count_cpus: " << count_cpus << std::endl;
           
-          if (ldc.cpu <= 0)
+          if (ldc.cpu < 0)
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
             std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
@@ -2295,7 +2295,7 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "throughput info: " << ldc.dc << ", " << ldc.throughput << std::endl;
           }
           log_file << "count_throughputs: " << count_throughputs << std::endl;
-          if (ldc.throughput <= 0) 
+          if (ldc.throughput < 0) 
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
             std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
