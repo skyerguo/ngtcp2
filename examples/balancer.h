@@ -84,6 +84,7 @@ struct Config {
   uint64_t client_ip;
   uint64_t client_process;
   uint64_t time_stamp;
+  uint32_t redundancy = 0;
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
 };

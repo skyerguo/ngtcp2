@@ -2075,7 +2075,6 @@ int Server::on_read(int fd, bool forwarded) {
           if (!config.quiet) {
             std::cerr << "latency info: " << ldc.dc << ", " << ldc.latency << std::endl;
           }
-          log_file << "count_latencies: " << count_latencies << std::endl;
           if (ldc.latency <= 0)
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
@@ -2084,6 +2083,8 @@ int Server::on_read(int fd, bool forwarded) {
           }
           if (!count_latencies) minimun_latency = ldc.latency;
           else if (!check_redundant_suitable(ldc.dc, minimun_latency ,ldc.latency, latencies)) continue;
+
+          log_file << "count_latencies: " << count_latencies << std::endl;
 
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
@@ -2136,11 +2137,9 @@ int Server::on_read(int fd, bool forwarded) {
           }
           /* rundandant routing */
           count_latencies++;
-          if (count_latencies >= 2 ) {
+          if (count_latencies > config.redundancy ) {
               break;
           }
-          /* no redundant */
-          // break;
         }
         log_file.close();
         std::cerr << "=====latency optimized routing and forwarding selecting END=====" << std::endl;
@@ -2192,8 +2191,6 @@ int Server::on_read(int fd, bool forwarded) {
           if (!config.quiet) {
             std::cerr << "cpu info: " << ldc.dc << ", " << ldc.cpu << std::endl;
           }
-          log_file << "count_cpus: " << count_cpus << std::endl;
-          
           if (ldc.cpu < 0)
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
@@ -2202,6 +2199,8 @@ int Server::on_read(int fd, bool forwarded) {
           }
           if (!count_cpus) minimun_cpu = ldc.cpu;
           else if (!check_redundant_suitable(ldc.dc, minimun_cpu ,ldc.cpu, latencies)) continue;
+
+          log_file << "count_cpus: " << count_cpus << std::endl;
 
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
@@ -2237,11 +2236,9 @@ int Server::on_read(int fd, bool forwarded) {
           }
           /* rundandant routing */
           count_cpus++;
-          if (count_cpus >= 2 ) {
+          if (count_cpus > config.redundancy ) {
               break;
           }
-          /* no redundant */
-          // break;
         }
         log_file.close();
         std::cerr << "=====cpu optimized routing and forwarding selecting END=====" << std::endl;
@@ -2273,8 +2270,6 @@ int Server::on_read(int fd, bool forwarded) {
           std::map<std::string, int>::iterator iter;
           iter = server_fd_map_.begin();
           while(iter != server_fd_map_.end()) {
-              // std::cerr << "server_fd_map_" << std::endl;
-              // std::cerr << iter->first << " : " << iter->second << std::endl;
               iter++;
           }
           auto fd = server_fd_map_["server"];
@@ -2294,7 +2289,6 @@ int Server::on_read(int fd, bool forwarded) {
           if (!config.quiet) {
             std::cerr << "throughput info: " << ldc.dc << ", " << ldc.throughput << std::endl;
           }
-          log_file << "count_throughputs: " << count_throughputs << std::endl;
           if (ldc.throughput < 0) 
             continue;
           if (dcs.find(ldc.dc) == dcs.end()) {
@@ -2303,6 +2297,8 @@ int Server::on_read(int fd, bool forwarded) {
           }
           if (!count_throughputs) minimun_throughput = ldc.throughput;
           else if (!check_redundant_suitable(ldc.dc, minimun_throughput ,ldc.throughput, latencies)) continue;
+
+          log_file << "count_throughputs: " << count_throughputs << std::endl;
 
           struct sockaddr_in sa;
           memset(&sa, 0, sizeof(sa));
@@ -2337,11 +2333,9 @@ int Server::on_read(int fd, bool forwarded) {
           }
           /* rundandant routing */
           count_throughputs++;
-          if (count_throughputs >= 2 ) {
+          if (count_throughputs > config.redundancy ) {
               break;
           }
-          /* no redundant */
-          // break;
         }
         log_file.close();
         std::cerr << "=====throughput optimized routing and forwarding selecting END=====" << std::endl;
@@ -2939,6 +2933,8 @@ Options:
               Specify idle timeout in seconds.
               Default: )" << config.timeout
             << R"(
+  --redundancy input the number of redundancy. 
+               Default 0.
   -h, --help  Display this help and exit.
 )";
 }
@@ -2962,6 +2958,7 @@ int main(int argc, char **argv) {
         {"ciphers", required_argument, &flag, 1},
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
+        {"redundancy", required_argument, &flag, 4},
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -3030,8 +3027,13 @@ int main(int argc, char **argv) {
         // --timeout
         config.timeout = strtol(optarg, nullptr, 10);
         break;
+      case 4:
+        // --redundancy
+        config.redundancy = strtol(optarg, nullptr, 10);
+        break;
+      default:
+        break;
       }
-      break;
     default:
       break;
     };

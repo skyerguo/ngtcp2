@@ -62,10 +62,10 @@ double stringToDouble(std::string num);
 
 std::string getStdLocation(std::string dc);
 
-uint64_t address2Int(const std::string &ip);
-std::string int2Address(uint64_t ip_int);
+uint64_t address2Int(const std::string &ip); // IP address to 64-bit unsigned int.
+std::string int2Address(uint64_t ip_int); // 64-bit unsigned int to IP address.
 
-std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c);
+std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c); // IP address + process id + timestamp to identify the specific request.
 std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 

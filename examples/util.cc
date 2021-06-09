@@ -240,6 +240,7 @@ std::string int2Address(uint64_t ip_int) {
     res.erase(res.begin());
   return res;
 }
+
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
   std::string res = "";
   res = int2Address(a) + "_";
