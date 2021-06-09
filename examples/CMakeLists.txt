@@ -67,18 +67,9 @@ if(LIBEV_FOUND AND OPENSSL_FOUND AND LIBMYSQLCLIENT_FOUND)
     cJSON.c
   )
 
-  set(balancer2_SOURCES
-    balancer2.cc
-    debug.cc
-    util.cc
-    crypto_openssl.cc
-    crypto.cc
-    http.cc
-  )
   add_executable(client ${client_SOURCES} $<TARGET_OBJECTS:http-parser>)
   add_executable(server ${server_SOURCES} $<TARGET_OBJECTS:http-parser>)
   add_executable(balancer ${balancer_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(balancer2 ${balancer2_SOURCES} $<TARGET_OBJECTS:http-parser>)
   set_target_properties(client PROPERTIES
     COMPILE_FLAGS "${WARNCXXFLAGS}"
     CXX_STANDARD 14
