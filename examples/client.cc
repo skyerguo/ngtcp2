@@ -459,6 +459,8 @@ namespace {
 http_parser htp;
 std::map<uint32_t, std::shared_ptr<Stream>> *streams2_;
 #define MAX_ELEMENT_SIZE 10000000
+uint32_t last_plt_time = 0;
+uint32_t last_plt_cost = 0;
 
 struct message {
   char body[MAX_ELEMENT_SIZE];
@@ -472,7 +474,7 @@ struct message {
 
   int message_complete_cb_called;
 };
-static struct message messages[50];
+static struct message messages[100];
 static int num_messages;
 // is_file：控制index.csv是否已经被遍历
 static int is_file;
@@ -601,7 +603,12 @@ int message_complete_cb (http_parser *parser) {
   }
   // debug::print_timestamp();
   auto t = debug::ts(start_ts[messages[num_messages].conn_]).count();
+  
+  std::cerr << "last_plt_time: " << last_plt_time << std::endl;
   std::cerr << "\rPLT: " << t <<  " microseconds" << std::endl;
+  last_plt_cost = t - last_plt_time;
+  last_plt_time = t;
+  std::cerr << "last_plt_cost: " << last_plt_cost << std::endl;
   //std::cout.flush();
   // num_messages++;
   return 0;
@@ -632,7 +639,8 @@ int recv_data(uint8_t fin, const uint8_t *data, size_t datalen) {
   if (htp.upgrade) {
     /* handle new protocol */
   } else if (nread != datalen) {
-    std::cerr << "recv_error"  << std::endl;
+    std::cerr << "recv_error" << " penalty: " << last_plt_cost / 1000 << "ms" << std::endl;
+    sleep(last_plt_cost / 1000);
     // exit(0);
     return -1;
   }
