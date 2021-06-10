@@ -1,11 +1,31 @@
+- [1. ngtcp2 安装](#1-ngtcp2-安装)
+  - [1.1. 分支说明](#11-分支说明)
+    - [1.1.1. master](#111-master)
+    - [1.1.2. motivation](#112-motivation)
+    - [1.1.3. resource_demand](#113-resource_demand)
+  - [1.2. 安装说明](#12-安装说明)
+    - [1.2.1. 安装需要的包](#121-安装需要的包)
+    - [1.2.2. 配置openssl](#122-配置openssl)
+    - [1.2.3. 降低libmysqlclient-dev版本](#123-降低libmysqlclient-dev版本)
+    - [1.2.4. 配置ngtcp2](#124-配置ngtcp2)
+- [2. 运行说明](#2-运行说明)
+  - [2.1. 单机器测试](#21-单机器测试)
+  - [2.2. 云服务器多机器使用](#22-云服务器多机器使用)
+- [3. 关键代码说明](#3-关键代码说明)
+  - [3.1. metadata](#31-metadata)
+  - [3.2. client](#32-client)
+  - [3.3. balancer](#33-balancer)
+  - [3.4. server](#34-server)
+- [4. 传输文件说明](#4-传输文件说明)
+  - [4.1. websites](#41-websites)
+  - [4.2. websites2](#42-websites2)
+
 # 1. ngtcp2 安装
 ## 1.1. 分支说明
-### master
+### 1.1.1. master
 - 这是一个早期版本，从学兵的分支获得的，没有metadata的版本
 
-
-
-### motivation
+### 1.1.2. motivation
 
 - 用于进行motivation实验的版本
 
@@ -13,7 +33,7 @@
 
   
 
-### resource_demand
+### 1.1.3. resource_demand
 
 - 主要版本，有resource_demand需求
 - 目前提供了cpu_sensitive, throughput_sensitive, latency_sensitive 三种{0,1}的资源权重
@@ -31,7 +51,7 @@ $ git checkout -b resource_demand
 
 ## 1.2. 安装说明 
 
-### 安装需要的包
+### 1.2.1. 安装需要的包
 
 ```
 $ sudo apt-get install -yqq pkg-config autoconf automake autotools-dev libtool libev-dev gdb zip unzip libcunit1 libcunit1-doc libcunit1-dev sshpass
@@ -48,7 +68,7 @@ $ sudo apt-get install -yqq liblexbor liblexbor-dev
 
 
 
-### 配置openssl
+### 1.2.2. 配置openssl
 
  ```
 $ cd ~/
@@ -60,7 +80,7 @@ $ make -j$(nproc) && make install_sw
 
 
 
-### 降低libmysqlclient-dev版本
+### 1.2.3. 降低libmysqlclient-dev版本
 
 ```
 # 运行中出现“/usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libmysqlclient.so: undefined reference to `SSL_CTX_set_ciphersuites@OPENSSL_1_1_1'”问题，也运行该部分，可以不需要wget
@@ -76,7 +96,7 @@ $ sudo apt-mark hold libmysqlclient-dev
 
 
 
-### 配置ngtcp2
+### 1.2.4. 配置ngtcp2
 
 ```
 $ cd ~/ngtcp2
@@ -259,9 +279,9 @@ mysql+redis 查询，并排序：从“/* select balancer */”，到“Logs mys
 
 
 
-# 传输文件说明
+# 4. 传输文件说明
 
-## websites
+## 4.1. websites
 
 * server端需要完整的数据，client端需要resource_list.txt
 
@@ -274,7 +294,7 @@ mysql+redis 查询，并排序：从“/* select balancer */”，到“Logs mys
 
 
 
-## websites2
+## 4.2. websites2
 
 * server端需要完整的数据，client端需要resource_list.txt
 
