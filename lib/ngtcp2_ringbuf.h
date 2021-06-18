@@ -26,17 +26,17 @@
 #define NGTCP2_RINGBUF_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
 
 #include "ngtcp2_mem.h"
 
-typedef struct {
+typedef struct ngtcp2_ringbuf {
   /* buf points to the underlying buffer. */
   uint8_t *buf;
-  ngtcp2_mem *mem;
+  const ngtcp2_mem *mem;
   /* nmemb is the number of elements that can be stored in this ring
      buffer. */
   size_t nmemb;
@@ -60,7 +60,7 @@ typedef struct {
  *     Out of memory.
  */
 int ngtcp2_ringbuf_init(ngtcp2_ringbuf *rb, size_t nmemb, size_t size,
-                        ngtcp2_mem *mem);
+                        const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_ringbuf_free frees resources allocated for |rb|.  This
@@ -69,11 +69,29 @@ int ngtcp2_ringbuf_init(ngtcp2_ringbuf *rb, size_t nmemb, size_t size,
 void ngtcp2_ringbuf_free(ngtcp2_ringbuf *rb);
 
 /* ngtcp2_ringbuf_push_front moves the offset to the first element in
+   the buffer backward, and returns the pointer to the element.
+   Caller can store data to the buffer pointed by the returned
+   pointer.  If this action exceeds the capacity of the ring buffer,
+   the last element is silently overwritten, and rb->len remains
+   unchanged. */
+void *ngtcp2_ringbuf_push_front(ngtcp2_ringbuf *rb);
+
+/* ngtcp2_ringbuf_push_back moves the offset to the last element in
    the buffer forward, and returns the pointer to the element.  Caller
    can store data to the buffer pointed by the returned pointer.  If
-   this action exceeds the capacity of the ring buffer, the last
+   this action exceeds the capacity of the ring buffer, the first
    element is silently overwritten, and rb->len remains unchanged. */
-void *ngtcp2_ringbuf_push_front(ngtcp2_ringbuf *rb);
+void *ngtcp2_ringbuf_push_back(ngtcp2_ringbuf *rb);
+
+/*
+ * ngtcp2_ringbuf_pop_front removes first element in |rb|.
+ */
+void ngtcp2_ringbuf_pop_front(ngtcp2_ringbuf *rb);
+
+/*
+ * ngtcp2_ringbuf_pop_back removes the last element in |rb|.
+ */
+void ngtcp2_ringbuf_pop_back(ngtcp2_ringbuf *rb);
 
 /* ngtcp2_ringbuf_resize changes the number of elements stored.  This
    does not change the capacity of the underlying buffer. */
@@ -84,6 +102,9 @@ void ngtcp2_ringbuf_resize(ngtcp2_ringbuf *rb, size_t len);
 void *ngtcp2_ringbuf_get(ngtcp2_ringbuf *rb, size_t offset);
 
 /* ngtcp2_ringbuf_len returns the number of elements stored. */
-size_t ngtcp2_ringbuf_len(ngtcp2_ringbuf *rb);
+#define ngtcp2_ringbuf_len(RB) ((RB)->len)
+
+/* ngtcp2_ringbuf_full returns nonzero if |rb| is full. */
+int ngtcp2_ringbuf_full(ngtcp2_ringbuf *rb);
 
 #endif /* NGTCP2_RINGBUF_H */

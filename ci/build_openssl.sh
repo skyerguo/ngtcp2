@@ -1,10 +1,8 @@
-#!/bin/sh
-#build last openssl master (for Travis)
+#!/bin/sh -e
+# build patched openssl (for GitHub workflow)
 
-cd ..
-git clone --depth 1 -b quic https://github.com/tatsuhiro-t/openssl
+git clone --depth 1 -b OpenSSL_1_1_1k+quic https://github.com/quictls/openssl
 cd openssl
 ./config enable-tls1_3 --prefix=$PWD/build
 make -j$(nproc)
 make install_sw
-cd ..

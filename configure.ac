@@ -45,6 +45,18 @@ AC_SUBST(LT_CURRENT, 0)
 AC_SUBST(LT_REVISION, 0)
 AC_SUBST(LT_AGE, 0)
 
+AC_SUBST(CRYPTO_OPENSSL_LT_CURRENT, 0)
+AC_SUBST(CRYPTO_OPENSSL_LT_REVISION, 0)
+AC_SUBST(CRYPTO_OPENSSL_LT_AGE, 0)
+
+AC_SUBST(CRYPTO_GNUTLS_LT_CURRENT, 0)
+AC_SUBST(CRYPTO_GNUTLS_LT_REVISION, 0)
+AC_SUBST(CRYPTO_GNUTLS_LT_AGE, 0)
+
+AC_SUBST(CRYPTO_BORINGSSL_LT_CURRENT, 0)
+AC_SUBST(CRYPTO_BORINGSSL_LT_REVISION, 0)
+AC_SUBST(CRYPTO_BORINGSSL_LT_AGE, 0)
+
 # from nghttp2
 major=`echo $PACKAGE_VERSION |cut -d. -f1 | sed -e "s/[^0-9]//g"`
 minor=`echo $PACKAGE_VERSION |cut -d. -f2 | sed -e "s/[^0-9]//g"`
@@ -65,15 +77,69 @@ AC_ARG_ENABLE([debug],
                     [Turn on debug output])],
     [debug=$enableval], [debug=no])
 
-if test "x${debug}" = "x${enableval}"; then
+if test "x${debug}" = "xyes"; then
   DEBUGCFLAGS="-O0 -g3"
   AC_SUBST([DEBUGCFLAGS])
+  AC_DEFINE([DEBUGBUILD], [1], [Define to 1 to enable debug output.])
 fi
 
 AC_ARG_ENABLE(asan,
     AS_HELP_STRING([--enable-asan],
                    [Enable AddressSanitizer (ASAN)]),
     [asan=$enableval], [asan=no])
+
+AC_ARG_ENABLE([lib-only],
+    [AS_HELP_STRING([--enable-lib-only],
+                    [Build libngtcp2 and libngtcp2_crypto only.])],
+    [lib_only=$enableval], [lib_only=no])
+
+AC_ARG_WITH([jemalloc],
+    [AS_HELP_STRING([--with-jemalloc],
+                    [Use jemalloc [default=check]])],
+    [request_jemalloc=$withval], [request_jemalloc=check])
+
+AC_ARG_WITH([cunit],
+    [AS_HELP_STRING([--with-cunit],
+                    [Use cunit [default=check]])],
+    [request_cunit=$withval], [request_cunit=check])
+
+AC_ARG_WITH([libnghttp3],
+    [AS_HELP_STRING([--with-libnghttp3],
+                    [Use libnghttp3 [default=check]])],
+    [request_libnghttp3=$withval], [request_libnghttp3=check])
+
+AC_ARG_WITH([libev],
+    [AS_HELP_STRING([--with-libev],
+                    [Use libev [default=check]])],
+    [request_libev=$withval], [request_libev=check])
+
+AC_ARG_WITH([openssl],
+    [AS_HELP_STRING([--with-openssl],
+                    [Use openssl [default=check]])],
+    [request_openssl=$withval], [request_openssl=check])
+
+AC_ARG_WITH([gnutls],
+    [AS_HELP_STRING([--with-gnutls],
+                    [Use gnutls [default=no]])],
+    [request_gnutls=$withval], [request_gnutls=no])
+
+AC_ARG_WITH([boringssl],
+    [AS_HELP_STRING([--with-boringssl],
+                    [Use boringssl [default=no]])],
+    [request_boringssl=$withval], [request_boringssl=no])
+
+AC_ARG_VAR([BORINGSSL_CFLAGS], [C compiler flags for BORINGSSL])
+AC_ARG_VAR([BORINGSSL_LIBS], [linker flags for BORINGSSL])
+
+AC_ARG_VAR([LIBEV_CFLAGS], [C compiler flags for libev, skipping any checks])
+AC_ARG_VAR([LIBEV_LIBS], [linker flags for libev, skipping any checks])
+
+AC_ARG_VAR([JEMALLOC_CFLAGS],
+           [C compiler flags for jemalloc, skipping any checks])
+AC_ARG_VAR([JEMALLOC_LIBS], [linker flags for jemalloc, skipping any checks])
+
+AC_ARG_VAR([LIBTOOL_LDFLAGS],
+           [libtool specific flags (e.g., -static-libtool-libs)])
 
 # Checks for programs
 AC_PROG_CC
@@ -86,85 +152,272 @@ AC_PROG_MKDIR_P
 
 PKG_PROG_PKG_CONFIG([0.20])
 
-AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
+AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+
+case "${build}" in
+  *-apple-darwin*)
+    EXTRA_DEFS="-D__APPLE_USE_RFC_3542"
+    AC_SUBST([EXTRA_DEFS])
+    ;;
+esac
 
 # Checks for libraries.
 
 # cunit
-PKG_CHECK_MODULES([CUNIT], [cunit >= 2.1], [have_cunit=yes], [have_cunit=no])
-# If pkg-config does not find cunit, check it using AC_CHECK_LIB.  We
-# do this because Debian (Ubuntu) lacks pkg-config file for cunit.
-if test "x${have_cunit}" = "xno"; then
-  AC_MSG_WARN([${CUNIT_PKG_ERRORS}])
-  AC_CHECK_LIB([cunit], [CU_initialize_registry],
-               [have_cunit=yes], [have_cunit=no])
+have_cunit=no
+if test "x${request_cunit}" != "xno"; then
+  PKG_CHECK_MODULES([CUNIT], [cunit >= 2.1], [have_cunit=yes], [have_cunit=no])
+  # If pkg-config does not find cunit, check it using AC_CHECK_LIB.  We
+  # do this because Debian (Ubuntu) lacks pkg-config file for cunit.
+  if test "x${have_cunit}" = "xno"; then
+    AC_MSG_WARN([${CUNIT_PKG_ERRORS}])
+    AC_CHECK_LIB([cunit], [CU_initialize_registry],
+                 [have_cunit=yes], [have_cunit=no])
+    if test "x${have_cunit}" = "xyes"; then
+      CUNIT_LIBS="-lcunit"
+      CUNIT_CFLAGS=""
+      AC_SUBST([CUNIT_LIBS])
+      AC_SUBST([CUNIT_CFLAGS])
+    fi
+  fi
   if test "x${have_cunit}" = "xyes"; then
-    CUNIT_LIBS="-lcunit"
-    CUNIT_CFLAGS=""
-    AC_SUBST([CUNIT_LIBS])
-    AC_SUBST([CUNIT_CFLAGS])
+    # cunit in Mac OS X requires ncurses. Note that in Mac OS X, test
+    # program can be built without -lncurses, but it emits runtime
+    # error.
+    case "${build}" in
+      *-apple-darwin*)
+        CUNIT_LIBS="$CUNIT_LIBS -lncurses"
+        AC_SUBST([CUNIT_LIBS])
+        ;;
+    esac
   fi
 fi
-if test "x${have_cunit}" = "xyes"; then
-  # cunit in Mac OS X requires ncurses. Note that in Mac OS X, test
-  # program can be built without -lncurses, but it emits runtime
-  # error.
-  case "${build}" in
-    *-apple-darwin*)
-      CUNIT_LIBS="$CUNIT_LIBS -lncurses"
-      AC_SUBST([CUNIT_LIBS])
-      ;;
-  esac
+
+if test "x${request_cunit}" = "xyes" &&
+   test "x${have_cunit}" != "xyes"; then
+  AC_MSG_ERROR([cunit was requested (--with-cunit) but not found])
 fi
 
 AM_CONDITIONAL([HAVE_CUNIT], [ test "x${have_cunit}" = "xyes" ])
 
-# openssl (for examples)
-PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.1.1],
-                  [have_openssl=yes], [have_openssl=no])
-if test "x${have_openssl}" = "xno"; then
-  AC_MSG_NOTICE($OPENSSL_PKG_ERRORS)
-fi
-PKG_CHECK_MODULES([LIBMYSQLCLIENT], [mysqlclient >= 5.6.47],
-                  [have_libmysqlclient=yes], [have_libmysqlclient=no])
-if test "x${have_libmysqlclient}" = "xno"; then
-  AC_MSG_NOTICE($LIBMYSQLCLIENT_PKG_ERRORS)
-fi
+AM_CONDITIONAL([ENABLE_SHARED], [ test "x${enable_shared}" = "xyes" ])
 
-# libev (for examples)
-# libev does not have pkg-config file.  Check it in an old way.
-save_LIBS=$LIBS
-# android requires -lm for floor
-AC_CHECK_LIB([ev], [ev_time], [have_libev=yes], [have_libev=no], [-lm])
-if test "x${have_libev}" = "xyes"; then
-  AC_CHECK_HEADER([ev.h], [have_libev=yes], [have_libev=no])
-  if test "x${have_libev}" = "xyes"; then
-    LIBEV_LIBS=-lev
-    LIBEV_CFLAGS=
-    AC_SUBST([LIBEV_LIBS])
-    AC_SUBST([LIBEV_CFLAGS])
+# OpenSSL (required for libngtcp2_crypto_openssl and examples)
+have_openssl=no
+if test "x${request_openssl}" != "xno"; then
+  PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.1.1],
+                    [have_openssl=yes], [have_openssl=no])
+  if test "x${have_openssl}" = "xno"; then
+    AC_MSG_NOTICE($OPENSSL_PKG_ERRORS)
+  fi
+  # Until OpenSSL gains mainline support for QUIC, check for a patched version.
+  save_CFLAGS="$CFLAGS"
+  save_LIBS="$LIBS"
+  CFLAGS="$OPENSSL_CFLAGS $CFLAGS"
+  LIBS="$OPENSSL_LIBS $LIBS"
+
+  AC_MSG_CHECKING([for SSL_is_quic])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <openssl/ssl.h>
+  ]], [[
+    SSL *ssl = NULL;
+    SSL_is_quic(ssl);
+  ]])],
+  [AC_MSG_RESULT([yes]); have_openssl_quic=yes],
+  [AC_MSG_RESULT([no]); have_openssl_quic=no])
+
+  CFLAGS="$save_CFLAGS"
+  LIBS="$save_LIBS"
+
+  if test "x${have_openssl}${have_openssl_quic}" = "xyesno"; then
+    AC_MSG_NOTICE([openssl does not have QUIC interface, disabling it])
+    have_openssl=no
+    OPENSSL_LIBS=
+    OPENSSL_CFLAGS=
   fi
 fi
-#AC_CHECK_LIB([mysqlclient], [main], [have_libmysqlclient=yes], [have_libmysqlclient=no], [-lm])
-#if test "x${have_libmysqlclient}" = "xyes"; then
-#  AC_CHECK_HEADER([mysql.h], [have_libmysqlclient=yes], [have_libmysqlclient=no])
-#  if test "x${have_libmysqlclient}" = "xyes"; then
-#    LIBMYSQLCLIENT_LIBS=-lmysqlclient
-#    LIBMYSQLCLIENT_CFLAGS=
-#    AC_SUBST([LIBMYSQLCLIENT_LIBS])
-#    AC_SUBST([LIBMYSQLCLIENT_CFLAGS])
-#  fi
-#fi
-LIBS=$save_LIBS
+
+if test "x${request_openssl}" = "xyes" &&
+   test "x${have_openssl}" != "xyes"; then
+  AC_MSG_ERROR([openssl was requested (--with-openssl) but not found])
+fi
+
+AM_CONDITIONAL([HAVE_OPENSSL], [ test "x${have_openssl}" = "xyes" ])
+
+# GnuTLS (required for libngtcp2_crypto_gnutls)
+have_gnutls=no
+if test "x${request_gnutls}" != "xno"; then
+  PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.7.2],
+                    [have_gnutls=yes], [have_gnutls=no])
+  if test "x${have_gnutls}" = "xno"; then
+    AC_MSG_NOTICE($GNUTLS_PKG_ERRORS)
+  fi
+fi
+
+if test "x${request_gnutls}" = "xyes" &&
+   test "x${have_gnutls}" != "xyes"; then
+  AC_MSG_ERROR([gnutls was requested (--with-gnutls) but not found])
+fi
+
+AM_CONDITIONAL([HAVE_GNUTLS], [ test "x${have_gnutls}" = "xyes" ])
+
+# BoringSSL (required for libngtcp2_crypto_boringssl)
+have_boringssl=no
+if test "x${request_boringssl}" != "xno"; then
+  save_CFLAGS="$CFLAGS"
+  save_LIBS="$LIBS"
+  CFLAGS="$BORINGSSL_CFLAGS"
+  LIBS="$BORINGSSL_LIBS $LIBS"
+
+  AC_MSG_CHECKING([for SSL_set_quic_early_data_context])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <openssl/ssl.h>
+  ]], [[
+    SSL *ssl = NULL;
+    SSL_set_quic_early_data_context(ssl, NULL, 0);
+  ]])],
+  [AC_MSG_RESULT([yes]); have_boringssl=yes],
+  [AC_MSG_RESULT([no]); have_boringssl=no])
+
+  CFLAGS="$save_CFLAGS"
+  LIBS="$save_LIBS"
+fi
+
+if test "x${request_boringssl}" = "xyes" &&
+   test "x${have_boringssl}" != "xyes"; then
+  AC_MSG_ERROR([boringssl was requested (--with-boringssl) but not found])
+fi
+
+AM_CONDITIONAL([HAVE_BORINGSSL], [ test "x${have_boringssl}" = "xyes" ])
+
+have_crypto=no
+if test "x${have_openssl}" = "xyes" ||
+   test "x${have_gnutls}" = "xyes" ||
+   test "x${have_boringssl}" = "xyes"; then
+  have_crypto=yes
+fi
+
+AM_CONDITIONAL([HAVE_CRYPTO], [ test "x${have_crypto}" = "xyes" ])
+
+# libnghttp3 (required for examples)
+have_libnghttp3=no
+if test "x${request_libnghttp3}" != "xno"; then
+  PKG_CHECK_MODULES([LIBNGHTTP3], [libnghttp3 >= 0.0.0],
+                    [have_libnghttp3=yes], [have_libnghttp3=no])
+  if test "${have_libnghttp3}" = "xno"; then
+    AC_MSG_NOTICE($LIBNGHTTP3_PKG_ERRORS)
+  fi
+fi
+
+if test "x${request_libnghttp3}" = "xyes" &&
+   test "x${have_libnghttp3}" != "xyes"; then
+  AC_MSG_ERROR([libnghttp3 was requested (--with-libnghttp3) but not found])
+fi
+
+AM_CONDITIONAL([HAVE_NGHTTP3], [ test "x${have_libnghttp3}" = "xyes" ])
+
+# libev (required for examples)
+have_libev=no
+if test "x${request_libev}" != "xno"; then
+  if test "x${LIBEV_LIBS}" = "x" && test "x${LIBEV_CFLAGS}" = "x"; then
+    # libev does not have pkg-config file.  Check it in an old way.
+    save_LIBS=$LIBS
+    # android requires -lm for floor
+    AC_CHECK_LIB([ev], [ev_time], [have_libev=yes], [have_libev=no], [-lm])
+    if test "x${have_libev}" = "xyes"; then
+      AC_CHECK_HEADER([ev.h], [have_libev=yes], [have_libev=no])
+      if test "x${have_libev}" = "xyes"; then
+        LIBEV_LIBS=-lev
+        LIBEV_CFLAGS=
+      fi
+    fi
+    LIBS=$save_LIBS
+  else
+    have_libev=yes
+  fi
+fi
+
+if test "x${request_libev}" = "xyes" &&
+   test "x${have_libev}" != "xyes"; then
+  AC_MSG_ERROR([libev was requested (--with-libev) but not found])
+fi
+
+enable_examples=no
+if test "x${lib_only}" = "xno" &&
+   test "x${have_libnghttp3}" = "xyes" &&
+   test "x${have_crypto}" = "xyes" &&
+   test "x${have_libev}" = "xyes"; then
+  enable_examples=yes
+
+  if test "x${have_openssl}" = "xyes"; then
+    AC_DEFINE([ENABLE_EXAMPLE_OPENSSL], [1],
+              [Define to 1 in order to build examples/{client,server}])
+  fi
+
+  if test "x${have_gnutls}" = "xyes"; then
+    AC_DEFINE([ENABLE_EXAMPLE_GNUTLS], [1],
+              [Define to 1 in order to build examples/{gtlsclient,gtlsserver}])
+  fi
+
+  if test "x${have_boringssl}" = "xyes"; then
+    AC_DEFINE([ENABLE_EXAMPLE_BORINGSSL], [1],
+              [Define to 1 in order to build examples/{bsslclient,bsslserver}])
+  fi
+fi
+
+AM_CONDITIONAL([ENABLE_EXAMPLES], [ test "x${enable_examples}" = "xyes" ])
+AM_CONDITIONAL([ENABLE_EXAMPLE_OPENSSL], [ test "x${enable_examples}" = "xyes" && test "x${have_openssl}" = "xyes" ])
+AM_CONDITIONAL([ENABLE_EXAMPLE_GNUTLS], [ test "x${enable_examples}" = "xyes" && test "x${have_gnutls}" = "xyes" ])
+AM_CONDITIONAL([ENABLE_EXAMPLE_BORINGSSL], [ test "x${enable_examples}" = "xyes" && test "x${have_boringssl}" = "xyes" ])
+
+# jemalloc
+have_jemalloc=no
+if test "x${request_jemalloc}" != "xno"; then
+  if test "x${JEMALLOC_LIBS}" = "x" && test "x${JEMALLOC_CFLAGS}" = "x"; then
+    save_LIBS=$LIBS
+    AC_SEARCH_LIBS([malloc_stats_print], [jemalloc], [have_jemalloc=yes], [],
+                   [$PTHREAD_LDFLAGS])
+
+    if test "x${have_jemalloc}" = "xyes"; then
+      jemalloc_libs=${ac_cv_search_malloc_stats_print}
+    else
+      # On Darwin, malloc_stats_print is je_malloc_stats_print
+      AC_SEARCH_LIBS([je_malloc_stats_print], [jemalloc], [have_jemalloc=yes],
+                     [], [$PTHREAD_LDFLAGS])
+
+      if test "x${have_jemalloc}" = "xyes"; then
+        jemalloc_libs=${ac_cv_search_je_malloc_stats_print}
+      fi
+    fi
+
+    LIBS=$save_LIBS
+
+    if test "x${have_jemalloc}" = "xyes" &&
+       test "x${jemalloc_libs}" != "xnone required"; then
+      JEMALLOC_LIBS=${jemalloc_libs}
+    fi
+  else
+    have_jemalloc=yes
+  fi
+fi
+
+if test "x${request_jemalloc}" = "xyes" &&
+   test "x${have_jemalloc}" != "xyes"; then
+  AC_MSG_ERROR([jemalloc was requested (--with-jemalloc) but not found])
+fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([ \
   arpa/inet.h \
+  netinet/in.h \
   stddef.h \
   stdint.h \
   stdlib.h \
   string.h \
   unistd.h \
+  sys/endian.h \
+  endian.h \
+  byteswap.h \
 ])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -191,6 +444,20 @@ AC_CHECK_FUNCS([ \
   memmove \
   memset \
 ])
+
+# Checks for symbols.
+AC_CHECK_DECLS([be64toh], [], [], [[
+#ifdef HAVE_ENDIAN_H
+#  include <endian.h>
+#endif
+#ifdef HAVE_SYS_ENDIAN_H
+#  include <sys/endian.h>
+#endif
+]])
+
+AC_CHECK_DECLS([bswap_64], [], [], [[
+#include <byteswap.h>
+]])
 
 # More compiler flags from nghttp2.
 save_CFLAGS=$CFLAGS
@@ -257,8 +524,7 @@ if test "x$werror" != "xno"; then
     # For C++ compiler
     AC_LANG_PUSH(C++)
     AX_CHECK_COMPILE_FLAG([-Wall], [CXXFLAGS="$CXXFLAGS -Wall"])
-    # TODO separate option for -Werror and warnings?
-    #AX_CHECK_COMPILE_FLAG([-Werror], [CXXFLAGS="$CXXFLAGS -Werror"])
+    AX_CHECK_COMPILE_FLAG([-Werror], [CXXFLAGS="$CXXFLAGS -Werror"])
     AX_CHECK_COMPILE_FLAG([-Wformat-security], [CXXFLAGS="$CXXFLAGS -Wformat-security"])
     AX_CHECK_COMPILE_FLAG([-Wsometimes-uninitialized], [CXXFLAGS="$CXXFLAGS -Wsometimes-uninitialized"])
     # Disable noexcept-type warning of g++-7.  This is not harmful as
@@ -278,11 +544,11 @@ AC_SUBST([WARNCXXFLAGS])
 
 if test "x$asan" != "xno"; then
     # Assume both C and C++ compiler either support ASAN or not.
-    LDFLAGS_saved="$LDFLAGS"
+    save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS -fsanitize=address"
     AX_CHECK_COMPILE_FLAG([-fsanitize=address],
                           [CFLAGS="$CFLAGS -fsanitize=address"; CXXFLAGS="$CXXFLAGS -fsanitize=address"],
-                          [LDFLAGS="$LDFLAGS_saved"])
+                          [LDFLAGS="$save_LDFLAGS"])
 fi
 
 # extra flags for API function visibility
@@ -291,11 +557,6 @@ AX_CHECK_COMPILE_FLAG([-fvisibility=hidden], [EXTRACFLAG="-fvisibility=hidden"])
 
 AC_SUBST([EXTRACFLAG])
 
-# debug build
-if test "x$debug" != "xno"; then
-    AC_DEFINE([DEBUGBUILD], [1], [Define to 1 to enable debug output.])
-fi
-
 AC_CONFIG_FILES([
   Makefile
   lib/Makefile
@@ -303,6 +564,16 @@ AC_CONFIG_FILES([
   lib/includes/Makefile
   lib/includes/ngtcp2/version.h
   tests/Makefile
+  crypto/Makefile
+  crypto/openssl/Makefile
+  crypto/openssl/libngtcp2_crypto_openssl.pc
+  crypto/includes/Makefile
+  crypto/gnutls/Makefile
+  crypto/gnutls/libngtcp2_crypto_gnutls.pc
+  crypto/boringssl/Makefile
+  crypto/boringssl/libngtcp2_crypto_boringssl.pc
+  doc/Makefile
+  doc/source/conf.py
   third-party/Makefile
   examples/Makefile
 ])
@@ -332,6 +603,12 @@ AC_MSG_NOTICE([summary of build options:
     Library:
       Shared:         ${enable_shared}
       Static:         ${enable_static}
+    Libtool:
+      LIBTOOL_LDFLAGS: ${LIBTOOL_LDFLAGS}
+    Crypto helper libraries:
+      libngtcp2_crypto_openssl:   ${have_openssl}
+      libngtcp2_crypto_gnutls:    ${have_gnutls}
+      libngtcp2_crypto_boringssl: ${have_boringssl}
     Test:
       CUnit:          ${have_cunit} (CFLAGS='${CUNIT_CFLAGS}' LIBS='${CUNIT_LIBS}')
     Debug:
@@ -339,5 +616,9 @@ AC_MSG_NOTICE([summary of build options:
     Libs:
       OpenSSL:        ${have_openssl} (CFLAGS='${OPENSSL_CFLAGS}' LIBS='${OPENSSL_LIBS}')
       Libev:          ${have_libev} (CFLAGS='${LIBEV_CFLAGS}' LIBS='${LIBEV_LIBS}')
-      Libmysqlclient: ${have_libmysqlclient} (CFLAGS='${LIBMYSQLCLIENT_CFLAGS}' LIBS='${LIBMYSQLCLIENT_LIBS}')
+      Libnghttp3:     ${have_libnghttp3} (CFLAGS='${LIBNGHTTP3_CFLAGS}' LIBS='${LIBNGHTTP3_LIBS}')
+      Jemalloc:       ${have_jemalloc} (CFLAGS='${JEMALLOC_CFLAGS}' LIBS='${JEMALLOC_LIBS}')
+      GnuTLS:         ${have_gnutls} (CFLAGS='${GNUTLS_CFLAGS}' LIBS='${GNUTLS_LIBS}')
+      BoringSSL:      ${have_boringssl} (CFLAGS='${BORINGSSL_CFLAGS}' LIBS='${BORINGSSL_LIBS}')
+    Examples:         ${enable_examples}
 ])

@@ -26,29 +26,23 @@
 #define NGTCP2_ROB_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
 
 #include "ngtcp2_mem.h"
 #include "ngtcp2_range.h"
-
-struct ngtcp2_rob_gap;
-typedef struct ngtcp2_rob_gap ngtcp2_rob_gap;
+#include "ngtcp2_ksl.h"
 
 /*
  * ngtcp2_rob_gap represents the gap, which is the range of stream
  * data that is not received yet.
  */
-struct ngtcp2_rob_gap {
-  /* next points to the next gap.  This singly linked list is ordered
-     by range.begin in the increasing order, and they never
-     overlap. */
-  ngtcp2_rob_gap *next;
+typedef struct ngtcp2_rob_gap {
   /* range is the range of this gap. */
   ngtcp2_range range;
-};
+} ngtcp2_rob_gap;
 
 /*
  * ngtcp2_rob_gap_new allocates new ngtcp2_rob_gap object, and assigns
@@ -63,32 +57,26 @@ struct ngtcp2_rob_gap {
  *     Out of memory.
  */
 int ngtcp2_rob_gap_new(ngtcp2_rob_gap **pg, uint64_t begin, uint64_t end,
-                       ngtcp2_mem *mem);
+                       const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_rob_gap_del deallocates |g|.  It deallocates the memory
  * pointed by |g| it self.  |mem| is custom memory allocator to
  * deallocate memory.
  */
-void ngtcp2_rob_gap_del(ngtcp2_rob_gap *g, ngtcp2_mem *mem);
-
-struct ngtcp2_rob_data;
-typedef struct ngtcp2_rob_data ngtcp2_rob_data;
+void ngtcp2_rob_gap_del(ngtcp2_rob_gap *g, const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_rob_data holds the buffered stream data.
  */
-struct ngtcp2_rob_data {
-  /* next points to the next data.  This singly linked list is ordered
-     by offset in the increasing order, and they never overlap. */
-  ngtcp2_rob_data *next;
+typedef struct ngtcp2_rob_data {
+  /* range is the range of this gap. */
+  ngtcp2_range range;
   /* begin points to the buffer. */
   uint8_t *begin;
   /* end points to the one beyond of the last byte of the buffer */
   uint8_t *end;
-  /* offset is a stream offset of begin. */
-  uint64_t offset;
-};
+} ngtcp2_rob_data;
 
 /*
  * ngtcp2_rob_data_new allocates new ngtcp2_rob_data object, and
@@ -105,28 +93,28 @@ struct ngtcp2_rob_data {
  *     Out of memory.
  */
 int ngtcp2_rob_data_new(ngtcp2_rob_data **pd, uint64_t offset, size_t chunk,
-                        ngtcp2_mem *mem);
+                        const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_rob_data_del deallocates |d|.  It deallocates the memory
  * pointed by |d| itself.  |mem| is custom memory allocator to
  * deallocate memory.
  */
-void ngtcp2_rob_data_del(ngtcp2_rob_data *d, ngtcp2_mem *mem);
+void ngtcp2_rob_data_del(ngtcp2_rob_data *d, const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_rob is the reorder buffer which reassembles stream data
  * received in out of order.
  */
-typedef struct {
-  /* gap maintains the range of offset which is not received
+typedef struct ngtcp2_rob {
+  /* gapksl maintains the range of offset which is not received
      yet. Initially, its range is [0, UINT64_MAX). */
-  ngtcp2_rob_gap *gap;
-  /* data maintains the list of buffers which store received data
+  ngtcp2_ksl gapksl;
+  /* dataksl maintains the list of buffers which store received data
      ordered by stream offset. */
-  ngtcp2_rob_data *data;
+  ngtcp2_ksl dataksl;
   /* mem is custom memory allocator */
-  ngtcp2_mem *mem;
+  const ngtcp2_mem *mem;
   /* chunk is the size of each buffer in data field */
   size_t chunk;
 } ngtcp2_rob;
@@ -141,7 +129,7 @@ typedef struct {
  * NGTCP2_ERR_NOMEM
  *     Out of memory.
  */
-int ngtcp2_rob_init(ngtcp2_rob *rob, size_t chunk, ngtcp2_mem *mem);
+int ngtcp2_rob_init(ngtcp2_rob *rob, size_t chunk, const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_rob_free frees resources allocated for |rob|.
@@ -164,8 +152,14 @@ int ngtcp2_rob_push(ngtcp2_rob *rob, uint64_t offset, const uint8_t *data,
 /*
  * ngtcp2_rob_remove_prefix removes gap up to |offset|, exclusive.  It
  * also removes data buffer if it is completely included in |offset|.
+ *
+ * This function returns 0 if it succeeds, or one of the following
+ * negative error codes:
+ *
+ * NGTCP2_ERR_NOMEM
+ *     Out of memory
  */
-void ngtcp2_rob_remove_prefix(ngtcp2_rob *rob, uint64_t offset);
+int ngtcp2_rob_remove_prefix(ngtcp2_rob *rob, uint64_t offset);
 
 /*
  * ngtcp2_rob_data_at stores the pointer to the buffer of stream
@@ -194,5 +188,10 @@ void ngtcp2_rob_pop(ngtcp2_rob *rob, uint64_t offset, size_t len);
  * If there is no gap, it returns UINT64_MAX.
  */
 uint64_t ngtcp2_rob_first_gap_offset(ngtcp2_rob *rob);
+
+/*
+ * ngtcp2_rob_data_buffered returns nonzero if any data is buffered.
+ */
+int ngtcp2_rob_data_buffered(ngtcp2_rob *rob);
 
 #endif /* NGTCP2_ROB_H */

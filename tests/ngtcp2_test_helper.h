@@ -26,7 +26,7 @@
 #define NGTCP2_TEST_HELPER_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
@@ -49,6 +49,18 @@
  */
 #define NGTCP2_APP_ERR01 0xff01u
 #define NGTCP2_APP_ERR02 0xff02u
+
+/*
+ * NGTCP2_FAKE_AEAD_OVERHEAD is AEAD overhead used in unit tests.
+ * Because we use the same encryption/decryption function for both
+ * handshake and post handshake packets, we have to use AEAD overhead
+ * used in handshake packets.
+ */
+#define NGTCP2_FAKE_AEAD_OVERHEAD NGTCP2_INITIAL_AEAD_OVERHEAD
+
+/* NGTCP2_FAKE_HP_MASK is a header protection mask used in unit
+   tests. */
+#define NGTCP2_FAKE_HP_MASK "\x00\x00\x00\x00\x00"
 
 /*
  * ngtcp2_t_encode_stream_frame encodes STREAM frame into |out| with
@@ -76,12 +88,21 @@ size_t ngtcp2_t_encode_ack_frame(uint8_t *out, uint64_t largest_ack,
                                  uint64_t ack_blklen);
 
 /*
- * write_single_frame_pkt writes a QUIC packet containing single frame
- * |fr| in |out| whose capacity is |outlen|.  This function returns
- * the number of bytes written.
+ * write_single_frame_pkt_flags writes a QUIC packet containing single
+ * frame |fr| in |out| whose capacity is |outlen|.  This function
+ * returns the number of bytes written.
+ */
+size_t write_single_frame_pkt_flags(ngtcp2_conn *conn, uint8_t *out,
+                                    size_t outlen, uint8_t flags,
+                                    const ngtcp2_cid *dcid, int64_t pkt_num,
+                                    ngtcp2_frame *fr);
+
+/*
+ * write_single_frame_pkt is write_single_frame_pkt_flags with flag =
+ * NGTCP2_PKT_FLAG_NONE.
  */
 size_t write_single_frame_pkt(ngtcp2_conn *conn, uint8_t *out, size_t outlen,
-                              uint64_t conn_id, uint64_t pkt_num,
+                              const ngtcp2_cid *dcid, int64_t pkt_num,
                               ngtcp2_frame *fr);
 
 /*
@@ -91,8 +112,24 @@ size_t write_single_frame_pkt(ngtcp2_conn *conn, uint8_t *out, size_t outlen,
  * bytes written.
  */
 size_t write_single_frame_pkt_without_conn_id(ngtcp2_conn *conn, uint8_t *out,
-                                              size_t outlen, uint64_t pkt_num,
+                                              size_t outlen, int64_t pkt_num,
                                               ngtcp2_frame *fr);
+
+/*
+ * write_pkt_flags writes a QUIC packet containing frames pointed by
+ * |fr| of length |frlen| in |out| whose capacity is |outlen|.  This
+ * function returns the number of bytes written.
+ */
+size_t write_pkt_flags(ngtcp2_conn *conn, uint8_t *out, size_t outlen,
+                       uint8_t flags, const ngtcp2_cid *dcid, int64_t pkt_num,
+                       ngtcp2_frame *fr, size_t frlen);
+
+/*
+ * write_pkt is write_pkt_flags with flag = NGTCP2_PKT_FLAG_NONE.
+ */
+size_t write_pkt(ngtcp2_conn *conn, uint8_t *out, size_t outlen,
+                 const ngtcp2_cid *dcid, int64_t pkt_num, ngtcp2_frame *fr,
+                 size_t frlen);
 
 /*
  * write_single_frame_handshake_pkt writes a unprotected QUIC
@@ -101,13 +138,103 @@ size_t write_single_frame_pkt_without_conn_id(ngtcp2_conn *conn, uint8_t *out,
  * written.
  */
 size_t write_single_frame_handshake_pkt(uint8_t *out, size_t outlen,
-                                        uint8_t pkt_type, uint64_t conn_id,
-                                        uint64_t pkt_num, uint32_t version,
-                                        ngtcp2_frame *fr);
+                                        uint8_t pkt_type,
+                                        const ngtcp2_cid *dcid,
+                                        const ngtcp2_cid *scid, int64_t pkt_num,
+                                        uint32_t version, ngtcp2_frame *fr,
+                                        ngtcp2_crypto_km *ckm);
+
+/*
+ * write_single_frame_initial_pkt writes an Initial packet containing
+ * a single frame |fr| into |out| whose capacity is |outlen|.  This
+ * function returns the number of bytes written.
+ */
+size_t write_single_frame_initial_pkt(uint8_t *out, size_t outlen,
+                                      const ngtcp2_cid *dcid,
+                                      const ngtcp2_cid *scid, int64_t pkt_num,
+                                      uint32_t version, ngtcp2_frame *fr,
+                                      const uint8_t *token, size_t tokenlen,
+                                      ngtcp2_crypto_km *ckm);
+
+/*
+ * write_single_frame_0rtt_pkt writes a 0RTT packet containing a
+ * single frame |fr| into |out| whose capacity is |outlen|.  This
+ * function returns the number of bytes written.
+ */
+size_t write_single_frame_0rtt_pkt(uint8_t *out, size_t outlen,
+                                   const ngtcp2_cid *dcid,
+                                   const ngtcp2_cid *scid, int64_t pkt_num,
+                                   uint32_t version, ngtcp2_frame *fr,
+                                   ngtcp2_crypto_km *ckm);
+
+/*
+ * write_handshake_pkt writes an unprotected QUIC handshake packet
+ * containing |frlen| frames pointed by|fra| in |out| whose capacity
+ * is |outlen|.  This function returns the number of bytes written.
+ */
+size_t write_handshake_pkt(uint8_t *out, size_t outlen, uint8_t pkt_type,
+                           const ngtcp2_cid *dcid, const ngtcp2_cid *scid,
+                           int64_t pkt_num, uint32_t version, ngtcp2_frame *fra,
+                           size_t frlen, ngtcp2_crypto_km *ckm);
 
 /*
  * open_stream opens new stream denoted by |stream_id|.
  */
-ngtcp2_strm *open_stream(ngtcp2_conn *conn, uint64_t stream_id);
+ngtcp2_strm *open_stream(ngtcp2_conn *conn, int64_t stream_id);
+
+/*
+ * rtb_entry_length returns the length of elements pointed by |ent|
+ * list.
+ */
+size_t rtb_entry_length(const ngtcp2_rtb_entry *ent);
+
+void scid_init(ngtcp2_cid *cid);
+void dcid_init(ngtcp2_cid *cid);
+void rcid_init(ngtcp2_cid *cid);
+
+/*
+ * read_pkt_payloadlen reads long header payload length field from
+ * |pkt|.
+ */
+uint64_t read_pkt_payloadlen(const uint8_t *pkt, const ngtcp2_cid *dcid,
+                             const ngtcp2_cid *scid);
+
+/*
+ * write_pkt_payloadlen writes long header payload length field into
+ * |pkt|.
+ */
+void write_pkt_payloadlen(uint8_t *pkt, const ngtcp2_cid *dcid,
+                          const ngtcp2_cid *scid, uint64_t payloadlen);
+
+/*
+ * pkt_decode_hd_long decodes long packet header from |pkt| of length
+ * |pktlen|.  This function assumes that header protection has been
+ * decrypted.
+ */
+ngtcp2_ssize pkt_decode_hd_long(ngtcp2_pkt_hd *dest, const uint8_t *pkt,
+                                size_t pktlen);
+
+/*
+ * pkt_decode_hd_short decodes long packet header from |pkt| of length
+ * |pktlen|.  This function assumes that header protection has been
+ * decrypted.
+ */
+ngtcp2_ssize pkt_decode_hd_short(ngtcp2_pkt_hd *dest, const uint8_t *pkt,
+                                 size_t pktlen, size_t dcidlen);
+
+/*
+ * pkt_decode_hd_short_mask decodes long packet header from |pkt| of
+ * length |pktlen|.  NGTCP2_FAKE_HP_MASK is used to decrypt header
+ * protection.
+ */
+ngtcp2_ssize pkt_decode_hd_short_mask(ngtcp2_pkt_hd *dest, const uint8_t *pkt,
+                                      size_t pktlen, size_t dcidlen);
+
+/*
+ * path_init initializes |path| with the given arguments.  They form
+ * IPv4 addresses.
+ */
+void path_init(ngtcp2_path_storage *path, uint32_t local_addr,
+               uint16_t local_port, uint32_t remote_addr, uint16_t remote_port);
 
 #endif /* NGTCP2_TEST_HELPER_H */

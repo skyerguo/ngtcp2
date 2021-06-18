@@ -27,11 +27,12 @@
 #define NGTCP2_MAP_TEST_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 void test_ngtcp2_map(void);
 void test_ngtcp2_map_functional(void);
 void test_ngtcp2_map_each_free(void);
+void test_ngtcp2_map_clear(void);
 
 #endif /* NGTCP2_MAP_TEST_H */

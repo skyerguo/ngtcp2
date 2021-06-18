@@ -25,12 +25,29 @@
 #include "ngtcp2_ringbuf.h"
 
 #include <assert.h>
+#ifdef WIN32
+#  include <intrin.h>
+#endif
 
 #include "ngtcp2_macro.h"
 
+#if defined(_MSC_VER) && defined(_M_ARM64)
+unsigned int __popcnt(unsigned int x) {
+  unsigned int c = 0;
+  for (; x; ++c) {
+    x &= x - 1;
+  }
+  return c;
+}
+#endif
+
 int ngtcp2_ringbuf_init(ngtcp2_ringbuf *rb, size_t nmemb, size_t size,
-                        ngtcp2_mem *mem) {
+                        const ngtcp2_mem *mem) {
+#ifdef WIN32
+  assert(1 == __popcnt((unsigned int)nmemb));
+#else
   assert(1 == __builtin_popcount((unsigned int)nmemb));
+#endif
 
   rb->buf = ngtcp2_mem_malloc(mem, nmemb * size);
   if (rb->buf == NULL) {
@@ -40,7 +57,7 @@ int ngtcp2_ringbuf_init(ngtcp2_ringbuf *rb, size_t nmemb, size_t size,
   rb->mem = mem;
   rb->nmemb = nmemb;
   rb->size = size;
-  rb->first = size - 1;
+  rb->first = 0;
   rb->len = 0;
 
   return 0;
@@ -61,6 +78,28 @@ void *ngtcp2_ringbuf_push_front(ngtcp2_ringbuf *rb) {
   return (void *)&rb->buf[rb->first * rb->size];
 }
 
+void *ngtcp2_ringbuf_push_back(ngtcp2_ringbuf *rb) {
+  size_t offset = (rb->first + rb->len) & (rb->nmemb - 1);
+
+  if (rb->len == rb->nmemb) {
+    rb->first = (rb->first + 1) & (rb->nmemb - 1);
+  } else {
+    ++rb->len;
+  }
+
+  return (void *)&rb->buf[offset * rb->size];
+}
+
+void ngtcp2_ringbuf_pop_front(ngtcp2_ringbuf *rb) {
+  rb->first = (rb->first + 1) & (rb->nmemb - 1);
+  --rb->len;
+}
+
+void ngtcp2_ringbuf_pop_back(ngtcp2_ringbuf *rb) {
+  assert(rb->len);
+  --rb->len;
+}
+
 void ngtcp2_ringbuf_resize(ngtcp2_ringbuf *rb, size_t len) {
   assert(len <= rb->nmemb);
   rb->len = len;
@@ -72,4 +111,4 @@ void *ngtcp2_ringbuf_get(ngtcp2_ringbuf *rb, size_t offset) {
   return &rb->buf[offset * rb->size];
 }
 
-size_t ngtcp2_ringbuf_len(ngtcp2_ringbuf *rb) { return rb->len; }
+int ngtcp2_ringbuf_full(ngtcp2_ringbuf *rb) { return rb->len == rb->nmemb; }

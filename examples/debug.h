@@ -26,57 +26,108 @@
 #define DEBUG_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif // HAVE_CONFIG_H
 
 // For travis and PRIu64
 #define __STDC_FORMAT_MACROS
 #include <cinttypes>
-
-#include <chrono>
-#include <map>
+#include <string_view>
 
 #include <ngtcp2/ngtcp2.h>
+#include <nghttp3/nghttp3.h>
 
 namespace ngtcp2 {
 
 namespace debug {
 
-void reset_timestamp();
+int handshake_completed(ngtcp2_conn *conn, void *user_data);
 
-std::chrono::microseconds timestamp();
-
-std::chrono::microseconds ts(std::chrono::steady_clock::time_point base);
-
-void set_color_output(bool f);
-
-void print_timestamp();
-
-void print_indent();
-
-int send_pkt(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd, void *user_data);
-
-int send_frame(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd,
-               const ngtcp2_frame *fr, void *user_data);
-
-int recv_pkt(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd, void *user_data);
-
-int recv_frame(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd,
-               const ngtcp2_frame *fr, void *user_data);
-
-int handshake_completed(std::map<ngtcp2_conn*, std::chrono::steady_clock::time_point> *start_ts, ngtcp2_conn *conn, void *user_data);
-
-int recv_version_negotiation(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd,
-                             const uint32_t *sv, size_t nsv, void *user_data);
-
-int recv_stateless_reset(ngtcp2_conn *conn, const ngtcp2_pkt_hd *hd,
-                         const ngtcp2_pkt_stateless_reset *sr, void *user_data);
-
-void print_transport_params(const ngtcp2_transport_params *params, int type);
+int handshake_confirmed(ngtcp2_conn *conn, void *user_data);
 
 bool packet_lost(double prob);
 
-void print_stream_data(uint64_t stream_id, const uint8_t *data, size_t datalen);
+void print_crypto_data(ngtcp2_crypto_level crypto_level, const uint8_t *data,
+                       size_t datalen);
+
+void print_stream_data(int64_t stream_id, const uint8_t *data, size_t datalen);
+
+void print_initial_secret(const uint8_t *data, size_t len);
+
+void print_client_in_secret(const uint8_t *data, size_t len);
+void print_server_in_secret(const uint8_t *data, size_t len);
+
+void print_handshake_secret(const uint8_t *data, size_t len);
+
+void print_client_hs_secret(const uint8_t *data, size_t len);
+void print_server_hs_secret(const uint8_t *data, size_t len);
+
+void print_client_0rtt_secret(const uint8_t *data, size_t len);
+
+void print_client_1rtt_secret(const uint8_t *data, size_t len);
+void print_server_1rtt_secret(const uint8_t *data, size_t len);
+
+void print_client_pp_key(const uint8_t *data, size_t len);
+void print_server_pp_key(const uint8_t *data, size_t len);
+
+void print_client_pp_iv(const uint8_t *data, size_t len);
+void print_server_pp_iv(const uint8_t *data, size_t len);
+
+void print_client_pp_hp(const uint8_t *data, size_t len);
+void print_server_pp_hp(const uint8_t *data, size_t len);
+
+void print_secrets(const uint8_t *secret, size_t secretlen, const uint8_t *key,
+                   size_t keylen, const uint8_t *iv, size_t ivlen,
+                   const uint8_t *hp, size_t hplen);
+
+void print_secrets(const uint8_t *secret, size_t secretlen, const uint8_t *key,
+                   size_t keylen, const uint8_t *iv, size_t ivlen);
+
+void print_hp_mask(const uint8_t *mask, size_t masklen, const uint8_t *sample,
+                   size_t samplelen);
+
+void log_printf(void *user_data, const char *fmt, ...);
+
+void path_validation(const ngtcp2_path *path,
+                     ngtcp2_path_validation_result res);
+
+void print_http_begin_request_headers(int64_t stream_id);
+
+void print_http_begin_response_headers(int64_t stream_id);
+
+void print_http_header(int64_t stream_id, const nghttp3_rcbuf *name,
+                       const nghttp3_rcbuf *value, uint8_t flags);
+
+void print_http_end_headers(int64_t stream_id);
+
+void print_http_data(int64_t stream_id, const uint8_t *data, size_t datalen);
+
+void print_http_begin_trailers(int64_t stream_id);
+
+void print_http_end_trailers(int64_t stream_id);
+
+void print_http_begin_push_promise(int64_t stream_id, int64_t push_id);
+
+void print_http_push_promise(int64_t stream_id, int64_t push_id,
+                             const nghttp3_rcbuf *name,
+                             const nghttp3_rcbuf *value, uint8_t flags);
+
+void print_http_end_push_promise(int64_t stream_id, int64_t push_id);
+
+void cancel_push(int64_t push_id, int64_t stream_id);
+
+void push_stream(int64_t push_id, int64_t stream_id);
+
+void print_http_request_headers(int64_t stream_id, const nghttp3_nv *nva,
+                                size_t nvlen);
+
+void print_http_response_headers(int64_t stream_id, const nghttp3_nv *nva,
+                                 size_t nvlen);
+
+void print_http_push_promise(int64_t stream_id, int64_t push_id,
+                             const nghttp3_nv *nva, size_t nvlen);
+
+std::string_view secret_title(ngtcp2_crypto_level level);
 
 } // namespace debug
 

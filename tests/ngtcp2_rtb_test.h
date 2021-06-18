@@ -26,10 +26,13 @@
 #define NGTCP2_RTB_TEST_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 void test_ngtcp2_rtb_add(void);
 void test_ngtcp2_rtb_recv_ack(void);
+void test_ngtcp2_rtb_lost_pkt_ts(void);
+void test_ngtcp2_rtb_remove_expired_lost_pkt(void);
+void test_ngtcp2_rtb_remove_excessive_lost_pkt(void);
 
 #endif /* NGTCP2_RTB_TEST_H */

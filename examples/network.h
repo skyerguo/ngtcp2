@@ -27,36 +27,32 @@
 #define NETWORK_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif // HAVE_CONFIG_H
 
 #include <sys/types.h>
-#include <ifaddrs.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/ether.h>
-#include <linux/if_packet.h>
-#include <linux/ip.h>
-#include <linux/udp.h>
 #ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
+#  include <sys/socket.h>
 #endif // HAVE_SYS_SOCKET_H
 #include <sys/un.h>
 #ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
+#  include <netinet/in.h>
 #endif // HAVE_NETINET_IN_H
 #ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
+#  include <arpa/inet.h>
 #endif // HAVE_ARPA_INET_H
 
+#include <array>
 
 namespace ngtcp2 {
 
 enum network_error {
   NETWORK_ERR_OK = 0,
-  NETWORK_ERR_SEND_FATAL = -10,
-  NETWORK_ERR_SEND_NON_FATAL = -11,
+  NETWORK_ERR_FATAL = -10,
+  NETWORK_ERR_SEND_BLOCKED = -11,
   NETWORK_ERR_CLOSE_WAIT = -12,
+  NETWORK_ERR_RETRY = -13,
+  NETWORK_ERR_DROP_CONN = -14,
 };
 
 union sockaddr_union {
@@ -69,6 +65,18 @@ union sockaddr_union {
 struct Address {
   socklen_t len;
   union sockaddr_union su;
+  uint32_t ifindex;
+};
+
+struct PathStorage {
+  PathStorage() {
+    path.local.addr = reinterpret_cast<sockaddr *>(&local_addrbuf);
+    path.remote.addr = reinterpret_cast<sockaddr *>(&remote_addrbuf);
+  }
+
+  ngtcp2_path path;
+  sockaddr_storage local_addrbuf;
+  sockaddr_storage remote_addrbuf;
 };
 
 } // namespace ngtcp2

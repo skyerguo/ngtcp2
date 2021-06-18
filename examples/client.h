@@ -26,230 +26,141 @@
 #define CLIENT_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif // HAVE_CONFIG_H
 
 #include <vector>
 #include <deque>
 #include <map>
+#include <string_view>
+#include <memory>
 
 #include <ngtcp2/ngtcp2.h>
-
-#include <openssl/ssl.h>
+#include <ngtcp2/ngtcp2_crypto.h>
+#include <nghttp3/nghttp3.h>
 
 #include <ev.h>
 
+#include "client_base.h"
+#include "tls_client_context.h"
+#include "tls_client_session.h"
 #include "network.h"
-#include "crypto.h"
-#include "template.h"
+#include "shared.h"
 
 using namespace ngtcp2;
 
-namespace {
-    int create_sock(Address &remote_addr, const char *remote_ip, const char *addr, const char *port);
-}
-
-struct Config {
-  // tx_loss_prob is probability of losing outgoing packet.
-  double tx_loss_prob;
-  // rx_loss_prob is probability of losing incoming packet.
-  double rx_loss_prob;
-  // fd is a file descriptor to read input for streams.
-  int fd;
-  // ciphers is the list of enabled ciphers.
-  const char *ciphers;
-  // groups is the list of supported groups.
-  const char *groups;
-  // interactive is true if interactive input mode is on.
-  bool interactive;
-  // nstreams is the number of streams to open.
-  size_t nstreams;
-  size_t concurrency =  1;
-
-  // data is the pointer to memory region which maps file denoted by
-  // fd.
-  uint8_t *data;
-  // datalen is the length of file denoted by fd.
-  size_t datalen;
-  // version is a QUIC version to use.
-  uint32_t version;
-  // quiet suppresses the output normally shown except for the error
-  // messages.
-  bool quiet;
-  // timeout is an idle timeout for QUIC connection.
-  uint32_t timeout;
-  // session_file is a path to a file to write, and read TLS session.
-  const char *session_file;
-  // tp_file is a path to a file to write, and read QUIC transport parameters.
-  const char *tp_file;
-  const char *website;
-  const char *website_root_path;
-  uint32_t website_www_opt;
-
-  const char *client_ip;
-  uint64_t client_process;
-  uint64_t time_stamp;
-
-  const char *remote_ip;
-  const char *addr;
-  const char *port;
-};
-
-struct Buffer {
-  Buffer(const uint8_t *data, size_t datalen);
-  Buffer(uint8_t *begin, uint8_t *end);
-  explicit Buffer(size_t datalen);
-  Buffer();
-
-  size_t size() const { return tail - head; }
-  size_t left() const { return buf.data() + buf.size() - tail; }
-  uint8_t *const wpos() { return tail; }
-  const uint8_t *rpos() const { return head; }
-  void seek(size_t len) { head += len; }
-  void push(size_t len) { tail += len; }
-  void reset() {
-    head = begin;
-    tail = begin;
-  }
-  size_t bufsize() const { return tail - begin; }
-
-  std::vector<uint8_t> buf;
-  // begin points to the beginning of the buffer.  This might point to
-  // buf.data() if a buffer space is allocated by this object.  It is
-  // also allowed to point to the external shared buffer.
-  uint8_t *begin;
-  // head points to the position of the buffer where read should
-  // occur.
-  uint8_t *head;
-  // tail points to the position of the buffer where write should
-  // occur.
-  uint8_t *tail;
-};
-
 struct Stream {
-  Stream(uint64_t stream_id);
+  Stream(const Request &req, int64_t stream_id);
   ~Stream();
 
-  void buffer_file();
+  int open_file(const std::string_view &path);
 
-  uint64_t stream_id;
-  std::deque<Buffer> streambuf;
-  // streambuf_idx is the index in streambuf, which points to the
-  // buffer to send next.
-  size_t streambuf_idx;
-  // tx_stream_offset is the offset where all data before offset is
-  // acked by the remote endpoint.
-  uint64_t tx_stream_offset;
-  bool should_send_fin;
+  Request req;
+  int64_t stream_id;
+  int fd;
 };
 
-class QuicMigrationListener {
-public:
-  QuicMigrationListener() {}
-  virtual ~QuicMigrationListener() {}
-  virtual int OnMigration(uint32_t peer_address) = 0;
+class Client;
+
+struct Endpoint {
+  Address addr;
+  ev_io rev;
+  Client *client;
+  int fd;
 };
 
-class Client: public QuicMigrationListener {
+class Client : public ClientBase {
 public:
-  Client(struct ev_loop *loop, SSL_CTX *ssl_ctx);
+  Client(struct ev_loop *loop);
   ~Client();
 
-  int init(int fd, const Address &remote_addr, const char *addr, int datafd,
-           uint32_t version);
+  int init(int fd, const Address &local_addr, const Address &remote_addr,
+           const char *addr, const char *port, uint32_t version,
+           const TLSClientContext &tls_ctx);
   void disconnect();
-  void disconnect(int liberr);
-  void close();
 
-  int tls_handshake(bool initial = false);
-  int read_tls();
-  int on_read(bool primary);
-  int on_write(bool primary);
-  int on_write_stream(uint64_t stream_id, uint8_t fin, Buffer &data, bool primary);
-  int feed_data(uint8_t *data, size_t datalen);
+  void start_wev();
+
+  int on_read(const Endpoint &ep);
+  int on_write();
+  int write_streams();
+  int feed_data(const Endpoint &ep, const sockaddr *sa, socklen_t salen,
+                const ngtcp2_pkt_info *pi, uint8_t *data, size_t datalen);
+  int handle_expiry();
   void schedule_retransmit();
+  int handshake_completed();
+  int handshake_confirmed();
 
-  int write_client_handshake(const uint8_t *data, size_t datalen);
-  size_t read_client_handshake(const uint8_t **pdest);
+  int send_packet(const Endpoint &ep, const ngtcp2_addr &remote_addr,
+                  unsigned int ecn, const uint8_t *data, size_t datalen);
+  int on_stream_close(int64_t stream_id, uint64_t app_error_code);
+  int on_extend_max_streams();
+  int handle_error();
+  int make_stream_early();
+  int change_local_addr();
+  void start_change_local_addr_timer();
+  int update_key(uint8_t *rx_secret, uint8_t *tx_secret,
+                 ngtcp2_crypto_aead_ctx *rx_aead_ctx, uint8_t *rx_iv,
+                 ngtcp2_crypto_aead_ctx *tx_aead_ctx, uint8_t *tx_iv,
+                 const uint8_t *current_rx_secret,
+                 const uint8_t *current_tx_secret, size_t secretlen);
+  int initiate_key_update();
+  void start_key_update_timer();
+  void start_delay_stream_timer();
 
-  size_t read_server_handshake(uint8_t *buf, size_t buflen);
-  void write_server_handshake(const uint8_t *data, size_t datalen);
+  int select_preferred_address(Address &selected_addr,
+                               const ngtcp2_preferred_addr *paddr);
 
-  int setup_crypto_context();
-  int setup_early_crypto_context();
-  ssize_t hs_encrypt_data(uint8_t *dest, size_t destlen,
-                          const uint8_t *plaintext, size_t plaintextlen,
-                          const uint8_t *key, size_t keylen,
-                          const uint8_t *nonce, size_t noncelen,
-                          const uint8_t *ad, size_t adlen);
-  ssize_t hs_decrypt_data(uint8_t *dest, size_t destlen,
-                          const uint8_t *ciphertext, size_t ciphertextlen,
-                          const uint8_t *key, size_t keylen,
-                          const uint8_t *nonce, size_t noncelen,
-                          const uint8_t *ad, size_t adlen);
-  ssize_t encrypt_data(uint8_t *dest, size_t destlen, const uint8_t *plaintext,
-                       size_t plaintextlen, const uint8_t *key, size_t keylen,
-                       const uint8_t *nonce, size_t noncelen, const uint8_t *ad,
-                       size_t adlen);
-  ssize_t decrypt_data(uint8_t *dest, size_t destlen, const uint8_t *ciphertext,
-                       size_t ciphertextlen, const uint8_t *key, size_t keylen,
-                       const uint8_t *nonce, size_t noncelen, const uint8_t *ad,
-                       size_t adlen);
-  ngtcp2_conn *conn() const;
-  int send_packet(bool primary);
-  int start_interactive_input();
-  int send_interactive_input();
-  int stop_interactive_input();
-  int remove_tx_stream_data(uint64_t stream_id, uint64_t offset,
-                            size_t datalen);
-  void on_stream_close(uint64_t stream_id);
-  int on_extend_max_stream_id(uint64_t max_stream_id);
-  int handle_error(int liberr);
-  void make_stream_early();
-  void handle_early_data();
-  virtual int OnMigration(uint32_t peer_address);
-  int fd2() { return fd2_; }
-  int send_http_resq(uint64_t stream_id, char *url);
+  int setup_httpconn();
+  int submit_http_request(const Stream *stream);
+  int recv_stream_data(uint32_t flags, int64_t stream_id, const uint8_t *data,
+                       size_t datalen);
+  int acked_stream_data_offset(int64_t stream_id, uint64_t datalen);
+  int http_acked_stream_data(int64_t stream_id, size_t datalen);
+  void http_consume(int64_t stream_id, size_t nconsumed);
+  void http_write_data(int64_t stream_id, const uint8_t *data, size_t datalen);
+  int on_stream_reset(int64_t stream_id);
+  int extend_max_stream_data(int64_t stream_id, uint64_t max_data);
+  int send_stop_sending(int64_t stream_id, uint64_t app_error_code);
+  int http_stream_close(int64_t stream_id, uint64_t app_error_code);
+
+  void reset_idle_timer();
+
+  void idle_timeout();
 
 private:
+  std::vector<Endpoint> endpoints_;
   Address remote_addr_;
   size_t max_pktlen_;
   ev_io wev_;
-  ev_io rev_;
-  ev_io wev2_;
-  ev_io rev2_;
-  ev_io stdinrev_;
   ev_timer timer_;
   ev_timer rttimer_;
+  ev_timer change_local_addr_timer_;
+  ev_timer key_update_timer_;
+  ev_timer delay_stream_timer_;
   ev_signal sigintev_;
   struct ev_loop *loop_;
-  SSL_CTX *ssl_ctx_;
-  SSL *ssl_;
-  int fd_;
-  sockaddr_in dest_addr_;
-  int fd2_;
-  sockaddr_in dest_addr2_;
-  bool migrated_;
-  int datafd_;
-  std::map<uint32_t, std::shared_ptr<Stream>> streams_;
-  std::deque<Buffer> chandshake_;
-  // chandshake_idx_ is the index in chandshake_, which points to the
-  // buffer to read next.
-  size_t chandshake_idx_;
-  uint64_t tx_stream0_offset_;
-  std::vector<uint8_t> shandshake_;
-  size_t nsread_;
-  ngtcp2_conn *conn_;
-  crypto::Context hs_crypto_ctx_;
-  crypto::Context crypto_ctx_;
-  // common buffer used to store packet data before sending
-  Buffer sendbuf_;
-  uint64_t last_stream_id_;
+  std::map<int64_t, std::unique_ptr<Stream>> streams_;
+  nghttp3_conn *httpconn_;
+  // addr_ is the server host address.
+  const char *addr_;
+  // port_ is the server port.
+  const char *port_;
   // nstreams_done_ is the number of streams opened.
-  uint64_t nstreams_done_;
-  // resumption_ is true if client attempts to resume session.
-  bool resumption_;
-  bool late_bound_;
+  size_t nstreams_done_;
+  // nstreams_closed_ is the number of streams get closed.
+  size_t nstreams_closed_;
+  // nkey_update_ is the number of key update occurred.
+  size_t nkey_update_;
+  uint32_t version_;
+  // early_data_ is true if client attempts to do 0RTT data transfer.
+  bool early_data_;
+  // should_exit_ is true if client should exit rather than waiting
+  // for timeout.
+  bool should_exit_;
+  // handshake_confirmed_ gets true after handshake has been
+  // confirmed.
+  bool handshake_confirmed_;
 };
 
 #endif // CLIENT_H

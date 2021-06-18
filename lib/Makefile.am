@@ -1,6 +1,6 @@
 # ngtcp2
 
-# Copyright (c) 2016 ngtcp2
+# Copyright (c) 2016 - 2019 ngtcp2 contributors
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -24,6 +24,7 @@ SUBDIRS = includes
 
 AM_CFLAGS = $(WARNCFLAGS) $(DEBUGCFLAGS) $(EXTRACFLAG)
 AM_CPPFLAGS = -I$(srcdir)/includes -I$(builddir)/includes -DBUILDING_NGTCP2
+AM_LDFLAGS = ${LIBTOOL_LDFLAGS}
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libngtcp2.pc
@@ -35,6 +36,7 @@ OBJECTS = \
 	ngtcp2_pkt.c \
 	ngtcp2_conv.c \
 	ngtcp2_str.c \
+	ngtcp2_vec.c \
 	ngtcp2_buf.c \
 	ngtcp2_conn.c \
 	ngtcp2_mem.c \
@@ -50,12 +52,23 @@ OBJECTS = \
 	ngtcp2_strm.c \
 	ngtcp2_idtr.c \
 	ngtcp2_gaptr.c \
-	ngtcp2_ringbuf.c
+	ngtcp2_ringbuf.c \
+	ngtcp2_log.c \
+	ngtcp2_qlog.c \
+	ngtcp2_cid.c \
+	ngtcp2_ksl.c \
+	ngtcp2_cc.c \
+	ngtcp2_addr.c \
+	ngtcp2_path.c \
+	ngtcp2_pv.c \
+	ngtcp2_version.c \
+	ngtcp2_rst.c
 
 HFILES = \
 	ngtcp2_pkt.h \
 	ngtcp2_conv.h \
 	ngtcp2_str.h \
+	ngtcp2_vec.h \
 	ngtcp2_buf.h \
 	ngtcp2_conn.h \
 	ngtcp2_mem.h \
@@ -72,7 +85,17 @@ HFILES = \
 	ngtcp2_idtr.h \
 	ngtcp2_gaptr.h \
 	ngtcp2_ringbuf.h \
-	ngtcp2_macro.h
+	ngtcp2_log.h \
+	ngtcp2_qlog.h \
+	ngtcp2_cid.h \
+	ngtcp2_ksl.h \
+	ngtcp2_cc.h \
+	ngtcp2_addr.h \
+	ngtcp2_path.h \
+	ngtcp2_pv.h \
+	ngtcp2_macro.h \
+	ngtcp2_rst.h \
+	ngtcp2_rcvry.h
 
 libngtcp2_la_SOURCES = $(HFILES) $(OBJECTS)
 libngtcp2_la_LDFLAGS = -no-undefined \

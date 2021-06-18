@@ -28,41 +28,37 @@
 #include <assert.h>
 
 #include "ngtcp2_str.h"
+#include "ngtcp2_pkt.h"
 
 uint64_t ngtcp2_get_uint64(const uint8_t *p) {
   uint64_t n;
   memcpy(&n, p, 8);
-  return bswap64(n);
+  return ngtcp2_ntohl64(n);
 }
 
 uint64_t ngtcp2_get_uint48(const uint8_t *p) {
   uint64_t n = 0;
   memcpy(((uint8_t *)&n) + 2, p, 6);
-  return bswap64(n);
+  return ngtcp2_ntohl64(n);
 }
 
 uint32_t ngtcp2_get_uint32(const uint8_t *p) {
   uint32_t n;
   memcpy(&n, p, 4);
-  return ntohl(n);
+  return ngtcp2_ntohl(n);
 }
 
 uint32_t ngtcp2_get_uint24(const uint8_t *p) {
   uint32_t n = 0;
   memcpy(((uint8_t *)&n) + 1, p, 3);
-  return ntohl(n);
+  return ngtcp2_ntohl(n);
 }
 
 uint16_t ngtcp2_get_uint16(const uint8_t *p) {
   uint16_t n;
   memcpy(&n, p, 2);
-  return ntohs(n);
+  return ngtcp2_ntohs(n);
 }
-
-/* varintlen_def is an array of required length of variable-length
-   integer encoding.  Use 2 most significant bits as an index to get
-   the length in bytes. */
-static size_t varintlen_def[] = {1, 2, 4, 8};
 
 uint64_t ngtcp2_get_varint(size_t *plen, const uint8_t *p) {
   union {
@@ -72,53 +68,68 @@ uint64_t ngtcp2_get_varint(size_t *plen, const uint8_t *p) {
     uint64_t n64;
   } n;
 
-  *plen = varintlen_def[*p >> 6];
+  *plen = (size_t)(1u << (*p >> 6));
 
   switch (*plen) {
   case 1:
     return *p;
-  case 2: {
+  case 2:
     memcpy(&n, p, 2);
     n.b[0] &= 0x3f;
-    return ntohs(n.n16);
-  }
-  case 4: {
+    return ngtcp2_ntohs(n.n16);
+  case 4:
     memcpy(&n, p, 4);
     n.b[0] &= 0x3f;
-    return ntohl(n.n32);
-  }
-  case 8: {
+    return ngtcp2_ntohl(n.n32);
+  case 8:
     memcpy(&n, p, 8);
     n.b[0] &= 0x3f;
-    return bswap64(n.n64);
-  }
+    return ngtcp2_ntohl64(n.n64);
+  default:
+    assert(0);
   }
 
-  assert(0);
+  return 0;
+}
+
+int64_t ngtcp2_get_pkt_num(const uint8_t *p, size_t pkt_numlen) {
+  switch (pkt_numlen) {
+  case 1:
+    return *p;
+  case 2:
+    return (int64_t)ngtcp2_get_uint16(p);
+  case 3:
+    return (int64_t)ngtcp2_get_uint24(p);
+  case 4:
+    return (int64_t)ngtcp2_get_uint32(p);
+  default:
+    assert(0);
+    abort();
+  }
 }
 
 uint8_t *ngtcp2_put_uint64be(uint8_t *p, uint64_t n) {
-  n = bswap64(n);
+  n = ngtcp2_htonl64(n);
   return ngtcp2_cpymem(p, (const uint8_t *)&n, sizeof(n));
 }
 
 uint8_t *ngtcp2_put_uint48be(uint8_t *p, uint64_t n) {
-  n = bswap64(n);
+  n = ngtcp2_htonl64(n);
   return ngtcp2_cpymem(p, ((const uint8_t *)&n) + 2, 6);
 }
 
 uint8_t *ngtcp2_put_uint32be(uint8_t *p, uint32_t n) {
-  n = htonl(n);
+  n = ngtcp2_htonl(n);
   return ngtcp2_cpymem(p, (const uint8_t *)&n, sizeof(n));
 }
 
 uint8_t *ngtcp2_put_uint24be(uint8_t *p, uint32_t n) {
-  n = htonl(n);
+  n = ngtcp2_htonl(n);
   return ngtcp2_cpymem(p, ((const uint8_t *)&n) + 1, 3);
 }
 
 uint8_t *ngtcp2_put_uint16be(uint8_t *p, uint16_t n) {
-  n = htons(n);
+  n = ngtcp2_htons(n);
   return ngtcp2_cpymem(p, (const uint8_t *)&n, sizeof(n));
 }
 
@@ -144,8 +155,39 @@ uint8_t *ngtcp2_put_varint(uint8_t *p, uint64_t n) {
   return rv;
 }
 
+uint8_t *ngtcp2_put_varint14(uint8_t *p, uint16_t n) {
+  uint8_t *rv;
+
+  assert(n < 16384);
+
+  rv = ngtcp2_put_uint16be(p, n);
+  *p |= 0x40;
+
+  return rv;
+}
+
+uint8_t *ngtcp2_put_pkt_num(uint8_t *p, int64_t pkt_num, size_t len) {
+  switch (len) {
+  case 1:
+    *p++ = (uint8_t)pkt_num;
+    return p;
+  case 2:
+    ngtcp2_put_uint16be(p, (uint16_t)pkt_num);
+    return p + 2;
+  case 3:
+    ngtcp2_put_uint24be(p, (uint32_t)pkt_num);
+    return p + 3;
+  case 4:
+    ngtcp2_put_uint32be(p, (uint32_t)pkt_num);
+    return p + 4;
+  default:
+    assert(0);
+    abort();
+  }
+}
+
 size_t ngtcp2_get_varint_len(const uint8_t *p) {
-  return varintlen_def[*p >> 6];
+  return (size_t)(1u << (*p >> 6));
 }
 
 size_t ngtcp2_put_varint_len(uint64_t n) {
@@ -160,4 +202,56 @@ size_t ngtcp2_put_varint_len(uint64_t n) {
   }
   assert(n < 4611686018427387904ULL);
   return 8;
+}
+
+int64_t ngtcp2_nth_server_bidi_id(uint64_t n) {
+  if (n == 0) {
+    return 0;
+  }
+
+  if ((NGTCP2_MAX_VARINT >> 2) < n - 1) {
+    return NGTCP2_MAX_SERVER_STREAM_ID_BIDI;
+  }
+
+  return (int64_t)(((n - 1) << 2) | 0x01);
+}
+
+int64_t ngtcp2_nth_client_bidi_id(uint64_t n) {
+  if (n == 0) {
+    return 0;
+  }
+
+  if ((NGTCP2_MAX_VARINT >> 2) < n - 1) {
+    return NGTCP2_MAX_CLIENT_STREAM_ID_BIDI;
+  }
+
+  return (int64_t)((n - 1) << 2);
+}
+
+int64_t ngtcp2_nth_server_uni_id(uint64_t n) {
+  if (n == 0) {
+    return 0;
+  }
+
+  if ((NGTCP2_MAX_VARINT >> 2) < n - 1) {
+    return NGTCP2_MAX_SERVER_STREAM_ID_UNI;
+  }
+
+  return (int64_t)(((n - 1) << 2) | 0x03);
+}
+
+int64_t ngtcp2_nth_client_uni_id(uint64_t n) {
+  if (n == 0) {
+    return 0;
+  }
+
+  if ((NGTCP2_MAX_VARINT >> 2) < n - 1) {
+    return NGTCP2_MAX_CLIENT_STREAM_ID_UNI;
+  }
+
+  return (int64_t)(((n - 1) << 2) | 0x02);
+}
+
+uint64_t ngtcp2_ord_stream_id(int64_t stream_id) {
+  return (uint64_t)(stream_id >> 2) + 1;
 }

@@ -26,24 +26,35 @@
 #define NGTCP2_PPE_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
 
+#include "ngtcp2_pkt.h"
 #include "ngtcp2_buf.h"
 #include "ngtcp2_crypto.h"
 
 /*
  * ngtcp2_ppe is the Protected Packet Encoder.
  */
-typedef struct {
+typedef struct ngtcp2_ppe {
   ngtcp2_buf buf;
-  ngtcp2_crypto_ctx *ctx;
+  ngtcp2_crypto_cc *cc;
   /* hdlen is the number of bytes for packet header written in buf. */
   size_t hdlen;
+  /* len_offset is the offset to Length field. */
+  size_t len_offset;
+  /* pkt_num_offset is the offset to packet number field. */
+  size_t pkt_num_offset;
+  /* pkt_numlen is the number of bytes used to encode a packet
+     number */
+  size_t pkt_numlen;
+  /* sample_offset is the offset to sample for packet number
+     encryption. */
+  size_t sample_offset;
   /* pkt_num is the packet number written in buf. */
-  uint64_t pkt_num;
+  int64_t pkt_num;
   /* nonce is the buffer to store nonce.  It should be equal or longer
      than then length of IV. */
   uint8_t nonce[32];
@@ -53,7 +64,7 @@ typedef struct {
  * ngtcp2_ppe_init initializes |ppe| with the given buffer.
  */
 void ngtcp2_ppe_init(ngtcp2_ppe *ppe, uint8_t *out, size_t outlen,
-                     ngtcp2_crypto_ctx *cctx);
+                     ngtcp2_crypto_cc *cc);
 
 /*
  * ngtcp2_ppe_encode_hd encodes |hd|.
@@ -88,13 +99,19 @@ int ngtcp2_ppe_encode_frame(ngtcp2_ppe *ppe, ngtcp2_frame *fr);
  * NGTCP2_ERR_CALLBACK_FAILURE
  *     User-defined callback function failed.
  */
-ssize_t ngtcp2_ppe_final(ngtcp2_ppe *ppe, const uint8_t **ppkt);
+ngtcp2_ssize ngtcp2_ppe_final(ngtcp2_ppe *ppe, const uint8_t **ppkt);
 
 /*
  * ngtcp2_ppe_left returns the number of bytes left to write
  * additional frames.  This does not count AEAD overhead.
  */
 size_t ngtcp2_ppe_left(ngtcp2_ppe *ppe);
+
+/*
+ * ngtcp2_ppe_pktlen returns the provisional packet length.  It
+ * includes AEAD overhead.
+ */
+size_t ngtcp2_ppe_pktlen(ngtcp2_ppe *ppe);
 
 /**
  * @function
@@ -103,5 +120,34 @@ size_t ngtcp2_ppe_left(ngtcp2_ppe *ppe);
  * buffer.  This function returns the number of bytes padded.
  */
 size_t ngtcp2_ppe_padding(ngtcp2_ppe *ppe);
+
+/*
+ * ngtcp2_ppe_padding_hp_sample adds PADDING frame if the current
+ * payload does not have enough space for header protection sample.
+ * This function should be called just before calling
+ * ngtcp2_ppe_final().
+ *
+ * This function returns the number of bytes added as padding.
+ */
+size_t ngtcp2_ppe_padding_hp_sample(ngtcp2_ppe *ppe);
+
+/*
+ * ngtcp2_ppe_padding_size adds PADDING frame so that the size of QUIC
+ * packet is at least |n| bytes long.  If it is unable to add PADDING
+ * in that way, this function still adds PADDING frame as much as
+ * possible.  This function should be called just before calling
+ * ngtcp2_ppe_final().  For Short packet, this function should be
+ * called instead of ngtcp2_ppe_padding_hp_sample.
+ *
+ * This function returns the number of bytes added as padding.
+ */
+size_t ngtcp2_ppe_padding_size(ngtcp2_ppe *ppe, size_t n);
+
+/*
+ * ngtcp2_ppe_ensure_hp_sample returns nonzero if the buffer has
+ * enough space for header protection sample.  This should be called
+ * right after packet header is written.
+ */
+int ngtcp2_ppe_ensure_hp_sample(ngtcp2_ppe *ppe);
 
 #endif /* NGTCP2_PPE_H */

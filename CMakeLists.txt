@@ -23,8 +23,12 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 cmake_minimum_required(VERSION 3.1)
+
+# Allow setting VISIBILITY_PRESET on static library targets without warning.
+cmake_policy(SET CMP0063 NEW)
+
 # XXX using 0.1.90 instead of 0.1.0-DEV
-project(nghttp2 VERSION 0.1.90)
+project(ngtcp2 VERSION 0.1.90)
 
 # See versioning rule:
 #  http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
@@ -32,7 +36,7 @@ set(LT_CURRENT  0)
 set(LT_REVISION 0)
 set(LT_AGE      0)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
 include(Version)
 
 math(EXPR LT_SOVERSION "${LT_CURRENT} - ${LT_AGE}")
@@ -63,8 +67,14 @@ foreach(_build_type "Release" "MinSizeRel" "RelWithDebInfo")
 endforeach()
 
 
-find_package(OpenSSL 1.1.1)
+if(ENABLE_GNUTLS)
+  find_package(GnuTLS 3.7.2)
+endif()
+if(ENABLE_OPENSSL)
+  find_package(OpenSSL 1.1.1)
+endif()
 find_package(Libev 4.11)
+find_package(Libnghttp3 0.0.0)
 find_package(CUnit 2.1)
 enable_testing()
 set(HAVE_CUNIT      ${CUNIT_FOUND})
@@ -72,26 +82,79 @@ if(HAVE_CUNIT)
   add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 endif()
 
-# openssl (for examples)
-set(HAVE_OPENSSL    ${OPENSSL_FOUND})
-if(OPENSSL_FOUND)
+# OpenSSL (required for libngtcp2_crypto_openssl and examples)
+include(CMakePushCheckState)
+include(CheckSymbolExists)
+if(ENABLE_OPENSSL AND OPENSSL_FOUND)
+  # Until OpenSSL gains mainline support for QUIC, check for a patched version.
+  cmake_push_check_state()
+  set(CMAKE_REQUIRED_INCLUDES   "${OPENSSL_INCLUDE_DIR}")
+  set(CMAKE_REQUIRED_LIBRARIES  "${OPENSSL_LIBRARIES}")
+  check_symbol_exists(SSL_is_quic "openssl/ssl.h" HAVE_SSL_IS_QUIC)
+  if(NOT HAVE_SSL_IS_QUIC)
+    message(WARNING "Disabling OpenSSL due to lack of QUIC support in ${OPENSSL_LIBRARIES}")
+  endif()
+  cmake_pop_check_state()
+endif()
+if(ENABLE_OPENSSL AND HAVE_SSL_IS_QUIC)
   set(OPENSSL_INCLUDE_DIRS  ${OPENSSL_INCLUDE_DIR})
+  set(HAVE_OPENSSL TRUE)
+  set(HAVE_CRYPTO TRUE)
 else()
+  set(HAVE_OPENSSL FALSE)
   set(OPENSSL_INCLUDE_DIRS  "")
   set(OPENSSL_LIBRARIES     "")
 endif()
-# libev (for examples)
+
+# BoringSSL (required for libngtcp2_crypto_boringssl)
+if(ENABLE_BORINGSSL)
+  cmake_push_check_state()
+  set(CMAKE_REQUIRED_INCLUDES   "${BORINGSSL_INCLUDE_DIR}")
+  set(CMAKE_REQUIRED_LIBRARIES  "${BORINGSSL_LIBRARIES}")
+  check_symbol_exists(SSL_set_quic_early_data_context "openssl/ssl.h" HAVE_SSL_SET_QUIC_EARLY_DATA_CONTEXT)
+  if(NOT HAVE_SSL_SET_QUIC_EARLY_DATA_CONTEXT)
+    message(WARNING "Disabling BoringSSL due to lack of QUIC support in ${BORINGSSL_LIBRARIES}")
+  endif()
+  cmake_pop_check_state()
+endif()
+if(ENABLE_BORINGSSL AND HAVE_SSL_SET_QUIC_EARLY_DATA_CONTEXT)
+  set(BORINGSSL_INCLUDE_DIRS  ${BORINGSSL_INCLUDE_DIR})
+  set(HAVE_BORINGSSL TRUE)
+  set(HAVE_CRYPTO TRUE)
+else()
+  set(HAVE_BORINGSSL FALSE)
+  set(BORINGSSL_INCLUDE_DIRS  "")
+  set(BORINGSSL_LIBRARIES     "")
+endif()
+
+# libev (required for examples)
 set(HAVE_LIBEV      ${LIBEV_FOUND})
-set(HAVE_LIBMYSQLCLIENT      ${LIBMYSQLCLIENT_FOUND})
+# libnghttp3 (required for examples)
+set(HAVE_LIBNGHTTP3 ${LIBNGHTTP3_FOUND})
+
+# GnuTLS (required for libngtcp2_crypto_gnutls)
+if(ENABLE_GNUTLS AND GNUTLS_FOUND)
+  set(GNUTLS_INCLUDE_DIRS  ${GNUTLS_INCLUDE_DIR})
+  set(HAVE_GNUTLS TRUE)
+  set(HAVE_CRYPTO TRUE)
+else()
+  set(HAVE_GNUTLS FALSE)
+  set(GNUTLS_INCLUDE_DIRS  "")
+  set(GNUTLS_LIBRARIES     "")
+endif()
 
 # Checks for header files.
 include(CheckIncludeFile)
 check_include_file("arpa/inet.h"   HAVE_ARPA_INET_H)
+check_include_file("netinet/in.h"  HAVE_NETINET_IN_H)
 check_include_file("stddef.h"      HAVE_STDDEF_H)
 check_include_file("stdint.h"      HAVE_STDINT_H)
 check_include_file("stdlib.h"      HAVE_STDLIB_H)
 check_include_file("string.h"      HAVE_STRING_H)
 check_include_file("unistd.h"      HAVE_UNISTD_H)
+check_include_file("sys/endian.h"  HAVE_SYS_ENDIAN_H)
+check_include_file("endian.h"      HAVE_ENDIAN_H)
+check_include_file("byteswap.h"    HAVE_BYTESWAP_H)
 
 include(CheckTypeSize)
 # Checks for typedefs, structures, and compiler characteristics.
@@ -99,9 +162,19 @@ include(CheckTypeSize)
 check_type_size("ssize_t" SIZEOF_SSIZE_T)
 if(SIZEOF_SSIZE_T STREQUAL "")
   # ssize_t is a signed type in POSIX storing at least -1.
-  # Set it to "int" to match the behavior of AC_TYPE_SSIZE_T (autotools).
-  set(ssize_t int)
+  # Set it to a pointer-size int.
+  set(ssize_t ptrdiff_t)
 endif()
+
+# Checks for symbols.
+if(HAVE_ENDIAN_H)
+  check_symbol_exists(be64toh "endian.h" HAVE_BE64TOH)
+endif()
+if(HAVE_SYS_ENDIAN_H)
+  check_symbol_exists(be64toh "sys/endian.h" HAVE_BE64TOH)
+endif()
+
+check_symbol_exists(bswap_64 "byteswap.h" HAVE_BSWAP_64)
 
 include(ExtractValidFlags)
 set(WARNCFLAGS)
@@ -182,7 +255,6 @@ else()
   )
 
   if(ENABLE_ASAN)
-    include(CMakePushCheckState)
     cmake_push_check_state()
     set(CMAKE_REQUIRED_LIBRARIES "-fsanitize=address")
     check_c_compiler_flag(-fsanitize=address C__fsanitize_address_VALID)
@@ -226,6 +298,10 @@ foreach(name
   configure_file("${name}.in" "${name}" @ONLY)
 endforeach()
 
+if(APPLE)
+  add_definitions(-D__APPLE_USE_RFC_3542)
+endif()
+
 include_directories(
   "${CMAKE_CURRENT_BINARY_DIR}" # for config.h
 )
@@ -236,6 +312,7 @@ install(FILES README.rst DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 
 add_subdirectory(lib)
 add_subdirectory(tests)
+add_subdirectory(crypto)
 add_subdirectory(third-party)
 add_subdirectory(examples)
 
@@ -255,10 +332,14 @@ message(STATUS "summary of build options:
       CXXFLAGS:       ${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
       WARNCFLAGS:     ${WARNCFLAGS}
       WARNCXXFLAGS:   ${WARNCXXFLAGS}
+    Library:
+      Shared:         ${BUILD_SHARED_LIBS}
     Test:
       CUnit:          ${HAVE_CUNIT} (LIBS='${CUNIT_LIBRARIES}')
     Libs:
       OpenSSL:        ${HAVE_OPENSSL} (LIBS='${OPENSSL_LIBRARIES}')
       Libev:          ${HAVE_LIBEV} (LIBS='${LIBEV_LIBRARIES}')
-      Libmysqlclient: ${HAVE_LIBMYSQLCLIENT} (LIBS='${LIBMYSQLCLIENT_LIBRARIES})
+      Libnghttp3:     ${HAVE_LIBNGHTTP3} (LIBS='${LIBNGHTTP3_LIBRARIES}')
+      GnuTLS:         ${HAVE_GNUTLS} (LIBS='${GNUTLS_LIBRARIES}')
+      BoringSSL:      ${HAVE_BORINGSSL} (LIBS='${BORINGSSL_LIBRARIES}')
 ")

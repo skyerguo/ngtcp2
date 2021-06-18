@@ -26,365 +26,228 @@
 #define SERVER_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif // HAVE_CONFIG_H
 
 #include <vector>
-#include <deque>
-#include <map>
-#include <set>
+#include <unordered_map>
 #include <string>
-#include <net/if_arp.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
+#include <deque>
+#include <string_view>
+#include <memory>
 
 #include <ngtcp2/ngtcp2.h>
+#include <ngtcp2/ngtcp2_crypto.h>
+#include <nghttp3/nghttp3.h>
 
-#include <openssl/ssl.h>
 #include <ev.h>
-#include <http-parser/http_parser.h>
-#include <fstream>
-#include <sstream>
 
+#include "server_base.h"
+#include "tls_server_context.h"
 #include "network.h"
-#include "crypto.h"
-#include "template.h"
-
+#include "shared.h"
 
 using namespace ngtcp2;
 
-struct Config {
-    // tx_loss_prob is probability of losing outgoing packet.
-    double tx_loss_prob;
-    // rx_loss_prob is probability of losing incoming packet.
-    double rx_loss_prob;
-    // ciphers is the list of enabled ciphers.
-    const char *ciphers;
-    // groups is the list of supported groups.
-    const char *groups;
-    // htdocs is a root directory to serve documents.
-    std::string htdocs;
-    // port is the port number which server listens on for incoming
-    // connections.
-    uint16_t port;
-    // quiet suppresses the output normally shown except for the error
-    // messages.
-    bool quiet;
-    // timeout is an idle timeout for QUIC connection.
-    uint32_t timeout;
-    bool ipv6;
-    const char *interface = "eth0";
-    const char *unicast_ip = "127.0.0.1";
-    uint64_t client_ip;
-    uint64_t client_process;
-    uint64_t time_stamp;
+struct HTTPHeader {
+  HTTPHeader(const std::string_view &name, const std::string_view &value)
+      : name(name), value(value) {}
+
+  std::string_view name;
+  std::string_view value;
 };
 
-struct Buffer {
-    Buffer(const uint8_t *data, size_t datalen);
-
-    Buffer(uint8_t *begin, uint8_t *end);
-
-    explicit Buffer(size_t datalen);
-
-    Buffer();
-
-    size_t size() const { return tail - head; }
-
-    size_t left() const { return buf.data() + buf.size() - tail; }
-
-    uint8_t *const wpos() { return tail; }
-
-    const uint8_t *rpos() const { return head; }
-
-    void seek(size_t len) { head += len; }
-
-    void push(size_t len) { tail += len; }
-
-    void reset() { head = tail = begin; }
-
-    size_t bufsize() const { return tail - begin; }
-
-    std::vector <uint8_t> buf;
-    // begin points to the beginning of the buffer.  This might point to
-    // buf.data() if a buffer space is allocated by this object.  It is
-    // also allowed to point to the external shared buffer.
-    uint8_t *begin;
-    // head points to the position of the buffer where read should
-    // occur.
-    uint8_t *head;
-    // tail points to the position of the buffer where write should
-    // occur.
-    uint8_t *tail;
-};
-
-enum {
-    RESP_IDLE,
-    RESP_STARTED,
-    RESP_COMPLETED,
-};
+class Handler;
+struct FileEntry;
 
 struct Stream {
-    Stream(uint64_t stream_id);
+  Stream(int64_t stream_id, Handler *handler);
 
-    ~Stream();
+  int start_response(nghttp3_conn *conn);
+  std::pair<FileEntry, int> open_file(const std::string &path);
+  void map_file(const FileEntry &fe);
+  int send_status_response(nghttp3_conn *conn, unsigned int status_code,
+                           const std::vector<HTTPHeader> &extra_headers = {});
+  int send_redirect_response(nghttp3_conn *conn, unsigned int status_code,
+                             const std::string_view &path);
+  int64_t find_dyn_length(const std::string_view &path);
+  void http_acked_stream_data(size_t datalen);
 
-    int recv_data(uint8_t fin, const uint8_t *data, size_t datalen);
-
-    int start_response();
-
-    int open_file(const std::string &path);
-
-    int map_file(size_t len);
-
-    void buffer_file();
-
-    void send_status_response(unsigned int status_code,
-                              const std::string &extra_headers = "");
-
-    void send_redirect_response(unsigned int status_code,
-                                const std::string &path);
-
-    uint64_t stream_id;
-    std::deque <Buffer> streambuf;
-    // streambuf_idx is the index in streambuf, which points to the
-    // buffer to send next.
-    size_t streambuf_idx;
-    // tx_stream_offset is the offset where all data before offset is
-    // acked by the remote endpoint.
-    uint64_t tx_stream_offset;
-    // should_send_fin tells that fin should be sent after currently
-    // buffered data is sent.  After sending fin, it is set to false.
-    bool should_send_fin;
-    // resp_state is the state of response.
-    int resp_state;
-    http_parser htp;
-    unsigned int http_major;
-    unsigned int http_minor;
-    // uri is request uri/path.
-    std::string uri;
-    // hdrs contains request HTTP header fields.
-    std::vector <std::pair<std::string, std::string>> hdrs;
-    // prev_hdr_key is true if the previous modification to hdrs is
-    // adding key (header field name).
-    bool prev_hdr_key;
-    // fd is a file descriptor to read file to send its content to a
-    // client.
-    int fd;
-    // data is a pointer to the memory which maps file denoted by fd.
-    uint8_t *data;
-    // datalen is the length of mapped file by data.
-    uint64_t datalen;
+  int64_t stream_id;
+  Handler *handler;
+  // uri is request uri/path.
+  std::string uri;
+  std::string method;
+  std::string authority;
+  std::string status_resp_body;
+  // data is a pointer to the memory which maps file denoted by fd.
+  uint8_t *data;
+  // datalen is the length of mapped file by data.
+  uint64_t datalen;
+  // dynresp is true if dynamic data response is enabled.
+  bool dynresp;
+  // dyndataleft is the number of dynamic data left to send.
+  uint64_t dyndataleft;
+  // dynbuflen is the number of bytes in-flight.
+  uint64_t dynbuflen;
 };
 
 class Server;
 
-class Handler {
+// Endpoint is a local endpoint.
+struct Endpoint {
+  Address addr;
+  ev_io rev;
+  Server *server;
+  int fd;
+  // ecn is the last ECN bits set to fd.
+  unsigned int ecn;
+};
+
+class Handler : public HandlerBase {
 public:
-    Handler(struct ev_loop *loop, SSL_CTX *ssl_ctx, Server *server,
-            uint64_t client_conn_id);
+  Handler(struct ev_loop *loop, Server *server, const ngtcp2_cid *rcid);
+  ~Handler();
 
-    ~Handler();
+  int init(const Endpoint &ep, const Address &local_addr, const sockaddr *sa,
+           socklen_t salen, const ngtcp2_cid *dcid, const ngtcp2_cid *scid,
+           const ngtcp2_cid *ocid, const uint8_t *token, size_t tokenlen,
+           uint32_t version, const TLSServerContext &tls_ctx);
 
-    int init(int fd, const sockaddr *sa, socklen_t salen, uint32_t version);
+  int on_read(const Endpoint &ep, const Address &local_addr, const sockaddr *sa,
+              socklen_t salen, const ngtcp2_pkt_info *pi, uint8_t *data,
+              size_t datalen);
+  int on_write();
+  int write_streams();
+  int feed_data(const Endpoint &ep, const Address &local_addr,
+                const sockaddr *sa, socklen_t salen, const ngtcp2_pkt_info *pi,
+                uint8_t *data, size_t datalen);
+  void schedule_retransmit();
+  int handle_expiry();
+  void signal_write();
+  int handshake_completed();
 
-    int tls_handshake();
+  Server *server() const;
+  int recv_stream_data(uint32_t flags, int64_t stream_id, const uint8_t *data,
+                       size_t datalen);
+  int acked_stream_data_offset(int64_t stream_id, uint64_t datalen);
+  const ngtcp2_cid *scid() const;
+  const ngtcp2_cid *pscid() const;
+  const ngtcp2_cid *rcid() const;
+  uint32_t version() const;
+  void on_stream_open(int64_t stream_id);
+  int on_stream_close(int64_t stream_id, uint64_t app_error_code);
+  void start_draining_period();
+  int start_closing_period();
+  bool draining() const;
+  int handle_error();
+  int send_conn_close();
 
-    int read_tls();
+  int update_key(uint8_t *rx_secret, uint8_t *tx_secret,
+                 ngtcp2_crypto_aead_ctx *rx_aead_ctx, uint8_t *rx_iv,
+                 ngtcp2_crypto_aead_ctx *tx_aead_ctx, uint8_t *tx_iv,
+                 const uint8_t *current_rx_secret,
+                 const uint8_t *current_tx_secret, size_t secretlen);
 
-    int on_read(uint8_t *data, size_t datalen);
+  int setup_httpconn();
+  void http_consume(int64_t stream_id, size_t nconsumed);
+  void extend_max_remote_streams_bidi(uint64_t max_streams);
+  Stream *find_stream(int64_t stream_id);
+  void http_begin_request_headers(int64_t stream_id);
+  void http_recv_request_header(Stream *stream, int32_t token,
+                                nghttp3_rcbuf *name, nghttp3_rcbuf *value);
+  int http_end_request_headers(Stream *stream);
+  int http_end_stream(Stream *stream);
+  int start_response(Stream *stream);
+  int on_stream_reset(int64_t stream_id);
+  int extend_max_stream_data(int64_t stream_id, uint64_t max_data);
+  void shutdown_read(int64_t stream_id, int app_error_code);
+  void http_acked_stream_data(Stream *stream, size_t datalen);
+  int push_content(int64_t stream_id, const std::string_view &authority,
+                   const std::string_view &path);
+  void http_stream_close(int64_t stream_id, uint64_t app_error_code);
+  int http_send_stop_sending(int64_t stream_id, uint64_t app_error_code);
+  int http_reset_stream(int64_t stream_id, uint64_t app_error_code);
 
-    int on_write();
+  void reset_idle_timer();
 
-    int on_write_stream(Stream &stream);
-
-    int write_stream_data(Stream &stream, int fin, Buffer &data);
-
-    int feed_data(uint8_t *data, size_t datalen);
-
-    void schedule_retransmit();
-
-    void signal_write();
-
-    int write_server_handshake(const uint8_t *data, size_t datalen);
-
-    size_t read_server_handshake(const uint8_t **pdest);
-
-    size_t read_client_handshake(uint8_t *buf, size_t buflen);
-
-    void write_client_handshake(const uint8_t *data, size_t datalen);
-
-    int recv_client_initial(uint64_t conn_id);
-
-    int setup_crypto_context();
-
-    int setup_early_crypto_context();
-
-    ssize_t hs_encrypt_data(uint8_t *dest, size_t destlen,
-                            const uint8_t *plaintext, size_t plaintextlen,
-                            const uint8_t *key, size_t keylen,
-                            const uint8_t *nonce, size_t noncelen,
-                            const uint8_t *ad, size_t adlen);
-
-    ssize_t hs_decrypt_data(uint8_t *dest, size_t destlen,
-                            const uint8_t *ciphertext, size_t ciphertextlen,
-                            const uint8_t *key, size_t keylen,
-                            const uint8_t *nonce, size_t noncelen,
-                            const uint8_t *ad, size_t adlen);
-
-    ssize_t encrypt_data(uint8_t *dest, size_t destlen, const uint8_t *plaintext,
-                         size_t plaintextlen, const uint8_t *key, size_t keylen,
-                         const uint8_t *nonce, size_t noncelen, const uint8_t *ad,
-                         size_t adlen);
-
-    ssize_t decrypt_data(uint8_t *dest, size_t destlen, const uint8_t *ciphertext,
-                         size_t ciphertextlen, const uint8_t *key, size_t keylen,
-                         const uint8_t *nonce, size_t noncelen, const uint8_t *ad,
-                         size_t adlen);
-
-    Server *server() const;
-
-    Address *remote_addr();
-
-    ngtcp2_conn *conn() const;
-
-    int recv_stream_data(uint64_t stream_id, uint8_t fin, const uint8_t *data,
-                         size_t datalen);
-
-    uint64_t conn_id() const;
-
-    uint64_t client_conn_id() const;
-
-    uint32_t version() const;
-
-    int remove_tx_stream_data(uint64_t stream_id, uint64_t offset,
-                              size_t datalen);
-
-    void on_stream_close(uint64_t stream_id);
-
-    void start_draining_period();
-
-    int start_closing_period(int liberror);
-
-    bool draining() const;
-
-    int handle_error(int liberror);
-
-    int send_conn_close();
-
-    int send_greeting();
-
-    void update_fd(int fd) { fd_ = fd; }
+  void write_qlog(const void *data, size_t datalen);
+  void singal_write();
 
 private:
-    Address remote_addr_;
-    size_t max_pktlen_;
-    struct ev_loop *loop_;
-    SSL_CTX *ssl_ctx_;
-    SSL *ssl_;
-    Server *server_;
-    int fd_;
-    ev_timer timer_;
-    ev_timer rttimer_;
-    std::vector <uint8_t> chandshake_;
-    size_t ncread_;
-    std::deque <Buffer> shandshake_;
-    // shandshake_idx_ is the index in shandshake_, which points to the
-    // buffer to read next.
-    size_t shandshake_idx_;
-    ngtcp2_conn *conn_;
-    crypto::Context hs_crypto_ctx_;
-    crypto::Context crypto_ctx_;
-    std::map <uint32_t, std::unique_ptr<Stream>> streams_;
-    // common buffer used to store packet data before sending
-    Buffer sendbuf_;
-    // conn_closebuf_ contains a packet which contains CONNECTION_CLOSE.
-    // This packet is repeatedly sent as a response to the incoming
-    // packet in draining period.
-    std::unique_ptr <Buffer> conn_closebuf_;
-    uint64_t conn_id_;
-    uint64_t client_conn_id_;
-    // tx_stream0_offset_ is the offset where all data before offset is
-    // acked by the remote endpoint.
-    uint64_t tx_stream0_offset_;
-    // initial_ is initially true, and used to process first packet from
-    // client specially.  After first packet, it becomes false.
-    bool initial_;
-    // key_generated_ becomes true when 1-RTT key is available.
-    bool key_generated_;
-    // draining_ becomes true when draining period starts.
-    bool draining_;
+  size_t max_pktlen_;
+  struct ev_loop *loop_;
+  Server *server_;
+  ev_io wev_;
+  ev_timer timer_;
+  ev_timer rttimer_;
+  FILE *qlog_;
+  ngtcp2_cid scid_;
+  ngtcp2_cid pscid_;
+  ngtcp2_cid rcid_;
+  nghttp3_conn *httpconn_;
+  std::unordered_map<int64_t, std::unique_ptr<Stream>> streams_;
+  // conn_closebuf_ contains a packet which contains CONNECTION_CLOSE.
+  // This packet is repeatedly sent as a response to the incoming
+  // packet in draining period.
+  std::unique_ptr<Buffer> conn_closebuf_;
+  // nkey_update_ is the number of key update occurred.
+  size_t nkey_update_;
+  // draining_ becomes true when draining period starts.
+  bool draining_;
 };
 
 class Server {
 public:
-    Server(struct ev_loop *loop, SSL_CTX *ssl_ctx);
+  Server(struct ev_loop *loop, const TLSServerContext &tls_ctx);
+  ~Server();
 
-    ~Server();
+  int init(const char *addr, const char *port);
+  void disconnect();
+  void close();
 
-    int init(std::vector<int> fds);
+  int on_read(Endpoint &ep);
+  int send_version_negotiation(uint32_t version, const uint8_t *dcid,
+                               size_t dcidlen, const uint8_t *scid,
+                               size_t scidlen, Endpoint &ep,
+                               const Address &local_addr, const sockaddr *sa,
+                               socklen_t salen);
+  int send_retry(const ngtcp2_pkt_hd *chd, Endpoint &ep,
+                 const Address &local_addr, const sockaddr *sa,
+                 socklen_t salen);
+  int send_stateless_connection_close(const ngtcp2_pkt_hd *chd, Endpoint &ep,
+                                      const Address &local_addr,
+                                      const sockaddr *sa, socklen_t salen);
+  int generate_retry_token(uint8_t *token, size_t &tokenlen, const sockaddr *sa,
+                           socklen_t salen, const ngtcp2_cid *scid,
+                           const ngtcp2_cid *ocid);
+  int verify_retry_token(ngtcp2_cid *ocid, const ngtcp2_pkt_hd *hd,
+                         const sockaddr *sa, socklen_t salen);
+  int generate_token(uint8_t *token, size_t &tokenlen, const sockaddr *sa);
+  int verify_token(const ngtcp2_pkt_hd *hd, const sockaddr *sa,
+                   socklen_t salen);
+  int send_packet(Endpoint &ep, const ngtcp2_addr &local_addr,
+                  const ngtcp2_addr &remote_addr, unsigned int ecn,
+                  const uint8_t *data, size_t datalen, size_t gso_size);
+  void remove(const Handler *h);
 
-    void disconnect();
-
-    void disconnect(int liberr);
-
-    void close();
-
-    int on_write(int fd);
-
-    int on_read(int fd);
-
-    void unicast_fd(int fd) { unicast_fd_ = fd; }
-
-    int send_version_negotiation(int fd, const ngtcp2_pkt_hd *hd, const sockaddr *sa,
-                                 socklen_t salen);
-
-    int send_packet(int fd, Address &remote_addr, Buffer &buf);
-
-    void remove(const Handler *h);
-
-    int fd_size() { return fds_.size(); }
-
-    std::map<uint64_t, std::unique_ptr < Handler>>::
-
-    const_iterator
-    remove(std::map<uint64_t, std::unique_ptr < Handler>>
-
-    ::
-    const_iterator it
-    );
-
-    void start_wev();
-
-    ev_io *wev(int n);
-
-    ev_io *rev(int n);
+  int derive_token_key(uint8_t *key, size_t &keylen, uint8_t *iv, size_t &ivlen,
+                       const uint8_t *rand_data, size_t rand_datalen);
+  void generate_rand_data(uint8_t *buf, size_t len);
+  void associate_cid(const ngtcp2_cid *cid, Handler *h);
+  void dissociate_cid(const ngtcp2_cid *cid);
 
 private:
-    std::map <uint64_t, std::unique_ptr<Handler>> handlers_;
-    // ctos_ is a mapping between client's initial connection ID, and
-    // server chosen connection ID.
-    std::map <uint64_t, uint64_t> ctos_;
-    struct ev_loop *loop_;
-    SSL_CTX *ssl_ctx_;
-    std::vector<int> fds_;
-    int unicast_fd_;
-    ev_io wevs_[20];
-    ev_io revs_[20];
-    ev_signal sigintev_;
-};
-
-class ServerWrapper {
-public:
-    ServerWrapper(int fd, Server *server) {
-        fd_ = fd;
-        server_ = server;
-    }
-
-    ~ServerWrapper();
-
-    int fd_;
-    Server *server_;
+  std::unordered_map<std::string, std::unique_ptr<Handler>> handlers_;
+  // ctos_ is a mapping between client's initial destination
+  // connection ID, and server source connection ID.
+  std::unordered_map<std::string, std::string> ctos_;
+  struct ev_loop *loop_;
+  std::vector<Endpoint> endpoints_;
+  const TLSServerContext &tls_ctx_;
+  ngtcp2_crypto_aead token_aead_;
+  ngtcp2_crypto_md token_md_;
+  ev_signal sigintev_;
 };
 
 #endif // SERVER_H

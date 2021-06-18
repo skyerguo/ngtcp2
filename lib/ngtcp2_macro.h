@@ -26,7 +26,7 @@
 #define NGTCP2_MACRO_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <stddef.h>
@@ -38,5 +38,16 @@
 
 #define ngtcp2_struct_of(ptr, type, member)                                    \
   ((type *)(void *)((char *)(ptr)-offsetof(type, member)))
+
+/* ngtcp2_list_insert inserts |T| before |*PD|.  The contract is that
+   this is singly linked list, and the next element is pointed by next
+   field of the previous element.  |PD| must be a pointer to the
+   pointer to the next field of the previous element of |*PD|: if C is
+   the previous element of |PD|, PD = &C->next. */
+#define ngtcp2_list_insert(T, PD)                                              \
+  do {                                                                         \
+    (T)->next = *(PD);                                                         \
+    *(PD) = (T);                                                               \
+  } while (0)
 
 #endif /* NGTCP2_MACRO_H */

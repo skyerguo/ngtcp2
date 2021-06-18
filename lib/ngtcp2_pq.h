@@ -27,7 +27,7 @@
 #define NGTCP2_PQ_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
@@ -36,18 +36,24 @@
 
 /* Implementation of priority queue */
 
-/* "less" function, return nonzero if |lhs| is less than |rhs|. */
-typedef int (*ngtcp2_less)(const void *lhs, const void *rhs);
+/* NGTCP2_PQ_BAD_INDEX is the priority queue index which indicates
+   that an entry is not queued.  Assigning this value to
+   ngtcp2_pq_entry.index can check that the entry is queued or not. */
+#define NGTCP2_PQ_BAD_INDEX SIZE_MAX
 
-typedef struct {
+typedef struct ngtcp2_pq_entry {
   size_t index;
 } ngtcp2_pq_entry;
 
-typedef struct {
+/* "less" function, return nonzero if |lhs| is less than |rhs|. */
+typedef int (*ngtcp2_less)(const ngtcp2_pq_entry *lhs,
+                           const ngtcp2_pq_entry *rhs);
+
+typedef struct ngtcp2_pq {
   /* The pointer to the pointer to the item stored */
   ngtcp2_pq_entry **q;
   /* Memory allocator */
-  ngtcp2_mem *mem;
+  const ngtcp2_mem *mem;
   /* The number of items stored */
   size_t length;
   /* The maximum number of items this pq can store. This is
@@ -60,7 +66,7 @@ typedef struct {
 /*
  * Initializes priority queue |pq| with compare function |cmp|.
  */
-void ngtcp2_pq_init(ngtcp2_pq *pq, ngtcp2_less less, ngtcp2_mem *mem);
+void ngtcp2_pq_init(ngtcp2_pq *pq, ngtcp2_less less, const ngtcp2_mem *mem);
 
 /*
  * Deallocates any resources allocated for |pq|.  The stored items are
@@ -80,8 +86,8 @@ void ngtcp2_pq_free(ngtcp2_pq *pq);
 int ngtcp2_pq_push(ngtcp2_pq *pq, ngtcp2_pq_entry *item);
 
 /*
- * Returns item at the top of the queue |pq|. If the queue is empty,
- * this function returns NULL.
+ * Returns item at the top of the queue |pq|.  It is undefined if the
+ * queue is empty.
  */
 ngtcp2_pq_entry *ngtcp2_pq_top(ngtcp2_pq *pq);
 
@@ -102,14 +108,6 @@ int ngtcp2_pq_empty(ngtcp2_pq *pq);
 size_t ngtcp2_pq_size(ngtcp2_pq *pq);
 
 typedef int (*ngtcp2_pq_item_cb)(ngtcp2_pq_entry *item, void *arg);
-
-/*
- * Updates each item in |pq| using function |fun| and re-construct
- * priority queue. The |fun| must return non-zero if it modifies the
- * item in a way that it affects ordering in the priority queue. The
- * |arg| is passed to the 2nd parameter of |fun|.
- */
-void ngtcp2_pq_update(ngtcp2_pq *pq, ngtcp2_pq_item_cb fun, void *arg);
 
 /*
  * Applys |fun| to each item in |pq|.  The |arg| is passed as arg

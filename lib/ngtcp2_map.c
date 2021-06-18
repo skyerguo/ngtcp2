@@ -26,16 +26,18 @@
 #include "ngtcp2_map.h"
 
 #include <string.h>
+#include <assert.h>
+#include <stdio.h>
 
 #include "ngtcp2_conv.h"
 
-#define INITIAL_TABLE_LENGTH 256
+#define NGTCP2_INITIAL_TABLE_LENBITS 8
 
-int ngtcp2_map_init(ngtcp2_map *map, ngtcp2_mem *mem) {
+int ngtcp2_map_init(ngtcp2_map *map, const ngtcp2_mem *mem) {
   map->mem = mem;
-  map->tablelen = INITIAL_TABLE_LENGTH;
-  map->table =
-      ngtcp2_mem_calloc(mem, map->tablelen, sizeof(ngtcp2_map_entry *));
+  map->tablelen = 1 << NGTCP2_INITIAL_TABLE_LENBITS;
+  map->tablelenbits = NGTCP2_INITIAL_TABLE_LENBITS;
+  map->table = ngtcp2_mem_calloc(mem, map->tablelen, sizeof(ngtcp2_map_bucket));
   if (map->table == NULL) {
     return NGTCP2_ERR_NOMEM;
   }
@@ -45,121 +47,188 @@ int ngtcp2_map_init(ngtcp2_map *map, ngtcp2_mem *mem) {
   return 0;
 }
 
-void ngtcp2_map_free(ngtcp2_map *map) { ngtcp2_mem_free(map->mem, map->table); }
+void ngtcp2_map_free(ngtcp2_map *map) {
+  if (!map) {
+    return;
+  }
 
-void ngtcp2_map_each_free(ngtcp2_map *map,
-                          int (*func)(ngtcp2_map_entry *entry, void *ptr),
+  ngtcp2_mem_free(map->mem, map->table);
+}
+
+void ngtcp2_map_each_free(ngtcp2_map *map, int (*func)(void *data, void *ptr),
                           void *ptr) {
   uint32_t i;
+  ngtcp2_map_bucket *bkt;
+
   for (i = 0; i < map->tablelen; ++i) {
-    ngtcp2_map_entry *entry;
-    for (entry = map->table[i]; entry;) {
-      ngtcp2_map_entry *next = entry->next;
-      func(entry, ptr);
-      entry = next;
+    bkt = &map->table[i];
+
+    if (bkt->data == NULL) {
+      continue;
     }
-    map->table[i] = NULL;
+
+    func(bkt->data, ptr);
   }
 }
 
-int ngtcp2_map_each(ngtcp2_map *map,
-                    int (*func)(ngtcp2_map_entry *entry, void *ptr),
+int ngtcp2_map_each(ngtcp2_map *map, int (*func)(void *data, void *ptr),
                     void *ptr) {
   int rv;
   uint32_t i;
+  ngtcp2_map_bucket *bkt;
+
   for (i = 0; i < map->tablelen; ++i) {
-    ngtcp2_map_entry *entry, *next;
-    for (entry = map->table[i]; entry;) {
-      next = entry->next;
-      rv = func(entry, ptr);
-      if (rv != 0) {
-        return rv;
-      }
-      entry = next;
+    bkt = &map->table[i];
+
+    if (bkt->data == NULL) {
+      continue;
+    }
+
+    rv = func(bkt->data, ptr);
+    if (rv != 0) {
+      return rv;
     }
   }
+
   return 0;
 }
 
-void ngtcp2_map_entry_init(ngtcp2_map_entry *entry, key_type key) {
-  entry->key = key;
-  entry->next = NULL;
+static uint32_t hash(ngtcp2_map_key_type key) {
+  return (uint32_t)((key * 11400714819323198485llu) >> 32);
 }
 
-/* FNV1a hash */
-static uint32_t hash(key_type key, uint32_t mod) {
-  uint8_t *p, *end;
-  uint32_t h = 0x811C9DC5u;
-
-  key = bswap64(key);
-  p = (uint8_t *)&key;
-  end = p + sizeof(key_type);
-
-  for (; p != end; ++p) {
-    h ^= *p;
-    h *= 0x01000193u;
-  }
-
-  return h & (mod - 1);
+static size_t h2idx(uint32_t hash, uint32_t bits) {
+  return hash >> (32 - bits);
 }
 
-static int insert(ngtcp2_map_entry **table, uint32_t tablelen,
-                  ngtcp2_map_entry *entry) {
-  uint32_t h = hash(entry->key, tablelen);
-  if (table[h] == NULL) {
-    table[h] = entry;
-  } else {
-    ngtcp2_map_entry *p;
-    /* We won't allow duplicated key, so check it out. */
-    for (p = table[h]; p; p = p->next) {
-      if (p->key == entry->key) {
-        return NGTCP2_ERR_INVALID_ARGUMENT;
-      }
-    }
-    entry->next = table[h];
-    table[h] = entry;
-  }
-  return 0;
+static size_t distance(uint32_t tablelen, uint32_t tablelenbits,
+                       ngtcp2_map_bucket *bkt, size_t idx) {
+  return (idx - h2idx(bkt->hash, tablelenbits)) & (tablelen - 1);
 }
 
-/* new_tablelen must be power of 2 */
-static int resize(ngtcp2_map *map, uint32_t new_tablelen) {
+static void map_bucket_swap(ngtcp2_map_bucket *bkt, uint32_t *phash,
+                            ngtcp2_map_key_type *pkey, void **pdata) {
+  uint32_t h = bkt->hash;
+  ngtcp2_map_key_type key = bkt->key;
+  void *data = bkt->data;
+
+  bkt->hash = *phash;
+  bkt->key = *pkey;
+  bkt->data = *pdata;
+
+  *phash = h;
+  *pkey = key;
+  *pdata = data;
+}
+
+static void map_bucket_set_data(ngtcp2_map_bucket *bkt, uint32_t hash,
+                                ngtcp2_map_key_type key, void *data) {
+  bkt->hash = hash;
+  bkt->key = key;
+  bkt->data = data;
+}
+
+void ngtcp2_map_print_distance(ngtcp2_map *map) {
   uint32_t i;
-  ngtcp2_map_entry **new_table;
+  size_t idx;
+  ngtcp2_map_bucket *bkt;
+
+  for (i = 0; i < map->tablelen; ++i) {
+    bkt = &map->table[i];
+
+    if (bkt->data == NULL) {
+      fprintf(stderr, "@%u <EMPTY>\n", i);
+      continue;
+    }
+
+    idx = h2idx(bkt->hash, map->tablelenbits);
+    fprintf(stderr, "@%u hash=%08x key=%" PRIu64 " base=%zu distance=%zu\n", i,
+            bkt->hash, bkt->key, idx,
+            distance(map->tablelen, map->tablelenbits, bkt, idx));
+  }
+}
+
+static int insert(ngtcp2_map_bucket *table, uint32_t tablelen,
+                  uint32_t tablelenbits, uint32_t hash, ngtcp2_map_key_type key,
+                  void *data) {
+  size_t idx = h2idx(hash, tablelenbits);
+  size_t d = 0, dd;
+  ngtcp2_map_bucket *bkt;
+
+  for (;;) {
+    bkt = &table[idx];
+
+    if (bkt->data == NULL) {
+      map_bucket_set_data(bkt, hash, key, data);
+      return 0;
+    }
+
+    dd = distance(tablelen, tablelenbits, bkt, idx);
+    if (d > dd) {
+      map_bucket_swap(bkt, &hash, &key, &data);
+      d = dd;
+    } else if (bkt->key == key) {
+      /* TODO This check is just a waste after first swap or if this
+         function is called from map_resize.  That said, there is no
+         difference with or without this conditional in performance
+         wise. */
+      return NGTCP2_ERR_INVALID_ARGUMENT;
+    }
+
+    ++d;
+    idx = (idx + 1) & (tablelen - 1);
+  }
+}
+
+/* new_tablelen must be power of 2 and new_tablelen == (1 <<
+   new_tablelenbits) must hold. */
+static int map_resize(ngtcp2_map *map, uint32_t new_tablelen,
+                      uint32_t new_tablelenbits) {
+  uint32_t i;
+  ngtcp2_map_bucket *new_table;
+  ngtcp2_map_bucket *bkt;
+  int rv;
 
   new_table =
-      ngtcp2_mem_calloc(map->mem, new_tablelen, sizeof(ngtcp2_map_entry *));
+      ngtcp2_mem_calloc(map->mem, new_tablelen, sizeof(ngtcp2_map_bucket));
   if (new_table == NULL) {
     return NGTCP2_ERR_NOMEM;
   }
 
   for (i = 0; i < map->tablelen; ++i) {
-    ngtcp2_map_entry *entry;
-    for (entry = map->table[i]; entry;) {
-      ngtcp2_map_entry *next = entry->next;
-      entry->next = NULL;
-      /* This function must succeed */
-      insert(new_table, new_tablelen, entry);
-      entry = next;
+    bkt = &map->table[i];
+    if (bkt->data == NULL) {
+      continue;
     }
+    rv = insert(new_table, new_tablelen, new_tablelenbits, bkt->hash, bkt->key,
+                bkt->data);
+
+    assert(0 == rv);
   }
+
   ngtcp2_mem_free(map->mem, map->table);
   map->tablelen = new_tablelen;
+  map->tablelenbits = new_tablelenbits;
   map->table = new_table;
 
   return 0;
 }
 
-int ngtcp2_map_insert(ngtcp2_map *map, ngtcp2_map_entry *new_entry) {
+int ngtcp2_map_insert(ngtcp2_map *map, ngtcp2_map_key_type key, void *data) {
   int rv;
+
+  assert(data);
+
   /* Load factor is 0.75 */
   if ((map->size + 1) * 4 > map->tablelen * 3) {
-    rv = resize(map, map->tablelen * 2);
+    rv = map_resize(map, map->tablelen * 2, map->tablelenbits + 1);
     if (rv != 0) {
       return rv;
     }
   }
-  rv = insert(map->table, map->tablelen, new_entry);
+
+  rv = insert(map->table, map->tablelen, map->tablelenbits, hash(key), key,
+              data);
   if (rv != 0) {
     return rv;
   }
@@ -167,34 +236,76 @@ int ngtcp2_map_insert(ngtcp2_map *map, ngtcp2_map_entry *new_entry) {
   return 0;
 }
 
-ngtcp2_map_entry *ngtcp2_map_find(ngtcp2_map *map, key_type key) {
-  uint32_t h;
-  ngtcp2_map_entry *entry;
-  h = hash(key, map->tablelen);
-  for (entry = map->table[h]; entry; entry = entry->next) {
-    if (entry->key == key) {
-      return entry;
+void *ngtcp2_map_find(ngtcp2_map *map, ngtcp2_map_key_type key) {
+  uint32_t h = hash(key);
+  size_t idx = h2idx(h, map->tablelenbits);
+  ngtcp2_map_bucket *bkt;
+  size_t d = 0;
+
+  for (;;) {
+    bkt = &map->table[idx];
+
+    if (bkt->data == NULL ||
+        d > distance(map->tablelen, map->tablelenbits, bkt, idx)) {
+      return NULL;
     }
+
+    if (bkt->key == key) {
+      return bkt->data;
+    }
+
+    ++d;
+    idx = (idx + 1) & (map->tablelen - 1);
   }
-  return NULL;
 }
 
-int ngtcp2_map_remove(ngtcp2_map *map, key_type key) {
-  uint32_t h;
-  ngtcp2_map_entry **dst;
+int ngtcp2_map_remove(ngtcp2_map *map, ngtcp2_map_key_type key) {
+  uint32_t h = hash(key);
+  size_t idx = h2idx(h, map->tablelenbits), didx;
+  ngtcp2_map_bucket *bkt;
+  size_t d = 0;
 
-  h = hash(key, map->tablelen);
+  for (;;) {
+    bkt = &map->table[idx];
 
-  for (dst = &map->table[h]; *dst; dst = &(*dst)->next) {
-    if ((*dst)->key != key) {
-      continue;
+    if (bkt->data == NULL ||
+        d > distance(map->tablelen, map->tablelenbits, bkt, idx)) {
+      return NGTCP2_ERR_INVALID_ARGUMENT;
     }
 
-    *dst = (*dst)->next;
-    --map->size;
-    return 0;
+    if (bkt->key == key) {
+      map_bucket_set_data(bkt, 0, 0, NULL);
+
+      didx = idx;
+      idx = (idx + 1) & (map->tablelen - 1);
+
+      for (;;) {
+        bkt = &map->table[idx];
+        if (bkt->data == NULL ||
+            distance(map->tablelen, map->tablelenbits, bkt, idx) == 0) {
+          break;
+        }
+
+        map->table[didx] = *bkt;
+        map_bucket_set_data(bkt, 0, 0, NULL);
+        didx = idx;
+
+        idx = (idx + 1) & (map->tablelen - 1);
+      }
+
+      --map->size;
+
+      return 0;
+    }
+
+    ++d;
+    idx = (idx + 1) & (map->tablelen - 1);
   }
-  return NGTCP2_ERR_INVALID_ARGUMENT;
+}
+
+void ngtcp2_map_clear(ngtcp2_map *map) {
+  memset(map->table, 0, sizeof(*map->table) * map->tablelen);
+  map->size = 0;
 }
 
 size_t ngtcp2_map_size(ngtcp2_map *map) { return map->size; }

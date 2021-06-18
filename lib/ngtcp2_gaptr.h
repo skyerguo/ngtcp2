@@ -26,62 +26,23 @@
 #define NGTCP2_GAPTR_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <ngtcp2/ngtcp2.h>
 
 #include "ngtcp2_mem.h"
-#include "ngtcp2_range.h"
-
-struct ngtcp2_gaptr_gap;
-typedef struct ngtcp2_gaptr_gap ngtcp2_gaptr_gap;
-
-/*
- * ngtcp2_gaptr_gap represents the gap, which is the range of stream
- * data that is not received yet.
- */
-struct ngtcp2_gaptr_gap {
-  /* next points to the next gap.  This singly linked list is ordered
-     by range.begin in the increasing order, and they never
-     overlap. */
-  ngtcp2_gaptr_gap *next;
-  /* range is the range of this gap. */
-  ngtcp2_range range;
-};
-
-/*
- * ngtcp2_gaptr_gap_new allocates new ngtcp2_gaptr_gap object, and
- * assigns its pointer to |*pg|.  The caller should call
- * ngtcp2_gaptr_gap_del to delete it when it is no longer used.  The
- * range of the gap is [begin, end).  |mem| is custom memory allocator
- * to allocate memory.
- *
- * This function returns 0 if it succeeds, or one of the following
- * negative error codes:
- *
- * NGTCP2_ERR_NOMEM
- *     Out of memory.
- */
-int ngtcp2_gaptr_gap_new(ngtcp2_gaptr_gap **pg, uint64_t begin, uint64_t end,
-                         ngtcp2_mem *mem);
-
-/*
- * ngtcp2_gaptr_gap_del deallocates |g|.  It deallocates the memory
- * pointed by |g| it self.  |mem| is custom memory allocator to
- * deallocate memory.
- */
-void ngtcp2_gaptr_gap_del(ngtcp2_gaptr_gap *g, ngtcp2_mem *mem);
+#include "ngtcp2_ksl.h"
 
 /*
  * ngtcp2_gaptr maintains the gap in the range [0, UINT64_MAX).
  */
-typedef struct {
+typedef struct ngtcp2_gaptr {
   /* gap maintains the range of offset which is not received
      yet. Initially, its range is [0, UINT64_MAX). */
-  ngtcp2_gaptr_gap *gap;
+  ngtcp2_ksl gap;
   /* mem is custom memory allocator */
-  ngtcp2_mem *mem;
+  const ngtcp2_mem *mem;
 } ngtcp2_gaptr;
 
 /*
@@ -93,7 +54,7 @@ typedef struct {
  * NGTCP2_ERR_NOMEM
  *     Out of memory.
  */
-int ngtcp2_gaptr_init(ngtcp2_gaptr *gaptr, ngtcp2_mem *mem);
+int ngtcp2_gaptr_init(ngtcp2_gaptr *gaptr, const ngtcp2_mem *mem);
 
 /*
  * ngtcp2_gaptr_free frees resources allocated for |gaptr|.
@@ -117,5 +78,26 @@ int ngtcp2_gaptr_push(ngtcp2_gaptr *gaptr, uint64_t offset, size_t datalen);
  * If there is no gap, it returns UINT64_MAX.
  */
 uint64_t ngtcp2_gaptr_first_gap_offset(ngtcp2_gaptr *gaptr);
+
+/*
+ * ngtcp2_gaptr_get_first_gap_after returns the iterator pointing to
+ * the first gap which overlaps or comes after |offset|.
+ */
+ngtcp2_ksl_it ngtcp2_gaptr_get_first_gap_after(ngtcp2_gaptr *gaptr,
+                                               uint64_t offset);
+
+/*
+ * ngtcp2_gaptr_is_pushed returns nonzero if range [offset, offset +
+ * datalen) is completely pushed into this object.
+ */
+int ngtcp2_gaptr_is_pushed(ngtcp2_gaptr *gaptr, uint64_t offset,
+                           size_t datalen);
+
+/*
+ * ngtcp2_gaptr_drop_first_gap deletes the first gap entirely as if
+ * the range is pushed.  This function assumes that at least one gap
+ * exists.
+ */
+void ngtcp2_gaptr_drop_first_gap(ngtcp2_gaptr *gaptr);
 
 #endif /* NGTCP2_GAPTR_H */

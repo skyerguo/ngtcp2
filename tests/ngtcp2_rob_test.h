@@ -26,10 +26,11 @@
 #define NGTCP2_ROB_TEST_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 void test_ngtcp2_rob_push(void);
+void test_ngtcp2_rob_push_random(void);
 void test_ngtcp2_rob_data_at(void);
 void test_ngtcp2_rob_remove_prefix(void);
 

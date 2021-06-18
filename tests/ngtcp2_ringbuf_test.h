@@ -26,9 +26,10 @@
 #define NGTCP2_RINGBUF_TEST_H
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
 void test_ngtcp2_ringbuf_push_front(void);
+void test_ngtcp2_ringbuf_pop_front(void);
 
 #endif /* NGTCP2_RINGBUF_TEST_H */
