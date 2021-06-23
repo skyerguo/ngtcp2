@@ -116,39 +116,56 @@ struct Buffer {
   uint8_t *tail;
 };
 
-struct LatencyDC {
-    std::string dc;
-    double latency;
+// struct LatencyDC {
+//     std::string dc;
+//     double latency;
 
-    LatencyDC(std::string d, int l) : dc(d), latency(l) {}
-};
-struct LatencyDCCmp {
-    inline bool operator () (const LatencyDC& l1, const LatencyDC& l2) {
-      return (l1.latency < l2.latency);
-    }
-};
+//     LatencyDC(std::string d, int l) : dc(d), latency(l) {}
+// };
+// struct LatencyDCCmp {
+//     inline bool operator () (const LatencyDC& l1, const LatencyDC& l2) {
+//       return (l1.latency < l2.latency);
+//     }
+// };
 
-struct CpuDC {
+// struct CpuDC {
+//   std::string dc;
+//   double cpu;
+//   CpuDC(std::string d, double c) : dc(d), cpu(c) {}
+// };
+// struct CpuDCCmp {
+//     inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
+//       return (l1.cpu > l2.cpu);
+//     }
+// };
+
+// struct ThroughputDC {
+//   std::string dc;
+//   double throughput;
+//   ThroughputDC(std::string d, double t) : dc(d), throughput(t) {}
+// };
+// struct ThroughputDCCmp {
+//     inline bool operator () (const ThroughputDC& l1, const ThroughputDC& l2) {
+//       return (l1.throughput > l2.throughput);
+//     }
+// };
+
+static std::vector<std::double> best_metrics; // 某个metric的最优值
+struct WeightedDC {
   std::string dc;
-  double cpu;
-  CpuDC(std::string d, double c) : dc(d), cpu(c) {}
-};
-struct CpuDCCmp {
-    inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
-      return (l1.cpu > l2.cpu);
+  std::vector<std::pair<std::double, std::double>> metrics; // pair第一维表示测量值，第二维表示权重
+  double value;
+  void calc_value() {
+    int n = metrics.size();
+    this.value = 0;
+    for (int i = 0; i < n; ++i) {
+      this.value += (this.metrics[i]->first / best_metrics[i]) * this.metrics[i]->second;
     }
-};
-
-struct ThroughputDC {
-  std::string dc;
-  double throughput;
-  ThroughputDC(std::string d, double t) : dc(d), throughput(t) {}
-};
-struct ThroughputDCCmp {
-    inline bool operator () (const ThroughputDC& l1, const ThroughputDC& l2) {
-      return (l1.throughput > l2.throughput);
-    }
-};
+  }
+  bool operator < (const WeightedDC &rhs) const {
+    return this.value < rhs.value;
+  }
+}
 
 enum {
   RESP_IDLE,

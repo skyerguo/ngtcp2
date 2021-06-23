@@ -2009,23 +2009,17 @@ int Server::on_read(int fd, bool forwarded) {
 
       uint32_t temp_cnt = 0;
       for (auto ldc : latencies) {
-        // printf("%d%d")
         log_file << "latencies-" << temp_cnt << " " << ldc.dc << ", " << ldc.latency << std::endl;
-        // if (++temp_cnt>=2) break;
       }
 
       temp_cnt = 0;
       for (auto ldc : cpus) {
-        // printf("%d%d")
         log_file << "cpus-" << temp_cnt << " " << ldc.dc << ", " << ldc.cpu << std::endl;
-        // if (++temp_cnt>=2) break;
       }
 
       temp_cnt = 0;
       for (auto ldc : throughputs) {
-        // printf("%d%d")
         log_file << "throughputs-" << temp_cnt << " " << ldc.dc << ", " << ldc.throughput << std::endl;
-        // if (++temp_cnt>=2) break;
       }
 
       log_file.close();
