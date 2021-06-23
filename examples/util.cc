@@ -231,11 +231,13 @@ uint64_t address2Int(const std::string &ip) {
 
 std::string int2Address(uint64_t ip_int) {
   std::string res = "";
-  for (int i = 0; ip_int > 0; ++i) {
-    res = std::to_string(ip_int % 10) + res;
-    ip_int /= 10;
-    if (i % 3 == 2) res = "." + res;
+  for (; ip_int > 0;) {
+    res = std::to_string(ip_int % 1000) + res;
+    ip_int /= 1000;
+    res = "." + res;
   }
+  if (res[0] == '.')
+    res.erase(res.begin());
   return res;
 }
 
