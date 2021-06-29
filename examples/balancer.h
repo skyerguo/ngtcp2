@@ -84,7 +84,6 @@ struct Config {
   uint64_t client_ip;
   uint64_t client_process;
   uint64_t time_stamp;
-  uint32_t redundancy = 0;
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
 };
@@ -155,18 +154,24 @@ static std::vector<std::double> best_metrics; // 某个metric的最优值
 struct WeightedDC {
   std::string dc;
   std::vector<std::pair<std::double, std::double>> metrics; // pair第一维表示测量值，第二维表示权重
+  WeightedDC(){metrics.resieze(0);}
   double value;
   void calc_value() {
-    int n = metrics.size();
+    int n = this.metrics.size();
     this.value = 0;
     for (int i = 0; i < n; ++i) {
       this.value += (this.metrics[i]->first / best_metrics[i]) * this.metrics[i]->second;
     }
   }
-  bool operator < (const WeightedDC &rhs) const {
-    return this.value < rhs.value;
+  void debug_output() {
+    std::cerr << "weighted_dc info begin: " << this.dc << " " << this.value << std::endl;
+    for (int i = 0; i < n; ++i) std::cerr << this.metrics[i]->first << " " << this.metrics[i]->second << std::endl;
+    std::cerr << "weighted_dc info end. " << std::endl;
   }
-}
+  bool operator < (const WeightedDC &rhs) const { // value越大越好
+    return this.value > rhs.value;
+  }
+};
 
 enum {
   RESP_IDLE,
