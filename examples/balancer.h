@@ -86,6 +86,7 @@ struct Config {
   uint64_t time_stamp;
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
+  uint32_t redundancy;
 };
 
 struct Buffer {
@@ -150,26 +151,27 @@ struct Buffer {
 //     }
 // };
 
-static std::vector<std::double> best_metrics; // 某个metric的最优值
+static std::vector<double> best_metrics; // 某个metric的最优值
 struct WeightedDC {
   std::string dc;
-  std::vector<std::pair<std::double, std::double>> metrics; // pair第一维表示测量值，第二维表示权重
-  WeightedDC(){metrics.resieze(0);}
+  std::vector<std::pair<double, double> > metrics; // pair第一维表示测量值，第二维表示权重
+  WeightedDC(){metrics.resize(0);}
   double value;
   void calc_value() {
-    int n = this.metrics.size();
-    this.value = 0;
+    int n = this->metrics.size();
+    this->value = 0;
     for (int i = 0; i < n; ++i) {
-      this.value += (this.metrics[i]->first / best_metrics[i]) * this.metrics[i]->second;
+      this->value += (this->metrics[i].first / best_metrics[i]) * this->metrics[i].second;
     }
   }
   void debug_output() {
-    std::cerr << "weighted_dc info begin: " << this.dc << " " << this.value << std::endl;
-    for (int i = 0; i < n; ++i) std::cerr << this.metrics[i]->first << " " << this.metrics[i]->second << std::endl;
+    int n = this->metrics.size();
+    std::cerr << "weighted_dc info begin: " << this->dc << " " << this->value << std::endl;
+    for (int i = 0; i < n; ++i) std::cerr << this->metrics[i].first << " " << this->metrics[i].second << std::endl;
     std::cerr << "weighted_dc info end. " << std::endl;
   }
   bool operator < (const WeightedDC &rhs) const { // value越大越好
-    return this.value > rhs.value;
+    return this->value > rhs.value;
   }
 };
 

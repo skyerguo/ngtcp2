@@ -2354,6 +2354,7 @@ int Server::on_read(int fd, bool forwarded) {
 
       /* get all metrics */
       std::ofstream log_file;
+      std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);      
       log_file.open(unique_log_file, std::ofstream::app);
 
       std::chrono::high_resolution_clock::time_point start_log1 = std::chrono::high_resolution_clock::now();
@@ -2376,13 +2377,13 @@ int Server::on_read(int fd, bool forwarded) {
           best_metrics.push_back(0); len_best_metrics ++; // 假设最大的latency是1000.
           row = mysql_fetch_row(result);
           while (row != NULL) {
-              auto latency_value = 1000 - atoi(row[1]); // 假设最大的latency是1000.
+              double latency_value = 1000 - atoi(row[1]); // 假设最大的latency是1000.
               WeightedDC temp_dc;
               temp_dc.dc = row[0];
               temp_dc.metrics.push_back(std::make_pair(latency_value, config.rtt_sensitive));
               weighted_dcs.push_back(temp_dc);
 
-              best_metrics[len_best_metrics - 1] = max(best_metrics[len_best_metrics - 1], latency_value);
+              best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], latency_value);
               
               // std::cerr << "latency dc: " << dc.dc << " " << dc.latency << std::endl;
               row = mysql_fetch_row(result);
@@ -2417,26 +2418,26 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors" << std::endl;
             continue;
           }
-          auto redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
+          double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
 
           redis_key = "throughput_hestia-" + config.server_name[server_name_index] + "-server";
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors" << std::endl;
             continue;
           }
-          auto redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
+          double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
           
           auto temp_name = util::getStdLocation(config.server_name[server_name_index]);
           for (int j = 0; j < weighted_dcs.size(); ++j) {
             if (weighted_dcs[j].dc == temp_name) {
-              weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive););
+              weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
               break;
             }
           }
 
-          best_metrics[len_best_metrics - 2] = max(best_metrics[len_best_metrics - 2], redis_value_cpu);
-          best_metrics[len_best_metrics - 1] = max(best_metrics[len_best_metrics - 1], redis_value_throughput);
+          best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_cpu);
+          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_throughput);
         }
       }
       else {
@@ -2450,7 +2451,7 @@ int Server::on_read(int fd, bool forwarded) {
 
       /* 根据已有的最优结果，计算每个dc的实际权重，并排序 */ 
       for (int i = 0; i < weighted_dcs.size(); ++i) 
-        weighted_dcs.calc_value();
+        weighted_dcs[i].calc_value();
       sort(weighted_dcs.begin(), weighted_dcs.end());
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
@@ -2483,8 +2484,8 @@ int Server::on_read(int fd, bool forwarded) {
       }
       
       auto count_routings = 0;
-      auto max_value = weighted_dcs[0].value;
-      auto min_latency = best_metrics[0];
+      double max_value = weighted_dcs[0].value;
+      double min_latency = best_metrics[0];
       
       for (auto ldc : weighted_dcs) {
         if (!config.quiet) {
@@ -2494,7 +2495,7 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
           continue;
         }
-        if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0])) continue;
+        if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0].first)) continue;
 
         log_file << "count_routings: " << count_routings << std::endl;
 
