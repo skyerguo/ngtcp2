@@ -56,7 +56,7 @@ CLIENT_SRCS = \
 	util.cc util.h \
 	shared.cc shared.h
 
-noinst_PROGRAMS =
+noinst_PROGRAMS = client server balancer
 
 if ENABLE_EXAMPLE_OPENSSL
 noinst_PROGRAMS += client server h09client h09server perfserver

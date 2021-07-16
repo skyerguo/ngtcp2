@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <memory>
 #include <fstream>
+#include <sstream>  
+#include <string>  
 #include <iomanip>
 
 #include <unistd.h>
@@ -40,14 +42,24 @@
 #include <netdb.h>
 #include <sys/mman.h>
 
-#include <http-parser/http_parser.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
 
 #include "client.h"
 #include "network.h"
 #include "debug.h"
 #include "util.h"
+#include "crypto.h"
 #include "shared.h"
 #include "template.h"
+
+// for http response parser
+#include "http.h"
+#include <http-parser/http_parser.h>
+// for http dom parser
+#include "lexbor/html/html.h"
+#include "lexbor/core/fs.h"
+#include <lexbor/dom/interfaces/element.h>
 
 using namespace ngtcp2;
 using namespace std::literals;
@@ -57,6 +69,22 @@ auto randgen = util::make_mt19937();
 } // namespace
 
 Config config{};
+namespace {
+constexpr size_t MAX_BYTES_IN_FLIGHT = 1460 * 10;
+} // namespace
+
+std::map<ngtcp2_conn*, std::chrono::steady_clock::time_point> start_ts;
+
+Buffer::Buffer(const uint8_t *data, size_t datalen)
+    : buf{data, data + datalen},
+      begin(buf.data()),
+      head(begin),
+      tail(begin + datalen) {}
+Buffer::Buffer(uint8_t *begin, uint8_t *end)
+    : begin(begin), head(begin), tail(end) {}
+Buffer::Buffer(size_t datalen)
+    : buf(datalen), begin(buf.data()), head(begin), tail(begin) {}
+Buffer::Buffer() : begin(buf.data()), head(begin), tail(begin) {}
 
 Stream::Stream(const Request &req, int64_t stream_id)
     : req(req), stream_id(stream_id), fd(-1) {}

@@ -1,0 +1,2833 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PywebCopy Log</title>
+<style type="text/css">
+body, html {
+background: #000000;
+font-family: Arial;
+font-size: 16px;
+color: #C0C0C0;
+}
+h1 {
+color : #FFFFFF;
+border-bottom : 1px dotted #888888;
+}
+pre {
+font-family : arial;
+margin : 0;
+}
+table {
+border-collapse: collapse;
+width: 100%;
+}
+th, td {
+text-align: left;
+padding: 8px;
+}
+
+th {
+background-color: #4CAF50;
+color: white;
+}
+.box {
+border : 1px dotted #818286;
+padding : 5px;
+margin: 5px;
+background-color : #292929;
+}
+.err {
+color: #EE1100;
+font-weight: bold
+}
+.warn {
+color: #FFCC00;
+font-weight: bold
+}
+.info {
+color: #C0C0C0;
+}
+.debug {
+color: #CCA0A0;
+}
+.success {
+color: #4CAF50;
+}
+</style>
+</head>
+
+<body>
+<h1>PywebCopy Log <small>v5.0.0</small></h1>
+<div class="box">
+<table>
+<tr>
+    <th>Level</th>
+    <th>Time</th>
+    <th>Message</th>
+</tr>
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,317</td>
+<td ><pre>{'debug': True, 'log_file': '/root/thesis/global500/google.com/google.com_log.log', 'project_name': 'google.com', 'project_folder': '/root/thesis/global500/google.com', 'over_write': False, 'bypass_robots': False, 'zip_project_folder': True, 'delete_project_folder': False, 'allowed_file_ext': ['.html', '.php', '.asp', '.aspx', '.htm', '.xhtml', '.css', '.json', '.js', '.xml', '.svg', '.gif', '.ico', '.jpeg', '.pdf', '.jpg', '.png', '.ttf', '.eot', '.otf', '.woff', '.woff2', '.download', '.pwcf'], 'parser': 'lxml', 'http_headers': {'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; PyWebcopyBot/v5.0.0;) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.162'}, 'load_css': True, 'load_javascript': True, 'load_images': True, 'download_size': 0, 'downloaded_files': [], '_robots_obj': &#60pywebcopy.structures.RobotsTxt object at 0x7f4236745550&#62}</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,553</td>
+<td ><pre>URLTransformer https://www.google.com/ has been set to self.base_url None and self.url is https://www.google.com/</pre></td>
+<tr>
+
+
+<tr class="action">
+<td >ACTION</td>
+<td >2019-02-07 07:40:58,553</td>
+<td ><pre>Starting save_complete Action on url: 'https://www.google.com/'</pre></td>
+<tr>
+
+
+<tr class="action">
+<td >ACTION</td>
+<td >2019-02-07 07:40:58,554</td>
+<td ><pre>Starting save_assets Action on url: 'https://www.google.com/'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,554</td>
+<td ><pre>Using default Codec on raw_html!</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,582</td>
+<td ><pre>Remapping Image attributes for the imgs</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,582</td>
+<td ><pre>{'alt': 'Google', 'height': '92', 'id': 'hplogo', 'src': '/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png', 'srcset': '/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png 1x, /images/branding/googlelogo/2x/googlelogo_color_272x92dp.png 2x', 'style': 'padding-top:109px', 'width': '272', 'onload': 'window.lol&&lol()'}</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,583</td>
+<td ><pre>Remapped Attributes of the img.</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,583</td>
+<td ><pre>{'alt': 'Google', 'height': '92', 'id': 'hplogo', 'src': '/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png', 'srcset': '', 'style': 'padding-top:109px', 'width': '272', 'onload': 'window.lol&&lol()', 'data-src': '', 'data-srcset': ''}</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,586</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,586</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_96.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,587</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_96.png to the path: ../ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,588</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,588</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_27.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,588</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_27.png to the path: ../ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,589</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,589</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_96.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,590</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_96.png to the path: ../ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,590</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,590</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_27.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,591</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_27.png to the path: ../ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,591</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,591</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_96.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,592</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_96.png to the path: ../ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,592</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,592</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_27.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,593</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_27.png to the path: ../ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,593</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,593</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_96.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,594</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_96.png to the path: ../ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,594</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,594</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/silhouette_27.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,595</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/silhouette_27.png to the path: ../ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,595</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,595</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/i2_2ec824b0.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,596</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/i2_2ec824b0.png to the path: ../ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,596</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,596</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/i1_1967ca6a.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,597</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/i1_1967ca6a.png to the path: ../ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,597</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/a/133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,598</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/a/133fc21e88.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/a/133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,598</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/a/133fc21e88.png to the path: ../ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,598</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/a/f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,599</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/a/f5cdd88b65.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/a/f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,599</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/a/f5cdd88b65.png to the path: ../ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,599</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,600</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/p1_254618290.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,600</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/p1_254618290.png to the path: ../ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,601</td>
+<td ><pre>Handling url /images/nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,601</td>
+<td ><pre>URLTransformer /images/nav_logo242.png has been set to self.base_url None and self.url is /images/nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,601</td>
+<td ><pre>Remapped url of the file: /images/nav_logo242.png to the path: images/bd535099__nav_logo242.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,602</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,602</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBBc4.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,603</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBBc4.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,603</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,603</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,603</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,607</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,607</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,608</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,608</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,608</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,609</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,609</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,609</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,609</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,610</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,610</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,610</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,611</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,611</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,611</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,612</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,612</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,612</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,613</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,613</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,613</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,613</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,614</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7WxKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,615</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7WxKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,615</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,615</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4WxKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,616</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4WxKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,616</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,616</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7mxKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,617</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7mxKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,617</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,618</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu5mxKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,618</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu5mxKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,619</td>
+<td ><pre>Handling url //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,619</td>
+<td ><pre>URLTransformer //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu72xKOzY.woff2 has been set to self.base_url None and self.url is //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,620</td>
+<td ><pre>Remapped url of the file: //fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu72xKOzY.woff2 to the path: ../fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2 </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,621</td>
+<td ><pre>Handling url data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALwAAABACAQAAAAKENVCAAAI/ElEQVR4Ae3ae3BU5RnH8e/ZTbIhhIRbRIJyCZcEk4ZyE4RBAiRBxRahEZBLQYUZAjIgoLUWB6wjKIK2MtAqOLVUKSqWQW0ZaOQq0IFAIZVrgFQhXAOShITEbHY7407mnPfc8u6ya2f0fN6/9rzvc87Z39nbed/l/8OhIKMDQ+hHKp1JJB6FKq5QQhH72MZ1IsDRhvkU4bds9WxlLNE4wqg9q6jBL9G+4knc/HB9qXmuG4goD89TjT+IVkimE/zt6sYh/EG3WmaiOMGHbgQ38YfY3ibKCV6GMabHWY0bo+Ps5jjnuYlCczrSk8Hcgd5U1rONoDnG48Ova2W8RGeMXAxiHfWakT4mOx81oRiG1/C5vYh47KSx5fZid4JvxxVd7MdIp3EK06kNNXYneIWtutgLaIasQUwkJE7wE3SxbycWR8SD93BOiL2YRBwRDN5FwOPchaqecZQTQQ4XAApz0FrFQSLPwQD8mlZNEt8L5841D62/cJVIi2cgPelEAlBOCYfYSxXymjKAXqSQAFRwloPspRp5dzOMHiTThEqK2c1OvGHIsg/30YUWKHzDKfZwEB+2xBn3gUSSwmA+MpluruYDySMPYD23TOrX0V/q+CPZYai+yHw8wKscbmhMD+IVfyevcMlkuvxXxGOphTD4Gi4iJ40C/DZtM12wk8Lfbes/oSN27mGPZW0RnVmvebxIMng3z1Bluddz5Mh9wm8icqZIzPHfZDxW8qhotL6cUVh5zP74XOBg0MEnsgW/bfMxzyIOYdgSIuV5/JJtPmZmSlb7mI6ZGTLVQQafSKHUvp7BxFxhSD6N8UsH4An5aT+J3mNB1T+K3hj8YQ/ezRbpvY3CYKEwYFLYgvfTkQZ9qTN8nS3lIdJJZwTLDdNztfwUrTTDp+hllmnqrxo+sLqi1dWwuFPKYnK5h0we5c/UhhT8fF1FHWsZTis8dGAyB4S+67RF5wVhwC/DGHxvAqI4Imyv50Vi0YpjsW4l4AAuGii63yE+lhCHVlOW6o79TxRN/ee64y/SHb8TO4MOvq3uYh6iO1oufiP0r0VnjtA9K4zBDzSdgKtjJGbyqBfG5dFguC62sZiZoLt0Qy3qvYzCKIZNQQYvXupdxGO0Rni5dLebl1wexuD7A4DuC+gprMwTxu2hwT+E7c9iZYEw7lMaiBPeczAXT3EQwcdwTbP1Eq3RiyaPvcIe/4igj9C5NYzBpwOQKmzbh4IVF4dMviOShHfCEdxYieKY8M5qCUCy8E4oxIWVnwcRfK4wdhqitiyk1JBHJc3UU4UT+HDRYADR1GEnB2s9WYrqssn41/BjxcdrrEOVzRogS4hqOfVY8fI6qzWXYTAbgRwUVMvwYeUzzpKCnMGobvIeDRTuZyajiMLoMG2oRONfwnV5kNDNFH5ZKAD8SbPtFrHYaSr8+nkLgCXC53sCdloJz+RlAFYJv5bisPOG9Cv+U+F+O6AZM4Sx2iz+QKZxWrgArSmEbiAIpwvQGdV/qMFOFUdRdTbUn6QCO9c4bajvJhy/GjuFyOqEqhhIZyUXWEk6esd4imTyKTIG/1e08kghNNEMR7WfgERUpTTmPKrmIdSXGupbiHu3dQFZCagy2MGXzCAekZcPySKDlVSYTwsf5QB9aeBiCWMJxcO0RPU5AW5UPuyJI9xhr/diz4ssF6ohGJXyFmu42Fj5MrTGMILgKTyHqpoCAipR3YE9cURFWOorUCVhrzWyKrFWwGg68hIXG79uGziG1rt0IFhPcC+qj6gioARVJm7sRPMTVCWG+u54sBNHqm19Ji7sZCDrv5gp53ekkcNGvHJvGB+zdVd+M60JRi/eREt9VIQqgfuxM5Q4VEcM9R5ysfMAUaA78iFUzRmIfb2sw+j9m6m042lOEqS1hv+R3Y2svpSJCxJCn9hjR5ztywSgg7BtGwpWFHYLY+8CIB2/5Jppj5BvoE7Qz/a8bCVSrIv+quQrYCLVQl0NXVEpnBF6f4aVX+guvELAPmH7GMk/ZX1BgKJb2szBnEJBEMFHUyY841SsjGcr7bGVabLC8z6dsJPC3ww1sxE9LfTeoAdmeumOPkNzYcUb776Y6aebOh5Hg6m6l1MaZhYGOUn2sjD6MAmYyeIWfiqYhoKNLJNlaC/ryCUGvRhyWUedYfx7KIiack4XfZ5ujMI4XewlxIpzMEL04w31k3STtEW4NWd6Uugr4yFEHt4Ielo4iRvC+P20R6QwTZPnFtpjI4dKi5veAlbwLPnM4NesZDs3Tcd9RgxGIw3jdjCeO1FQSGYiuw39D6A1CJ+u/wsm0pZA/STDEnY9A9DKMtRvZjStAIVOzOJMSAsh+YaMltGXGEChHVPYr+s/igsbPTmHP8T2IR7MvW46voZa0+2voLfAor7GdPtz6C0yHVfNt4S+9KewwXTJ8xtumWyv5T6w14pNIYTu40VcWHHzvvSe3sWFnsIq6foVKCb1qyOw2N2EnZJ7+5aRSFAYS2lQp3maLOy5WS61pyW4MKOwCJ/E5X8BBTMuXsW+tpITQQYPcXws8Zyuk420eOZyQSqqy8zDg4yH+cp2T2cYjp1sim3rTzEEO4/YPKNL9AvpD00K+ZTbnZXwc1KSh9FspNrmDbSZicQirwmzLMI7Qb7EnjxM57hp/TGmEUNjEljAZUNtHW/TGvhA+J6QCx4gicVcNT2r7TyIgoEiGf+99CeVLiTSDKimjK85QSH7qCJ4Cr0YRi9SaI6fG5zlIAUcwS9d34Nsen9Xz3f1hRRQJF0fzVCyyaQdcZRzil18zCUAPtHc3s3mTYIRzWCGkEEH4vFSxmn2s5kSJDgOGP/l4Ii8aOHetzeOsIhiNAX0wVq28O3lwXHbklnIeQJ/PHJhQbh72YXjts3Eq4n0t5h7BL+mzcVx29Kpxy9E70IvV5h7qiEJRxiswC+0feTgJkAhg3d098S/J8IUfhziOUAaouscoYJmpNIO0WXSuYYjLLpxFb9U85KNI4wyKJWKfQKOMEtmm33sXCCbCHC4mMxZIWpx/aglEeNwM4J3KNb8jvmaDTxBIt8jhR8vD22IpYYr1PBD5HA4HP8DxVcxdwELEFUAAAAASUVORK5CYII=</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,621</td>
+<td ><pre>Handling url /intl/en/about/?fg=1&utm_source=google-US&utm_medium=referral&utm_campaign=hp-header</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,621</td>
+<td ><pre>URLTransformer /intl/en/about/?fg=1&utm_source=google-US&utm_medium=referral&utm_campaign=hp-header has been set to self.base_url None and self.url is /intl/en/about/?fg=1&utm_source=google-US&utm_medium=referral&utm_campaign=hp-header</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,622</td>
+<td ><pre>Remapped url of the file: /intl/en/about/?fg=1&utm_source=google-US&utm_medium=referral&utm_campaign=hp-header to the path: intl/en/about/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,622</td>
+<td ><pre>Handling url https://store.google.com/?utm_source=hp_header&utm_medium=google_oo&utm_campaign=GS100042</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,623</td>
+<td ><pre>URLTransformer https://store.google.com/?utm_source=hp_header&utm_medium=google_oo&utm_campaign=GS100042 has been set to self.base_url None and self.url is https://store.google.com/?utm_source=hp_header&utm_medium=google_oo&utm_campaign=GS100042</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,623</td>
+<td ><pre>Remapped url of the file: https://store.google.com/?utm_source=hp_header&utm_medium=google_oo&utm_campaign=GS100042 to the path: ../store.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,624</td>
+<td ><pre>Handling url https://mail.google.com/mail/?tab=wm</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,625</td>
+<td ><pre>URLTransformer https://mail.google.com/mail/?tab=wm has been set to self.base_url None and self.url is https://mail.google.com/mail/?tab=wm</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,625</td>
+<td ><pre>Remapped url of the file: https://mail.google.com/mail/?tab=wm to the path: ../mail.google.com/mail/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,626</td>
+<td ><pre>Handling url https://www.google.com/imghp?hl=en&tab=wi</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,626</td>
+<td ><pre>URLTransformer https://www.google.com/imghp?hl=en&tab=wi has been set to self.base_url None and self.url is https://www.google.com/imghp?hl=en&tab=wi</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,627</td>
+<td ><pre>Remapped url of the file: https://www.google.com/imghp?hl=en&tab=wi to the path: ./ed5f1f55__imghp.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,627</td>
+<td ><pre>Handling url https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,628</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en/about/products?tab=wh has been set to self.base_url None and self.url is https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,628</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en/about/products?tab=wh to the path: intl/en/about/9af610c8__products.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,629</td>
+<td ><pre>Handling url https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,629</td>
+<td ><pre>URLTransformer https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/ has been set to self.base_url None and self.url is https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,630</td>
+<td ><pre>Remapped url of the file: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/ to the path: ../accounts.google.com/8b4a2dad__ServiceLogin.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,630</td>
+<td ><pre>Handling url /search</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,630</td>
+<td ><pre>URLTransformer /search has been set to self.base_url None and self.url is /search</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,631</td>
+<td ><pre>Remapped url of the file: /search to the path: ./928f921d__search </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,632</td>
+<td ><pre>Handling url /images/experiments/wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,632</td>
+<td ><pre>URLTransformer /images/experiments/wavy-underline.png has been set to self.base_url None and self.url is /images/experiments/wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,633</td>
+<td ><pre>Remapped url of the file: /images/experiments/wavy-underline.png to the path: images/experiments/9a69ec2d__wavy-underline.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,633</td>
+<td ><pre>Handling url //www.gstatic.com/images/branding/googlemic/2x/googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,633</td>
+<td ><pre>URLTransformer //www.gstatic.com/images/branding/googlemic/2x/googlemic_color_24dp.png has been set to self.base_url None and self.url is //www.gstatic.com/images/branding/googlemic/2x/googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,634</td>
+<td ><pre>Remapped url of the file: //www.gstatic.com/images/branding/googlemic/2x/googlemic_color_24dp.png to the path: ../www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,635</td>
+<td ><pre>Handling url #</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,636</td>
+<td ><pre>Handling url /images/branding/googlelogo/2x/googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,636</td>
+<td ><pre>URLTransformer /images/branding/googlelogo/2x/googlelogo_color_272x92dp.png has been set to self.base_url None and self.url is /images/branding/googlelogo/2x/googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,637</td>
+<td ><pre>Remapped url of the file: /images/branding/googlelogo/2x/googlelogo_color_272x92dp.png to the path: images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,638</td>
+<td ><pre>Handling url https://www.google.com/intl/en_us/policies/privacy/?fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,638</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en_us/policies/privacy/?fg=1 has been set to self.base_url None and self.url is https://www.google.com/intl/en_us/policies/privacy/?fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,639</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en_us/policies/privacy/?fg=1 to the path: intl/en_us/policies/privacy/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,640</td>
+<td ><pre>Handling url https://www.google.com/intl/en_us/policies/terms/?fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,640</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en_us/policies/terms/?fg=1 has been set to self.base_url None and self.url is https://www.google.com/intl/en_us/policies/terms/?fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,641</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en_us/policies/terms/?fg=1 to the path: intl/en_us/policies/terms/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,641</td>
+<td ><pre>Handling url https://www.google.com/preferences?hl=en</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,641</td>
+<td ><pre>URLTransformer https://www.google.com/preferences?hl=en has been set to self.base_url None and self.url is https://www.google.com/preferences?hl=en</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,642</td>
+<td ><pre>Remapped url of the file: https://www.google.com/preferences?hl=en to the path: ./feccc01e__preferences.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,643</td>
+<td ><pre>Handling url https://www.google.com/preferences?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,643</td>
+<td ><pre>URLTransformer https://www.google.com/preferences?hl=en&fg=1 has been set to self.base_url None and self.url is https://www.google.com/preferences?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,644</td>
+<td ><pre>Remapped url of the file: https://www.google.com/preferences?hl=en&fg=1 to the path: ./eb75f44d__preferences.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,644</td>
+<td ><pre>Handling url /advanced_search?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,644</td>
+<td ><pre>URLTransformer /advanced_search?hl=en&fg=1 has been set to self.base_url None and self.url is /advanced_search?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,645</td>
+<td ><pre>Remapped url of the file: /advanced_search?hl=en&fg=1 to the path: ./f3e194ee__advanced_search.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,645</td>
+<td ><pre>Handling url /history/privacyadvisor/search?utm_source=googlemenu&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,645</td>
+<td ><pre>URLTransformer /history/privacyadvisor/search?utm_source=googlemenu&fg=1 has been set to self.base_url None and self.url is /history/privacyadvisor/search?utm_source=googlemenu&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,646</td>
+<td ><pre>Remapped url of the file: /history/privacyadvisor/search?utm_source=googlemenu&fg=1 to the path: history/privacyadvisor/67017ad5__search.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,647</td>
+<td ><pre>Handling url /history/optout?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,647</td>
+<td ><pre>URLTransformer /history/optout?hl=en&fg=1 has been set to self.base_url None and self.url is /history/optout?hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,648</td>
+<td ><pre>Remapped url of the file: /history/optout?hl=en&fg=1 to the path: history/0ce563f6__optout.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,648</td>
+<td ><pre>Handling url //support.google.com/websearch/?p=ws_results_help&hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,648</td>
+<td ><pre>URLTransformer //support.google.com/websearch/?p=ws_results_help&hl=en&fg=1 has been set to self.base_url None and self.url is //support.google.com/websearch/?p=ws_results_help&hl=en&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,649</td>
+<td ><pre>Remapped url of the file: //support.google.com/websearch/?p=ws_results_help&hl=en&fg=1 to the path: ../support.google.com/websearch/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,649</td>
+<td ><pre>Handling url #</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,649</td>
+<td ><pre>Handling url https://www.google.com/intl/en_us/ads/?subid=ww-ww-et-g-awa-a-g_hpafoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpafooter&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,650</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en_us/ads/?subid=ww-ww-et-g-awa-a-g_hpafoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpafooter&fg=1 has been set to self.base_url None and self.url is https://www.google.com/intl/en_us/ads/?subid=ww-ww-et-g-awa-a-g_hpafoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpafooter&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,651</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en_us/ads/?subid=ww-ww-et-g-awa-a-g_hpafoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpafooter&fg=1 to the path: intl/en_us/ads/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,651</td>
+<td ><pre>Handling url https://www.google.com/services/?subid=ww-ww-et-g-awa-a-g_hpbfoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpbfooter&fg=1</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,651</td>
+<td ><pre>URLTransformer https://www.google.com/services/?subid=ww-ww-et-g-awa-a-g_hpbfoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpbfooter&fg=1 has been set to self.base_url None and self.url is https://www.google.com/services/?subid=ww-ww-et-g-awa-a-g_hpbfoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpbfooter&fg=1</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,652</td>
+<td ><pre>Remapped url of the file: https://www.google.com/services/?subid=ww-ww-et-g-awa-a-g_hpbfoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpbfooter&fg=1 to the path: services/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,652</td>
+<td ><pre>Handling url https://myaccount.google.com/?utm_source=OGB&tab=wk&utm_medium=app</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,653</td>
+<td ><pre>URLTransformer https://myaccount.google.com/?utm_source=OGB&tab=wk&utm_medium=app has been set to self.base_url None and self.url is https://myaccount.google.com/?utm_source=OGB&tab=wk&utm_medium=app</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,653</td>
+<td ><pre>Remapped url of the file: https://myaccount.google.com/?utm_source=OGB&tab=wk&utm_medium=app to the path: ../myaccount.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,654</td>
+<td ><pre>Handling url https://www.google.com/webhp?tab=ww</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,654</td>
+<td ><pre>URLTransformer https://www.google.com/webhp?tab=ww has been set to self.base_url None and self.url is https://www.google.com/webhp?tab=ww</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,655</td>
+<td ><pre>Remapped url of the file: https://www.google.com/webhp?tab=ww to the path: ./f4f4bb67__webhp.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,655</td>
+<td ><pre>Handling url https://maps.google.com/maps?hl=en&tab=wl</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,656</td>
+<td ><pre>URLTransformer https://maps.google.com/maps?hl=en&tab=wl has been set to self.base_url None and self.url is https://maps.google.com/maps?hl=en&tab=wl</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,656</td>
+<td ><pre>Remapped url of the file: https://maps.google.com/maps?hl=en&tab=wl to the path: ../maps.google.com/2af50b70__maps.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,657</td>
+<td ><pre>Handling url https://www.youtube.com/?gl=US</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,657</td>
+<td ><pre>URLTransformer https://www.youtube.com/?gl=US has been set to self.base_url None and self.url is https://www.youtube.com/?gl=US</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,658</td>
+<td ><pre>Remapped url of the file: https://www.youtube.com/?gl=US to the path: ../www.youtube.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,658</td>
+<td ><pre>Handling url https://play.google.com/?hl=en&tab=w8</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,658</td>
+<td ><pre>URLTransformer https://play.google.com/?hl=en&tab=w8 has been set to self.base_url None and self.url is https://play.google.com/?hl=en&tab=w8</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,659</td>
+<td ><pre>Remapped url of the file: https://play.google.com/?hl=en&tab=w8 to the path: ../play.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,659</td>
+<td ><pre>Handling url https://news.google.com/nwshp?hl=en&tab=wn</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,660</td>
+<td ><pre>URLTransformer https://news.google.com/nwshp?hl=en&tab=wn has been set to self.base_url None and self.url is https://news.google.com/nwshp?hl=en&tab=wn</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,660</td>
+<td ><pre>Remapped url of the file: https://news.google.com/nwshp?hl=en&tab=wn to the path: ../news.google.com/ff982ea9__nwshp.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,661</td>
+<td ><pre>Handling url https://mail.google.com/mail/?tab=wm</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,661</td>
+<td ><pre>URLTransformer https://mail.google.com/mail/?tab=wm has been set to self.base_url None and self.url is https://mail.google.com/mail/?tab=wm</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,662</td>
+<td ><pre>Remapped url of the file: https://mail.google.com/mail/?tab=wm to the path: ../mail.google.com/mail/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,662</td>
+<td ><pre>Handling url https://contacts.google.com/?hl=en&tab=wC</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,662</td>
+<td ><pre>URLTransformer https://contacts.google.com/?hl=en&tab=wC has been set to self.base_url None and self.url is https://contacts.google.com/?hl=en&tab=wC</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,663</td>
+<td ><pre>Remapped url of the file: https://contacts.google.com/?hl=en&tab=wC to the path: ../contacts.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,663</td>
+<td ><pre>Handling url https://drive.google.com/?tab=wo</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,664</td>
+<td ><pre>URLTransformer https://drive.google.com/?tab=wo has been set to self.base_url None and self.url is https://drive.google.com/?tab=wo</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,664</td>
+<td ><pre>Remapped url of the file: https://drive.google.com/?tab=wo to the path: ../drive.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,665</td>
+<td ><pre>Handling url https://www.google.com/calendar?tab=wc</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,665</td>
+<td ><pre>URLTransformer https://www.google.com/calendar?tab=wc has been set to self.base_url None and self.url is https://www.google.com/calendar?tab=wc</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,666</td>
+<td ><pre>Remapped url of the file: https://www.google.com/calendar?tab=wc to the path: ./cf40e7a5__calendar.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,667</td>
+<td ><pre>Handling url https://plus.google.com/?gpsrc=ogpy0&tab=wX</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,667</td>
+<td ><pre>URLTransformer https://plus.google.com/?gpsrc=ogpy0&tab=wX has been set to self.base_url None and self.url is https://plus.google.com/?gpsrc=ogpy0&tab=wX</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,668</td>
+<td ><pre>Remapped url of the file: https://plus.google.com/?gpsrc=ogpy0&tab=wX to the path: ../plus.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,668</td>
+<td ><pre>Handling url https://translate.google.com/?hl=en&tab=wT</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,668</td>
+<td ><pre>URLTransformer https://translate.google.com/?hl=en&tab=wT has been set to self.base_url None and self.url is https://translate.google.com/?hl=en&tab=wT</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,669</td>
+<td ><pre>Remapped url of the file: https://translate.google.com/?hl=en&tab=wT to the path: ../translate.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,669</td>
+<td ><pre>Handling url https://photos.google.com/?tab=wq&pageId=none</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,669</td>
+<td ><pre>URLTransformer https://photos.google.com/?tab=wq&pageId=none has been set to self.base_url None and self.url is https://photos.google.com/?tab=wq&pageId=none</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,670</td>
+<td ><pre>Remapped url of the file: https://photos.google.com/?tab=wq&pageId=none to the path: ../photos.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,670</td>
+<td ><pre>Handling url https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,670</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en/about/products?tab=wh has been set to self.base_url None and self.url is https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,671</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en/about/products?tab=wh to the path: intl/en/about/9af610c8__products.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,671</td>
+<td ><pre>Handling url https://www.google.com/shopping?hl=en&source=og&tab=wf</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,671</td>
+<td ><pre>URLTransformer https://www.google.com/shopping?hl=en&source=og&tab=wf has been set to self.base_url None and self.url is https://www.google.com/shopping?hl=en&source=og&tab=wf</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,672</td>
+<td ><pre>Remapped url of the file: https://www.google.com/shopping?hl=en&source=og&tab=wf to the path: ./83091999__shopping.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,672</td>
+<td ><pre>Handling url https://www.google.com/finance?tab=we</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,672</td>
+<td ><pre>URLTransformer https://www.google.com/finance?tab=we has been set to self.base_url None and self.url is https://www.google.com/finance?tab=we</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,673</td>
+<td ><pre>Remapped url of the file: https://www.google.com/finance?tab=we to the path: ./41e31ff6__finance.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,673</td>
+<td ><pre>Handling url https://docs.google.com/document/?usp=docs_alc</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,673</td>
+<td ><pre>URLTransformer https://docs.google.com/document/?usp=docs_alc has been set to self.base_url None and self.url is https://docs.google.com/document/?usp=docs_alc</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,674</td>
+<td ><pre>Remapped url of the file: https://docs.google.com/document/?usp=docs_alc to the path: ../docs.google.com/document/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,674</td>
+<td ><pre>Handling url https://books.google.com/bkshp?hl=en&tab=wp</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,674</td>
+<td ><pre>URLTransformer https://books.google.com/bkshp?hl=en&tab=wp has been set to self.base_url None and self.url is https://books.google.com/bkshp?hl=en&tab=wp</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,674</td>
+<td ><pre>Remapped url of the file: https://books.google.com/bkshp?hl=en&tab=wp to the path: ../books.google.com/b38b1309__bkshp.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,675</td>
+<td ><pre>Handling url https://www.blogger.com/?tab=wj</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,675</td>
+<td ><pre>URLTransformer https://www.blogger.com/?tab=wj has been set to self.base_url None and self.url is https://www.blogger.com/?tab=wj</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,675</td>
+<td ><pre>Remapped url of the file: https://www.blogger.com/?tab=wj to the path: ../www.blogger.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,676</td>
+<td ><pre>Handling url https://hangouts.google.com/</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,676</td>
+<td ><pre>URLTransformer https://hangouts.google.com/ has been set to self.base_url None and self.url is https://hangouts.google.com/</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,676</td>
+<td ><pre>Remapped url of the file: https://hangouts.google.com/ to the path: ../hangouts.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,677</td>
+<td ><pre>Handling url https://keep.google.com/</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,677</td>
+<td ><pre>URLTransformer https://keep.google.com/ has been set to self.base_url None and self.url is https://keep.google.com/</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,677</td>
+<td ><pre>Remapped url of the file: https://keep.google.com/ to the path: ../keep.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,677</td>
+<td ><pre>Handling url https://jamboard.google.com/?usp=jam_ald</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,678</td>
+<td ><pre>URLTransformer https://jamboard.google.com/?usp=jam_ald has been set to self.base_url None and self.url is https://jamboard.google.com/?usp=jam_ald</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,678</td>
+<td ><pre>Remapped url of the file: https://jamboard.google.com/?usp=jam_ald to the path: ../jamboard.google.com/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,678</td>
+<td ><pre>Handling url https://earth.google.com/web/</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,678</td>
+<td ><pre>URLTransformer https://earth.google.com/web/ has been set to self.base_url None and self.url is https://earth.google.com/web/</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,679</td>
+<td ><pre>Remapped url of the file: https://earth.google.com/web/ to the path: ../earth.google.com/web/index.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,679</td>
+<td ><pre>Handling url https://www.google.com/save</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,679</td>
+<td ><pre>URLTransformer https://www.google.com/save has been set to self.base_url None and self.url is https://www.google.com/save</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,680</td>
+<td ><pre>Remapped url of the file: https://www.google.com/save to the path: ./b2d53d2d__save.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,680</td>
+<td ><pre>Handling url https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,680</td>
+<td ><pre>URLTransformer https://www.google.com/intl/en/about/products?tab=wh has been set to self.base_url None and self.url is https://www.google.com/intl/en/about/products?tab=wh</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,681</td>
+<td ><pre>Remapped url of the file: https://www.google.com/intl/en/about/products?tab=wh to the path: intl/en/about/9af610c8__products.html </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,681</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,682</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/i2_2ec824b0.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,682</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/i2_2ec824b0.png to the path: ../ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,682</td>
+<td ><pre>Handling url //ssl.gstatic.com/gb/images/i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,683</td>
+<td ><pre>URLTransformer //ssl.gstatic.com/gb/images/i1_1967ca6a.png has been set to self.base_url None and self.url is //ssl.gstatic.com/gb/images/i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,683</td>
+<td ><pre>Remapped url of the file: //ssl.gstatic.com/gb/images/i1_1967ca6a.png to the path: ../ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png </pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,683</td>
+<td ><pre>Handling url https://ssl.gstatic.com/gb/images/p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,683</td>
+<td ><pre>URLTransformer https://ssl.gstatic.com/gb/images/p2_63dfd6b10.png has been set to self.base_url None and self.url is https://ssl.gstatic.com/gb/images/p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,684</td>
+<td ><pre>Remapped url of the file: https://ssl.gstatic.com/gb/images/p2_63dfd6b10.png to the path: ../ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png </pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,685</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,685</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png from https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,690</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,690</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png from https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,725</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,726</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png from https://ssl.gstatic.com/gb/images/silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,750</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,751</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png from https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,754</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,755</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,756</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,779</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png'</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,788</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,789</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,789</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png</pre></td>
+<tr>
+
+
+<tr class="err">
+<td >ERROR</td>
+<td >2019-02-07 07:40:58,791</td>
+<td ><pre>File is not found or is unavailable on the server url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="err">
+<td >ERROR</td>
+<td >2019-02-07 07:40:58,791</td>
+<td ><pre>Failed to load the content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png from https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,791</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,791</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,792</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,792</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,793</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/e9e0a8a8__silhouette_96.png'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,793</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,794</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,794</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png from https://ssl.gstatic.com/gb/images/i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,797</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,797</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png from https://ssl.gstatic.com/gb/images/i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,801</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,801</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,803</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,806</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,807</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,808</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,811</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,811</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png from https://ssl.gstatic.com/gb/images/a/133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,816</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,816</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png from https://ssl.gstatic.com/gb/images/a/f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,821</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,821</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,821</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/e7be8b7e__133fc21e88.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,823</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,823</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,823</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/a/74426e22__f5cdd88b65.png</pre></td>
+<tr>
+
+
+<tr class="err">
+<td >ERROR</td>
+<td >2019-02-07 07:40:58,824</td>
+<td ><pre>File is not found or is unavailable on the server url https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="err">
+<td >ERROR</td>
+<td >2019-02-07 07:40:58,825</td>
+<td ><pre>Failed to load the content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png from https://ssl.gstatic.com/gb/images/silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,825</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,825</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,826</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/aae517ab__silhouette_27.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,826</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,826</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png from https://ssl.gstatic.com/gb/images/p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,829</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/www.google.com/images/bd535099__nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,829</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/www.google.com/images/bd535099__nav_logo242.png from https://www.google.com/images/nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,833</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,833</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,837</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/cf2e6c90__p1_254618290.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,838</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,838</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,841</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,841</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,845</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,845</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,849</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/www.google.com/images/bd535099__nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,849</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/www.google.com/images/bd535099__nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,850</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/www.google.com/images/bd535099__nav_logo242.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,878</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,879</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,929</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,929</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,930</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/5fd2d81a__KFOlCnqEu92Fr1MmWUlfBBc4.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,932</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,933</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,934</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/4e874a36__KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,935</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,936</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,945</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,945</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,946</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/d11ed628__KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,949</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,949</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,954</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,954</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,955</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/244561e4__KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,959</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,959</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,960</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/ebfb95f1__KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,962</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,962</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,966</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,966</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,967</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3242eb87__KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,968</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,968</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,969</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/41a2774c__KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,970</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,970</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,974</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,974</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,978</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,978</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,980</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/dddea770__KFOmCnqEu92Fr1Mu4mxK.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,981</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,981</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,982</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/2d5c2bc0__KFOmCnqEu92Fr1Mu7GxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,983</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,984</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,988</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,988</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,991</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,992</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,992</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/21b15ae8__KFOmCnqEu92Fr1Mu7WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:58,994</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,994</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:58,995</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/82b36710__KFOmCnqEu92Fr1Mu4WxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,995</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,996</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,998</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:58,998</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,002</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,002</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,002</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/3aceb7af__KFOmCnqEu92Fr1Mu7mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,004</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,004</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,005</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/420d1455__KFOmCnqEu92Fr1Mu5mxKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,006</td>
+<td ><pre>Downloading a new file of type .woff2 to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,006</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2 from https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="err">
+<td >CRITICAL</td>
+<td >2019-02-07 07:40:59,009</td>
+<td ><pre>File ext '' is not allowed for file at 'https://www.google.com/search'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,010</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/www.google.com/images/experiments/9a69ec2d__wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,010</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/www.google.com/images/experiments/9a69ec2d__wavy-underline.png from https://www.google.com/images/experiments/wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,014</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,014</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,015</td>
+<td ><pre>File of type .woff2 written successfully to /root/thesis/global500/google.com/fonts.gstatic.com/s/roboto/v18/58ce78c6__KFOmCnqEu92Fr1Mu72xKOzY.woff2</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,016</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,016</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png from https://www.gstatic.com/images/branding/googlemic/2x/googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,024</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/www.google.com/images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,024</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/www.google.com/images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png from https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,040</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/www.google.com/images/experiments/9a69ec2d__wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,040</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/www.google.com/images/experiments/9a69ec2d__wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,041</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/www.google.com/images/experiments/9a69ec2d__wavy-underline.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,074</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,074</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,075</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/www.gstatic.com/images/branding/googlemic/2x/3adb84b3__googlemic_color_24dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,076</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/11497622__i2_2ec824b0.png'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,077</td>
+<td ><pre>File already exists at location: '/root/thesis/global500/google.com/ssl.gstatic.com/gb/images/ff80adc8__i1_1967ca6a.png'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,078</td>
+<td ><pre>Downloading a new file of type .png to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,078</td>
+<td ><pre>Downloading content of file /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png from https://ssl.gstatic.com/gb/images/p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,085</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,085</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,092</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/ssl.gstatic.com/gb/images/97caa22e__p2_63dfd6b10.png</pre></td>
+<tr>
+
+
+<tr class="debug">
+<td >DEBUG</td>
+<td >2019-02-07 07:40:59,117</td>
+<td ><pre>Making path for the file at location /root/thesis/global500/google.com/www.google.com/images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,118</td>
+<td ><pre>Writing file at location /root/thesis/global500/google.com/www.google.com/images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="success">
+<td >SUCCESS</td>
+<td >2019-02-07 07:40:59,119</td>
+<td ><pre>File of type .png written successfully to /root/thesis/global500/google.com/www.google.com/images/branding/googlelogo/2x/daf1163a__googlelogo_color_272x92dp.png</pre></td>
+<tr>
+
+
+<tr class="action">
+<td >ACTION</td>
+<td >2019-02-07 07:40:59,119</td>
+<td ><pre>Starting save_html Action on url: 'https://www.google.com/'</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,171</td>
+<td ><pre>Saved the Project as ZIP archive at /root/thesis/global500/google.com.zip</pre></td>
+<tr>
+
+
+<tr class="info">
+<td >INFO</td>
+<td >2019-02-07 07:40:59,171</td>
+<td ><pre>Downloaded Contents Size :: 373 KB's</pre></td>
+<tr>
+
+</table>
+</div>
+<footer>
+Pywebcopy Logger
+</footer>
+</body>
+</html>
