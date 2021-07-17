@@ -56,42 +56,6 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
     ${OPENSSL_INCLUDE_DIRS}
     ${LIBEV_INCLUDE_DIRS}
     ${LIBNGHTTP3_INCLUDE_DIRS}
-    ${LIBMYSQLCLIENT_INCLUDE_DIRS}
-  )
-
-  link_libraries(
-    ngtcp2
-    ${OPENSSL_LIBRARIES}
-    ${LIBEV_LIBRARIES}
-    ${LIBMYSQLCLIENT_LIBRARIES}
-  )
-
-    set(client_SOURCES
-    client.cc
-    debug.cc
-    util.cc
-    crypto_openssl.cc
-    crypto.cc
-  )
-
-  set(server_SOURCES
-    server.cc
-    debug.cc
-    util.cc
-    crypto_openssl.cc
-    crypto.cc
-    http.cc
-  )
-
-  set(balancer_SOURCES
-    balancer.cc
-    debug.cc
-    util.cc
-    crypto_openssl.cc
-    crypto.cc
-    http.cc
-    CJsonObject.cpp
-    cJSON.c
   )
 
   set(ossl_LIBS
@@ -104,7 +68,6 @@ if(LIBEV_FOUND AND HAVE_OPENSSL AND LIBNGHTTP3_FOUND)
 
   add_executable(client ${client_SOURCES} $<TARGET_OBJECTS:http-parser>)
   add_executable(server ${server_SOURCES} $<TARGET_OBJECTS:http-parser>)
-  add_executable(balancer ${balancer_SOURCES} $<TARGET_OBJECTS:http-parser>)
   set_target_properties(client PROPERTIES
     COMPILE_FLAGS "${WARNCXXFLAGS} -DENABLE_EXAMPLE_OPENSSL -DWITH_EXAMPLE_OPENSSL"
     CXX_STANDARD 17
@@ -251,6 +214,4 @@ if(LIBEV_FOUND AND HAVE_BORINGSSL AND LIBNGHTTP3_FOUND)
   target_link_libraries(bsslserver ${bssl_LIBS})
 
   # TODO prevent bsslclient and example bsslservers from being installed?
-else()
-  message(WARNING "Examples are disabled due to lack of good libev or OpenSSL")
 endif()

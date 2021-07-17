@@ -29,8 +29,6 @@
 #include <algorithm>
 #include <memory>
 #include <fstream>
-#include <sstream>  
-#include <string>  
 #include <iomanip>
 
 #include <unistd.h>
@@ -42,24 +40,14 @@
 #include <netdb.h>
 #include <sys/mman.h>
 
-#include <openssl/bio.h>
-#include <openssl/err.h>
+#include <http-parser/http_parser.h>
 
 #include "client.h"
 #include "network.h"
 #include "debug.h"
 #include "util.h"
-#include "crypto.h"
 #include "shared.h"
 #include "template.h"
-
-// for http response parser
-#include "http.h"
-#include <http-parser/http_parser.h>
-// for http dom parser
-#include "lexbor/html/html.h"
-#include "lexbor/core/fs.h"
-#include <lexbor/dom/interfaces/element.h>
 
 using namespace ngtcp2;
 using namespace std::literals;
@@ -69,22 +57,6 @@ auto randgen = util::make_mt19937();
 } // namespace
 
 Config config{};
-namespace {
-constexpr size_t MAX_BYTES_IN_FLIGHT = 1460 * 10;
-} // namespace
-
-std::map<ngtcp2_conn*, std::chrono::steady_clock::time_point> start_ts;
-
-Buffer::Buffer(const uint8_t *data, size_t datalen)
-    : buf{data, data + datalen},
-      begin(buf.data()),
-      head(begin),
-      tail(begin + datalen) {}
-Buffer::Buffer(uint8_t *begin, uint8_t *end)
-    : begin(begin), head(begin), tail(end) {}
-Buffer::Buffer(size_t datalen)
-    : buf(datalen), begin(buf.data()), head(begin), tail(begin) {}
-Buffer::Buffer() : begin(buf.data()), head(begin), tail(begin) {}
 
 Stream::Stream(const Request &req, int64_t stream_id)
     : req(req), stream_id(stream_id), fd(-1) {}
@@ -493,21 +465,19 @@ int extend_max_streams_bidi(ngtcp2_conn *conn, uint64_t max_streams,
 } // namespace
 
 namespace {
-int rand(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *rand_ctx,
-         ngtcp2_rand_usage usage) {
+void rand(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *rand_ctx) {
   auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
   std::generate(dest, dest + destlen, [&dis]() { return dis(randgen); });
-  return 0;
 }
 } // namespace
 
 namespace {
 int get_new_connection_id(ngtcp2_conn *conn, ngtcp2_cid *cid, uint8_t *token,
                           size_t cidlen, void *user_data) {
-  auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
-  auto f = [&dis]() { return dis(randgen); };
+  if (util::generate_secure_random(cid->data, cidlen) != 0) {
+    return NGTCP2_ERR_CALLBACK_FAILURE;
+  }
 
-  std::generate_n(cid->data, cidlen, f);
   cid->datalen = cidlen;
   auto md = util::crypto_md_sha256();
   if (ngtcp2_crypto_generate_stateless_reset_token(
@@ -562,37 +532,50 @@ int update_key(ngtcp2_conn *conn, uint8_t *rx_secret, uint8_t *tx_secret,
 } // namespace
 
 namespace {
-int path_validation(ngtcp2_conn *conn, const ngtcp2_path *path,
+int path_validation(ngtcp2_conn *conn, uint32_t flags, const ngtcp2_path *path,
                     ngtcp2_path_validation_result res, void *user_data) {
   if (!config.quiet) {
     debug::path_validation(path, res);
   }
+
+  if (flags & NGTCP2_PATH_VALIDATION_FLAG_PREFERRED_ADDR) {
+    auto c = static_cast<Client *>(user_data);
+
+    c->set_remote_addr(path->remote);
+  }
+
   return 0;
 }
 } // namespace
 
+void Client::set_remote_addr(const ngtcp2_addr &remote_addr) {
+  memcpy(&remote_addr_.su, remote_addr.addr, remote_addr.addrlen);
+  remote_addr_.len = remote_addr.addrlen;
+}
+
 namespace {
-int select_preferred_address(ngtcp2_conn *conn, ngtcp2_addr *dest,
-                             void **ppath_user_data,
+int select_preferred_address(ngtcp2_conn *conn, ngtcp2_path *dest,
                              const ngtcp2_preferred_addr *paddr,
                              void *user_data) {
   auto c = static_cast<Client *>(user_data);
-  Address addr;
+  Address remote_addr;
 
   if (config.no_preferred_addr) {
     return 0;
   }
 
-  if (c->select_preferred_address(addr, paddr) != 0) {
-    dest->addrlen = 0;
+  if (c->select_preferred_address(remote_addr, paddr) != 0) {
     return 0;
   }
 
-  dest->addrlen = addr.len;
-  memcpy(dest->addr, &addr.su, dest->addrlen);
+  auto ep = c->endpoint_for(remote_addr);
+  if (!ep) {
+    return NGTCP2_ERR_CALLBACK_FAILURE;
+  }
 
-  auto path = ngtcp2_conn_get_path(conn);
-  *ppath_user_data = path->user_data;
+  ngtcp2_addr_copy_byte(&dest->local, &(*ep)->addr.su.sa, (*ep)->addr.len);
+  ngtcp2_addr_copy_byte(&dest->remote, &remote_addr.su.sa, remote_addr.len);
+  dest->user_data = *ep;
 
   return 0;
 }
@@ -627,6 +610,16 @@ int recv_new_token(ngtcp2_conn *conn, const ngtcp2_vec *token,
   }
 
   util::write_token(config.token_file, token->base, token->len);
+
+  return 0;
+}
+} // namespace
+
+namespace {
+int get_path_challenge_data(ngtcp2_conn *conn, uint8_t *data, void *user_data) {
+  if (util::generate_secure_random(data, NGTCP2_PATH_CHALLENGE_DATALEN) != 0) {
+    return NGTCP2_ERR_CALLBACK_FAILURE;
+  }
 
   return 0;
 }
@@ -697,24 +690,25 @@ int Client::init(int fd, const Address &local_addr, const Address &remote_addr,
       nullptr, // recv_datagram
       nullptr, // ack_datagram
       nullptr, // lost_datagram
-  };
-
-  auto dis = std::uniform_int_distribution<uint8_t>(
-      0, std::numeric_limits<uint8_t>::max());
-  auto generate_cid = [&dis](ngtcp2_cid &cid, size_t len) {
-    cid.datalen = len;
-    std::generate(std::begin(cid.data), std::begin(cid.data) + cid.datalen,
-                  [&dis]() { return dis(randgen); });
+      get_path_challenge_data,
   };
 
   ngtcp2_cid scid, dcid;
   if (config.scid_present) {
     scid = config.scid;
   } else {
-    generate_cid(scid, 17);
+    scid.datalen = 17;
+    if (util::generate_secure_random(scid.data, scid.datalen) != 0) {
+      std::cerr << "Could not generate source connection ID" << std::endl;
+      return -1;
+    }
   }
   if (config.dcid.datalen == 0) {
-    generate_cid(dcid, 18);
+    dcid.datalen = 18;
+    if (util::generate_secure_random(dcid.data, dcid.datalen) != 0) {
+      std::cerr << "Could not generate destination connection ID" << std::endl;
+      return -1;
+    }
   } else {
     dcid = config.dcid;
   }
@@ -740,8 +734,8 @@ int Client::init(int fd, const Address &local_addr, const Address &remote_addr,
     }
     settings.qlog.write = qlog_write_cb;
   }
-  settings.cc_algo =
-      config.cc == "cubic" ? NGTCP2_CC_ALGO_CUBIC : NGTCP2_CC_ALGO_RENO;
+
+  settings.cc_algo = config.cc_algo;
   settings.initial_ts = util::timestamp(loop_);
   settings.initial_rtt = config.initial_rtt;
   settings.max_window = config.max_window;
@@ -967,6 +961,10 @@ int Client::write_streams() {
   PathStorage path;
   size_t pktcnt = 0;
   std::array<uint8_t, 64_k> buf;
+  size_t max_pktcnt = config.cc_algo == NGTCP2_CC_ALGO_BBR
+                          ? ngtcp2_conn_get_send_quantum(conn_) / max_pktlen_
+                          : 10;
+  auto ts = util::timestamp(loop_);
 
   for (;;) {
     int64_t stream_id = -1;
@@ -998,8 +996,7 @@ int Client::write_streams() {
 
     auto nwrite = ngtcp2_conn_writev_stream(
         conn_, &path.path, &pi, buf.data(), max_pktlen_, &ndatalen, flags,
-        stream_id, reinterpret_cast<const ngtcp2_vec *>(v), vcnt,
-        util::timestamp(loop_));
+        stream_id, reinterpret_cast<const ngtcp2_vec *>(v), vcnt, ts);
     if (nwrite < 0) {
       switch (nwrite) {
       case NGTCP2_ERR_STREAM_DATA_BLOCKED:
@@ -1059,6 +1056,7 @@ int Client::write_streams() {
 
     if (nwrite == 0) {
       // We are congestion limited.
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       return 0;
     }
 
@@ -1070,11 +1068,14 @@ int Client::write_streams() {
       if (rv != NETWORK_ERR_SEND_BLOCKED) {
         last_error_ = quic_err_transport(NGTCP2_ERR_INTERNAL);
         disconnect();
+      } else {
+        ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       }
       return rv;
     }
 
-    if (++pktcnt == 10) {
+    if (++pktcnt == max_pktcnt) {
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       ev_io_start(loop_, &wev_);
       return 0;
     }
@@ -1090,8 +1091,10 @@ void Client::schedule_retransmit() {
   ev_timer_again(loop_, &rttimer_);
 }
 
+#ifdef HAVE_LINUX_RTNETLINK_H
 namespace {
-int bind_addr(Address &local_addr, int fd, int family) {
+int bind_addr(Address &local_addr, int fd, const in_addr_union *iau,
+              int family) {
   addrinfo hints{};
   addrinfo *res, *rp;
 
@@ -1099,7 +1102,21 @@ int bind_addr(Address &local_addr, int fd, int family) {
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_flags = AI_PASSIVE;
 
-  if (auto rv = getaddrinfo(nullptr, "0", &hints, &res); rv != 0) {
+  char *node;
+  std::array<char, NI_MAXHOST> nodebuf;
+
+  if (iau) {
+    if (inet_ntop(family, iau, nodebuf.data(), nodebuf.size()) == nullptr) {
+      std::cerr << "inet_ntop: " << strerror(errno) << std::endl;
+      return -1;
+    }
+
+    node = nodebuf.data();
+  } else {
+    node = nullptr;
+  }
+
+  if (auto rv = getaddrinfo(node, "0", &hints, &res); rv != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv) << std::endl;
     return -1;
   }
@@ -1127,6 +1144,47 @@ int bind_addr(Address &local_addr, int fd, int family) {
   return 0;
 }
 } // namespace
+#endif // HAVE_LINUX_RTNETLINK_H
+
+#ifndef HAVE_LINUX_RTNETLINK_H
+namespace {
+int connect_sock(Address &local_addr, int fd, const Address &remote_addr) {
+  if (connect(fd, &remote_addr.su.sa, remote_addr.len) != 0) {
+    std::cerr << "connect: " << strerror(errno) << std::endl;
+    return -1;
+  }
+
+  socklen_t len = sizeof(local_addr.su.storage);
+  if (getsockname(fd, &local_addr.su.sa, &len) == -1) {
+    std::cerr << "getsockname: " << strerror(errno) << std::endl;
+    return -1;
+  }
+  local_addr.len = len;
+
+  return 0;
+}
+} // namespace
+#endif // !HAVE_LINUX_RTNETLINK_H
+
+namespace {
+int udp_sock(int family) {
+  auto fd = util::create_nonblock_socket(family, SOCK_DGRAM, IPPROTO_UDP);
+  if (fd == -1) {
+    return -1;
+  }
+
+  auto val = 1;
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val,
+                 static_cast<socklen_t>(sizeof(val))) == -1) {
+    close(fd);
+    return -1;
+  }
+
+  fd_set_recv_ecn(fd, family);
+
+  return fd;
+}
+} // namespace
 
 namespace {
 int create_sock(Address &remote_addr, const char *addr, const char *port) {
@@ -1146,8 +1204,7 @@ int create_sock(Address &remote_addr, const char *addr, const char *port) {
   int fd = -1;
 
   for (rp = res; rp; rp = rp->ai_next) {
-    fd = util::create_nonblock_socket(rp->ai_family, rp->ai_socktype,
-                                      rp->ai_protocol);
+    fd = udp_sock(rp->ai_family);
     if (fd == -1) {
       continue;
     }
@@ -1156,18 +1213,9 @@ int create_sock(Address &remote_addr, const char *addr, const char *port) {
   }
 
   if (!rp) {
-    std::cerr << "Could not connect" << std::endl;
+    std::cerr << "Could not create socket" << std::endl;
     return -1;
   }
-
-  auto val = 1;
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val,
-                 static_cast<socklen_t>(sizeof(val))) == -1) {
-    close(fd);
-    return -1;
-  }
-
-  fd_set_recv_ecn(fd, rp->ai_family);
 
   remote_addr.len = rp->ai_addrlen;
   memcpy(&remote_addr.su, rp->ai_addr, rp->ai_addrlen);
@@ -1175,6 +1223,55 @@ int create_sock(Address &remote_addr, const char *addr, const char *port) {
   return fd;
 }
 } // namespace
+
+std::optional<Endpoint *> Client::endpoint_for(const Address &remote_addr) {
+#ifdef HAVE_LINUX_RTNETLINK_H
+  in_addr_union iau;
+
+  if (get_local_addr(iau, remote_addr) != 0) {
+    std::cerr << "Could not get local address for a selected preferred address"
+              << std::endl;
+    return nullptr;
+  }
+
+  auto current_path = ngtcp2_conn_get_path(conn_);
+  auto current_ep = static_cast<Endpoint *>(current_path->user_data);
+  if (addreq(&current_ep->addr.su.sa, iau)) {
+    return current_ep;
+  }
+#endif // HAVE_LINUX_RTNETLINK_H
+
+  auto fd = udp_sock(remote_addr.su.sa.sa_family);
+  if (fd == -1) {
+    return nullptr;
+  }
+
+  Address local_addr;
+
+#ifdef HAVE_LINUX_RTNETLINK_H
+  if (bind_addr(local_addr, fd, &iau, remote_addr.su.sa.sa_family) != 0) {
+    close(fd);
+    return nullptr;
+  }
+#else  // !HAVE_LINUX_RTNETLINK_H
+  if (connect_sock(local_addr, fd, remote_addr) != 0) {
+    close(fd);
+    return nullptr;
+  }
+#endif // !HAVE_LINUX_RTNETLINK_H
+
+  endpoints_.emplace_back();
+  auto &ep = endpoints_.back();
+  ep.addr = local_addr;
+  ep.client = this;
+  ep.fd = fd;
+  ev_io_init(&ep.rev, readcb, fd, EV_READ);
+  ep.rev.data = &ep;
+
+  ev_io_start(loop_, &ep.rev);
+
+  return &ep;
+}
 
 void Client::start_change_local_addr_timer() {
   ev_timer_start(loop_, &change_local_addr_timer_);
@@ -1187,25 +1284,30 @@ int Client::change_local_addr() {
     std::cerr << "Changing local address" << std::endl;
   }
 
-  auto nfd = util::create_nonblock_socket(remote_addr_.su.sa.sa_family,
-                                          SOCK_DGRAM, IPPROTO_UDP);
+  auto nfd = udp_sock(remote_addr_.su.sa.sa_family);
   if (nfd == -1) {
     return -1;
   }
 
-  auto val = 1;
-  if (setsockopt(nfd, SOL_SOCKET, SO_REUSEADDR, &val,
-                 static_cast<socklen_t>(sizeof(val))) == -1) {
+#ifdef HAVE_LINUX_RTNETLINK_H
+  in_addr_union iau;
+
+  if (get_local_addr(iau, remote_addr_) != 0) {
+    std::cerr << "Could not get local address" << std::endl;
     close(nfd);
     return -1;
   }
 
-  fd_set_recv_ecn(nfd, remote_addr_.su.sa.sa_family);
-
-  if (bind_addr(local_addr, nfd, remote_addr_.su.sa.sa_family) != 0) {
+  if (bind_addr(local_addr, nfd, &iau, remote_addr_.su.sa.sa_family) != 0) {
     close(nfd);
     return -1;
   }
+#else  // !HAVE_LINUX_RTNETLINK_H
+  if (connect_sock(local_addr, nfd, remote_addr_) != 0) {
+    close(nfd);
+    return -1;
+  }
+#endif // !HAVE_LINUX_RTNETLINK_H
 
   endpoints_.emplace_back();
   auto &ep = endpoints_.back();
@@ -1308,8 +1410,10 @@ int Client::send_packet(const Endpoint &ep, const ngtcp2_addr &remote_addr,
   msg_iov.iov_len = datalen;
 
   msghdr msg{};
+#ifdef HAVE_LINUX_RTNETLINK_H
   msg.msg_name = const_cast<sockaddr *>(remote_addr.addr);
   msg.msg_namelen = remote_addr.addrlen;
+#endif // HAVE_LINUX_RTNETLINK_H
   msg.msg_iov = &msg_iov;
   msg.msg_iovlen = 1;
 
@@ -1947,10 +2051,25 @@ int run(Client &c, const char *addr, const char *port,
     return -1;
   }
 
-  if (bind_addr(local_addr, fd, remote_addr.su.sa.sa_family) != 0) {
+#ifdef HAVE_LINUX_RTNETLINK_H
+  in_addr_union iau;
+
+  if (get_local_addr(iau, remote_addr) != 0) {
+    std::cerr << "Could not get local address" << std::endl;
     close(fd);
     return -1;
   }
+
+  if (bind_addr(local_addr, fd, &iau, remote_addr.su.sa.sa_family) != 0) {
+    close(fd);
+    return -1;
+  }
+#else  // !HAVE_LINUX_RTNETLINK_H
+  if (connect_sock(local_addr, fd, remote_addr) != 0) {
+    close(fd);
+    return -1;
+  }
+#endif // !HAVE_LINUX_RTNETLINK_H
 
   if (c.init(fd, local_addr, remote_addr, addr, port, config.version,
              tls_ctx) != 0) {
@@ -2059,7 +2178,7 @@ void config_set_default(Config &config) {
   config.max_window = 6_m;
   config.max_stream_window = 6_m;
   config.max_streams_uni = 100;
-  config.cc = "cubic"sv;
+  config.cc_algo = NGTCP2_CC_ALGO_CUBIC;
   config.initial_rtt = NGTCP2_DEFAULT_INITIAL_RTT;
 }
 } // namespace
@@ -2200,8 +2319,10 @@ Options:
               Exit when all client initiated HTTP streams are closed.
   --disable-early-data
               Disable early data.
-  --cc=(cubic|reno)
+  --cc=(cubic|reno|bbr)
               The name of congestion controller algorithm.
+              Default: )"
+            << util::strccalgo(config.cc_algo) << R"(
   --token-file=<PATH>
               Read/write token from/to <PATH>.  Token is obtained from
               NEW_TOKEN frame from server.
@@ -2517,11 +2638,19 @@ int main(int argc, char **argv) {
         break;
       case 27:
         // --cc
-        if (strcmp("cubic", optarg) == 0 || strcmp("reno", optarg) == 0) {
-          config.cc = optarg;
+        if (strcmp("cubic", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_CUBIC;
           break;
         }
-        std::cerr << "cc: specify cubic or reno" << std::endl;
+        if (strcmp("reno", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_RENO;
+          break;
+        }
+        if (strcmp("bbr", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_BBR;
+          break;
+        }
+        std::cerr << "cc: specify cubic, reno, or bbr" << std::endl;
         exit(EXIT_FAILURE);
       case 28:
         // --exit-on-all-streams-close

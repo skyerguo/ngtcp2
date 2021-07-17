@@ -21,7 +21,7 @@ for which we provide crypto helper libraries:
 
 * `OpenSSL with QUIC support
   <https://github.com/quictls/openssl/tree/OpenSSL_1_1_1k+quic>`_
-* GnuTLS >= 3.7.0
+* GnuTLS >= 3.7.2
 * BoringSSL
 
 Creating ngtcp2_conn object
@@ -64,6 +64,7 @@ callback functions must be set:
   <ngtcp2_callbacks.delete_crypto_cipher_ctx>`:
   `ngtcp2_crypto_delete_crypto_cipher_ctx_cb()` can be passed
   directly.
+* :member:`get_path_challenge_data <ngtcp2_get_path_challenge_data>`
 
 For server application, the following callback functions must be set:
 
@@ -90,6 +91,7 @@ For server application, the following callback functions must be set:
   <ngtcp2_callbacks.delete_crypto_cipher_ctx>`:
   `ngtcp2_crypto_delete_crypto_cipher_ctx_cb()` can be passed
   directly.
+* :member:`get_path_challenge_data <ngtcp2_get_path_challenge_data>`
 
 ``ngtcp2_crypto_*`` functions are a part of :doc:`ngtcp2 crypto API
 <crypto_apiref>` which provides easy integration with the supported
@@ -177,6 +179,16 @@ stream.  For unidirectional stream, call
 `ngtcp2_conn_open_uni_stream()`.  Call `ngtcp2_conn_writev_stream()`
 to send stream data.
 
+If BBR congestion control algorithm is used, the additional API
+functions are required when sending QUIC packets.  BBR needs pacing
+packets.  `ngtcp2_conn_get_send_quantum()` returns the number of bytes
+that can be sent without packet spacing.  After one or more calls of
+`ngtcp2_conn_writev_stream()` (it can be called multiple times to fill
+the buffer sized up to `ngtcp2_conn_get_send_quantum()` bytes), call
+`ngtcp2_conn_update_pkt_tx_time()` to set the timer when the next
+packet should be sent.  The timer is integrated into
+`ngtcp2_conn_get_expiry()`.
+
 Dealing with early data
 -----------------------
 
@@ -194,8 +206,8 @@ retransmit early data to server as 1RTT data.  If an application
 wishes to resend data, it has to reopen streams and writes data again.
 See `ngtcp2_conn_early_data_rejected`.
 
-Stream and crypto data ownershp
--------------------------------
+Stream and crypto data ownership
+--------------------------------
 
 Stream and crypto data passed to :type:`ngtcp2_conn` must be held by
 application until :member:`ngtcp2_callbacks.acked_stream_data_offset`

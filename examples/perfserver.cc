@@ -342,21 +342,19 @@ int stream_close(ngtcp2_conn *conn, int64_t stream_id, uint64_t app_error_code,
 } // namespace
 
 namespace {
-int rand(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *rand_ctx,
-         ngtcp2_rand_usage usage) {
+void rand(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *rand_ctx) {
   auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
   std::generate(dest, dest + destlen, [&dis]() { return dis(randgen); });
-  return 0;
 }
 } // namespace
 
 namespace {
 int get_new_connection_id(ngtcp2_conn *conn, ngtcp2_cid *cid, uint8_t *token,
                           size_t cidlen, void *user_data) {
-  auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
-  auto f = [&dis]() { return dis(randgen); };
+  if (util::generate_secure_random(cid->data, cidlen) != 0) {
+    return NGTCP2_ERR_CALLBACK_FAILURE;
+  }
 
-  std::generate_n(cid->data, cidlen, f);
   cid->datalen = cidlen;
   auto md = util::crypto_md_sha256();
   if (ngtcp2_crypto_generate_stateless_reset_token(
@@ -399,7 +397,7 @@ int update_key(ngtcp2_conn *conn, uint8_t *rx_secret, uint8_t *tx_secret,
 } // namespace
 
 namespace {
-int path_validation(ngtcp2_conn *conn, const ngtcp2_path *path,
+int path_validation(ngtcp2_conn *conn, uint32_t flags, const ngtcp2_path *path,
                     ngtcp2_path_validation_result res, void *user_data) {
   if (!config.quiet) {
     debug::path_validation(path, res);
@@ -431,6 +429,16 @@ int Handler::extend_max_stream_data(int64_t stream_id, uint64_t max_data) {
 
   return 0;
 }
+
+namespace {
+int get_path_challenge_data(ngtcp2_conn *conn, uint8_t *data, void *user_data) {
+  if (util::generate_secure_random(data, NGTCP2_PATH_CHALLENGE_DATALEN) != 0) {
+    return NGTCP2_ERR_CALLBACK_FAILURE;
+  }
+
+  return 0;
+}
+} // namespace
 
 namespace {
 void write_qlog(void *user_data, uint32_t flags, const void *data,
@@ -501,21 +509,21 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
       nullptr, // recv_datagram
       nullptr, // ack_datagram
       nullptr, // lost_datagram
+      get_path_challenge_data,
   };
 
-  auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
-
   scid_.datalen = NGTCP2_SV_SCIDLEN;
-  std::generate(scid_.data, scid_.data + scid_.datalen,
-                [&dis]() { return dis(randgen); });
+  if (util::generate_secure_random(scid_.data, scid_.datalen) != 0) {
+    std::cerr << "Could not generate connection ID" << std::endl;
+    return -1;
+  }
 
   ngtcp2_settings settings;
   ngtcp2_settings_default(&settings);
   settings.log_printf = config.quiet ? nullptr : debug::log_printf;
   settings.initial_ts = util::timestamp(loop_);
   settings.token = ngtcp2_vec{const_cast<uint8_t *>(token), tokenlen};
-  settings.cc_algo =
-      config.cc == "cubic" ? NGTCP2_CC_ALGO_CUBIC : NGTCP2_CC_ALGO_RENO;
+  settings.cc_algo = config.cc_algo;
   settings.initial_rtt = config.initial_rtt;
   if (!config.qlog_dir.empty()) {
     auto path = std::string{config.qlog_dir};
@@ -553,9 +561,11 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
     params.original_dcid = *scid;
   }
 
-  std::generate(std::begin(params.stateless_reset_token),
-                std::end(params.stateless_reset_token),
-                [&dis]() { return dis(randgen); });
+  if (util::generate_secure_random(params.stateless_reset_token,
+                                   sizeof(params.stateless_reset_token)) != 0) {
+    std::cerr << "Could not generate stateless reset token" << std::endl;
+    return -1;
+  }
 
   if (config.preferred_ipv4_addr.len || config.preferred_ipv6_addr.len) {
     params.preferred_address_present = 1;
@@ -577,12 +587,18 @@ int Handler::init(const Endpoint &ep, const Address &local_addr,
     }
 
     auto &token = params.preferred_address.stateless_reset_token;
-    std::generate(std::begin(token), std::end(token),
-                  [&dis]() { return dis(randgen); });
+    if (util::generate_secure_random(token, sizeof(token)) != 0) {
+      std::cerr << "Could not generate preferred address stateless reset token"
+                << std::endl;
+      return -1;
+    }
 
     pscid_.datalen = NGTCP2_SV_SCIDLEN;
-    std::generate(pscid_.data, pscid_.data + pscid_.datalen,
-                  [&dis]() { return dis(randgen); });
+    if (util::generate_secure_random(pscid_.data, pscid_.datalen) != 0) {
+      std::cerr << "Could not generate preferred address connection ID"
+                << std::endl;
+      return -1;
+    }
     params.preferred_address.cid = pscid_;
   }
 
@@ -717,11 +733,20 @@ int Handler::write_streams() {
   PathStorage path, prev_path;
   uint32_t prev_ecn = 0;
   size_t pktcnt = 0;
-  size_t max_pktcnt = std::min(static_cast<size_t>(config.max_gso_dgrams),
-                               static_cast<size_t>(64_k / max_pktlen_));
+  size_t max_pktcnt =
+      std::min(static_cast<size_t>(64_k), ngtcp2_conn_get_send_quantum(conn_)) /
+      max_pktlen_;
   std::array<uint8_t, 64_k> buf;
   uint8_t *bufpos = buf.data();
   ngtcp2_pkt_info pi;
+  auto ts = util::timestamp(loop_);
+
+  if (config.cc_algo != NGTCP2_CC_ALGO_BBR) {
+    /* If bbr is chosen, pacing is enabled.  No need to cap the number
+       of datagrams to send. */
+    max_pktcnt =
+        std::min(max_pktcnt, static_cast<size_t>(config.max_gso_dgrams));
+  }
 
   for (;;) {
     int64_t stream_id = -1;
@@ -746,9 +771,9 @@ int Handler::write_streams() {
 
     ngtcp2_ssize ndatalen;
 
-    auto nwrite = ngtcp2_conn_writev_stream(
-        conn_, &path.path, &pi, bufpos, max_pktlen_, &ndatalen, flags,
-        stream_id, &vec, vcnt, util::timestamp(loop_));
+    auto nwrite =
+        ngtcp2_conn_writev_stream(conn_, &path.path, &pi, bufpos, max_pktlen_,
+                                  &ndatalen, flags, stream_id, &vec, vcnt, ts);
     if (nwrite < 0) {
       switch (nwrite) {
       case NGTCP2_ERR_STREAM_DATA_BLOCKED:
@@ -784,9 +809,11 @@ int Handler::write_streams() {
                              prev_path.path.local, prev_path.path.remote,
                              prev_ecn, buf.data(), bufpos - buf.data(),
                              max_pktlen_);
+        ngtcp2_conn_update_pkt_tx_time(conn_, ts);
         reset_idle_timer();
       }
       // We are congestion limited.
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       return 0;
     }
 
@@ -806,6 +833,7 @@ int Handler::write_streams() {
       server_->send_packet(*static_cast<Endpoint *>(path.path.user_data),
                            path.path.local, path.path.remote, pi.ecn,
                            bufpos - nwrite, nwrite, max_pktlen_);
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       reset_idle_timer();
       ev_io_start(loop_, &wev_);
       return 0;
@@ -815,6 +843,7 @@ int Handler::write_streams() {
       server_->send_packet(*static_cast<Endpoint *>(path.path.user_data),
                            path.path.local, path.path.remote, pi.ecn,
                            buf.data(), bufpos - buf.data(), max_pktlen_);
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       reset_idle_timer();
       ev_io_start(loop_, &wev_);
       return 0;
@@ -826,6 +855,7 @@ int Handler::write_streams() {
                          path.path.local, path.path.remote, pi.ecn, buf.data(),
                          bufpos - buf.data(), 0);
     if (++pktcnt == max_pktcnt) {
+      ngtcp2_conn_update_pkt_tx_time(conn_, ts);
       ev_io_start(loop_, &wev_);
       return 0;
     }
@@ -1632,9 +1662,9 @@ int Server::send_retry(const ngtcp2_pkt_hd *chd, Endpoint &ep,
   ngtcp2_cid scid;
 
   scid.datalen = NGTCP2_SV_SCIDLEN;
-  auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
-  std::generate(scid.data, scid.data + scid.datalen,
-                [&dis]() { return dis(randgen); });
+  if (util::generate_secure_random(scid.data, scid.datalen) != 0) {
+    return -1;
+  }
 
   std::array<uint8_t, MAX_RETRY_TOKENLEN> token;
   size_t tokenlen = token.size();
@@ -1723,11 +1753,6 @@ int Server::derive_token_key(uint8_t *key, size_t &keylen, uint8_t *iv,
   return 0;
 }
 
-void Server::generate_rand_data(uint8_t *buf, size_t len) {
-  auto dis = std::uniform_int_distribution<uint8_t>(0, 255);
-  std::generate_n(buf, len, [&dis]() { return dis(randgen); });
-}
-
 namespace {
 size_t generate_retry_token_aad(uint8_t *dest, size_t destlen,
                                 const sockaddr *sa, socklen_t salen,
@@ -1761,7 +1786,10 @@ int Server::generate_retry_token(uint8_t *token, size_t &tokenlen,
   auto keylen = key.size();
   auto ivlen = iv.size();
 
-  generate_rand_data(rand_data.data(), rand_data.size());
+  if (util::generate_secure_random(rand_data.data(), rand_data.size()) != 0) {
+    return -1;
+  }
+
   if (derive_token_key(key.data(), keylen, iv.data(), ivlen, rand_data.data(),
                        rand_data.size()) != 0) {
     return -1;
@@ -1963,7 +1991,10 @@ int Server::generate_token(uint8_t *token, size_t &tokenlen,
   auto keylen = key.size();
   auto ivlen = iv.size();
 
-  generate_rand_data(rand_data.data(), rand_data.size());
+  if (util::generate_secure_random(rand_data.data(), rand_data.size()) != 0) {
+    return -1;
+  }
+
   if (derive_token_key(key.data(), keylen, iv.data(), ivlen, rand_data.data(),
                        rand_data.size()) != 0) {
     return -1;
@@ -2312,7 +2343,7 @@ void config_set_default(Config &config) {
   config.max_streams_bidi = 100;
   config.max_streams_uni = 100;
   config.max_dyn_length = 20_m;
-  config.cc = "cubic"sv;
+  config.cc_algo = NGTCP2_CC_ALGO_CUBIC;
   config.initial_rtt = NGTCP2_DEFAULT_INITIAL_RTT;
   config.max_gso_dgrams = 10;
 }
@@ -2413,8 +2444,10 @@ Options:
               The maximum length of a dynamically generated content.
               Default: )"
             << util::format_uint_iec(config.max_dyn_length) << R"(
-  --cc=(cubic|reno)
+  --cc=(cubic|reno|bbr)
               The name of congestion controller algorithm.
+              Default: )"
+            << util::strccalgo(config.cc_algo) << R"(
   --initial-rtt=<DURATION>
               Set an initial RTT.
               Default: )"
@@ -2654,11 +2687,19 @@ int main(int argc, char **argv) {
         break;
       case 19:
         // --cc
-        if (strcmp("cubic", optarg) == 0 || strcmp("reno", optarg) == 0) {
-          config.cc = optarg;
+        if (strcmp("cubic", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_CUBIC;
           break;
         }
-        std::cerr << "cc: specify cubic or reno" << std::endl;
+        if (strcmp("reno", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_RENO;
+          break;
+        }
+        if (strcmp("bbr", optarg) == 0) {
+          config.cc_algo = NGTCP2_CC_ALGO_BBR;
+          break;
+        }
+        std::cerr << "cc: specify cubic, reno, or bbr" << std::endl;
         exit(EXIT_FAILURE);
       case 20:
         // --initial-rtt

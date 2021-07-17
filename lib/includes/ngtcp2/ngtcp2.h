@@ -326,6 +326,14 @@ typedef struct ngtcp2_mem {
 /**
  * @macro
  *
+ * :macro:`NGTCP2_PATH_CHALLENGE_DATALEN` is the length of
+ * PATH_CHALLENGE data.
+ */
+#define NGTCP2_PATH_CHALLENGE_DATALEN 8
+
+/**
+ * @macro
+ *
  * :macro:`NGTCP2_RETRY_KEY_DRAFT` is an encryption key to create
  * integrity tag of Retry packet.  It is used for QUIC draft versions.
  */
@@ -1133,20 +1141,6 @@ typedef enum ngtcp2_transport_params_type {
 } ngtcp2_transport_params_type;
 
 /**
- * @enum
- *
- * ngtcp2_rand_usage describes the usage of the generated random data.
- */
-typedef enum ngtcp2_rand_usage {
-  NGTCP2_RAND_USAGE_NONE,
-  /**
-   * :enum:`NGTCP2_RAND_USAGE_PATH_CHALLENGE` indicates that random
-   * value is used for PATH_CHALLENGE.
-   */
-  NGTCP2_RAND_USAGE_PATH_CHALLENGE
-} ngtcp2_rand_usage;
-
-/**
  * @macrosection
  *
  * QUIC transport parameters related macros
@@ -1499,6 +1493,16 @@ typedef struct ngtcp2_conn_stat {
    * in byte per second.
    */
   uint64_t delivery_rate_sec;
+  /**
+   * :member:`pacing_rate` is the current packet sending rate.  If
+   * pacing is disabled, 0 is set.
+   */
+  double pacing_rate;
+  /**
+   * :member:`send_quantum` is the maximum size of a data aggregate
+   * scheduled and transmitted together.
+   */
+  size_t send_quantum;
 } ngtcp2_conn_stat;
 
 /**
@@ -1515,6 +1519,11 @@ typedef enum ngtcp2_cc_algo {
    * :enum:`NGTCP2_CC_ALGO_CUBIC` represents Cubic.
    */
   NGTCP2_CC_ALGO_CUBIC = 0x01,
+  /**
+   * :enum:`NGTCP2_CC_ALGO_BBR` represents BBR.  If BBR is chosen,
+   * packet pacing is enabled.
+   */
+  NGTCP2_CC_ALGO_BBR = 0x02,
   /**
    * :enum:`NGTCP2_CC_ALGO_CUSTOM` represents custom congestion
    * control algorithm.
@@ -1561,6 +1570,38 @@ typedef struct ngtcp2_cc_pkt {
    */
   ngtcp2_tstamp ts_sent;
 } ngtcp2_cc_pkt;
+
+/**
+ * @struct
+ *
+ * :type:`ngtcp2_cc_ack` is a convenient structure which stores
+ * acknowledged and lost bytes.
+ */
+typedef struct ngtcp2_cc_ack {
+  /**
+   * :member:`prior_bytes_in_flight` is the in-flight bytes before
+   * processing this ACK.
+   */
+  uint64_t prior_bytes_in_flight;
+  /**
+   * :member:`bytes_delivered` is the number of bytes acknowledged.
+   */
+  uint64_t bytes_delivered;
+  /**
+   * :member:`bytes_lost` is the number of bytes declared lost.
+   */
+  uint64_t bytes_lost;
+  /**
+   * :member:`pkt_delivered` is the cumulative acknowledged bytes when
+   * the last packet acknowledged by this ACK was sent.
+   */
+  uint64_t pkt_delivered;
+  /**
+   * :member:`largest_acked_sent_ts` is the time when the largest
+   * acknowledged packet was sent.
+   */
+  ngtcp2_tstamp largest_acked_sent_ts;
+} ngtcp2_cc_ack;
 
 typedef struct ngtcp2_cc ngtcp2_cc;
 
@@ -1612,6 +1653,7 @@ typedef void (*ngtcp2_cc_on_persistent_congestion)(ngtcp2_cc *cc,
  * called when an acknowledgement is received.
  */
 typedef void (*ngtcp2_cc_on_ack_recv)(ngtcp2_cc *cc, ngtcp2_conn_stat *cstat,
+                                      const ngtcp2_cc_ack *ack,
                                       ngtcp2_tstamp ts);
 
 /**
@@ -1638,7 +1680,8 @@ typedef void (*ngtcp2_cc_new_rtt_sample)(ngtcp2_cc *cc, ngtcp2_conn_stat *cstat,
  * :type:`ngtcp2_cc_reset` is a callback function which is called when
  * congestion state must be reset.
  */
-typedef void (*ngtcp2_cc_reset)(ngtcp2_cc *cc);
+typedef void (*ngtcp2_cc_reset)(ngtcp2_cc *cc, ngtcp2_conn_stat *cstat,
+                                ngtcp2_tstamp ts);
 
 /**
  * @enum
@@ -1839,8 +1882,7 @@ typedef struct ngtcp2_settings {
   /**
    * :member:`max_udp_payload_size` is the maximum size of UDP
    * datagram payload that this endpoint transmits.  It is used by
-   * congestion controller to compute congestion window.  If it is set
-   * to 0, it defaults to :macro:`NGTCP2_DEFAULT_MAX_PKTLEN`.
+   * congestion controller to compute congestion window.
    */
   size_t max_udp_payload_size;
   /**
@@ -2492,13 +2534,16 @@ typedef int (*ngtcp2_decrypt)(uint8_t *dest, const ngtcp2_crypto_aead *aead,
  * application to produce mask to encrypt or decrypt packet header.
  * The encryption cipher is |hp|.  |hp_ctx| is the cipher context
  * object which is initialized with header protection key.  The sample
- * is passed as |sample|.
+ * is passed as |sample| which is :macro:`NGTCP2_HP_SAMPLELEN` bytes
+ * long.
  *
  * The implementation of this callback must produce a mask using the
  * header protection cipher suite specified by QUIC specification and
  * write the result into the buffer pointed by |dest|.  The length of
- * mask must be :macro:`NGTCP2_HP_MASKLEN`.  The library ensures that
- * |dest| has enough capacity.
+ * mask must be at least :macro:`NGTCP2_HP_MASKLEN`.  The library only
+ * uses the first :macro:`NGTCP2_HP_MASKLEN` bytes of the produced
+ * mask.  The buffer pointed by |dest| is guaranteed to have at least
+ * :macro:`NGTCP2_HP_SAMPLELEN` bytes available for convenience.
  *
  * The callback function must return 0 if it succeeds, or
  *  :macro:`NGTCP2_ERR_CALLBACK_FAILURE` which makes the library call
@@ -2705,16 +2750,11 @@ typedef int (*ngtcp2_extend_max_stream_data)(ngtcp2_conn *conn,
  *
  * :type:`ngtcp2_rand` is a callback function to get randomized byte
  * string from application.  Application must fill random |destlen|
- * bytes to the buffer pointed by |dest|.  |usage| provides the usage
- * of the generated random data.
- *
- * The callback function must return 0 if it succeeds.  Returning
- * :macro:`NGTCP2_ERR_CALLBACK_FAILURE` makes the library call return
- * immediately.
+ * bytes to the buffer pointed by |dest|.  The generated bytes are
+ * used only in non-cryptographic context.
  */
-typedef int (*ngtcp2_rand)(uint8_t *dest, size_t destlen,
-                           const ngtcp2_rand_ctx *rand_ctx,
-                           ngtcp2_rand_usage usage);
+typedef void (*ngtcp2_rand)(uint8_t *dest, size_t destlen,
+                            const ngtcp2_rand_ctx *rand_ctx);
 
 /**
  * @functypedef
@@ -2783,11 +2823,34 @@ typedef int (*ngtcp2_update_key)(
     size_t secretlen, void *user_data);
 
 /**
+ * @macrosection
+ *
+ * Path validation related macros
+ */
+
+/**
+ * @macro
+ *
+ * :macro:`NGTCP2_PATH_VALIDATION_FLAG_NONE` indicates no flag set.
+ */
+#define NGTCP2_PATH_VALIDATION_FLAG_NONE 0
+
+/**
+ * @macro
+ *
+ * :macro:`NGTCP2_PATH_VALIDATION_FLAG_PREFERRED_ADDR` indicates the
+ * validation involving server preferred address.
+ */
+#define NGTCP2_PATH_VALIDATION_FLAG_PREFERRED_ADDR 0x01
+
+/**
  * @functypedef
  *
  * :type:`ngtcp2_path_validation` is a callback function which tells
- * the application the outcome of path validation.  |path| is the path
- * that was validated.  If |res| is
+ * the application the outcome of path validation.  |flags| is zero or
+ * more of NGTCP2_PATH_VALIDATION_FLAG_*.  See
+ * :macro:`NGTCP2_PATH_VALIDATION_FLAG_NONE`.  |path| is the path that
+ * was validated.  If |res| is
  * :enum:`ngtcp2_path_validation_result.NGTCP2_PATH_VALIDATION_RESULT_SUCCESS`,
  * the path validation succeeded.  If |res| is
  * :enum:`ngtcp2_path_validation_result.NGTCP2_PATH_VALIDATION_RESULT_FAILURE`,
@@ -2797,7 +2860,7 @@ typedef int (*ngtcp2_update_key)(
  * :macro:`NGTCP2_ERR_CALLBACK_FAILURE` makes the library call return
  * immediately.
  */
-typedef int (*ngtcp2_path_validation)(ngtcp2_conn *conn,
+typedef int (*ngtcp2_path_validation)(ngtcp2_conn *conn, uint32_t flags,
                                       const ngtcp2_path *path,
                                       ngtcp2_path_validation_result res,
                                       void *user_data);
@@ -2808,20 +2871,28 @@ typedef int (*ngtcp2_path_validation)(ngtcp2_conn *conn,
  * :type:`ngtcp2_select_preferred_addr` is a callback function which
  * asks a client application to choose server address from preferred
  * addresses |paddr| received from server.  An application should
- * write preferred address in |dest|.  If an application denies the
- * preferred addresses, just leave |dest| unmodified (or set
- * :member:`dest->addrlen <ngtcp2_addr.addrlen>` to 0) and return 0.
- * |*ppath_user_data| is assigned to :member:`ngtcp2_path.user_data`
- * of new path if a client chooses server address.  |*path_user_data|
- * is initialized to NULL.
+ * write a network path for a selected preferred address in |dest|.
+ * More specifically, the selected preferred address must be set to
+ * :member:`dest->remote <ngtcp2_path.remote>`, a client source
+ * address must be set to :member:`dest->local <ngtcp2_path.local>`.
+ * If a client source address does not change for the new server
+ * address, leave :member:`dest->local <ngtcp2_path.local>`
+ * unmodified, or copy the value of :member:`local
+ * <ngtcp2_path.local>` field of the current network path obtained
+ * from `ngtcp2_conn_get_path()`.  Both :member:`dest->local.addr
+ * <ngtcp2_addr.addr>` and :member:`dest->remote.addr
+ * <ngtcp2_addr.addr>` point to buffers which are at least
+ * ``sizeof(struct sockaddr_storage)`` bytes long, respectively.  If
+ * an application denies the preferred addresses, just leave |dest|
+ * unmodified (or set :member:`dest->remote.addrlen
+ * <ngtcp2_addr.addrlen>` to 0) and return 0.
  *
  * The callback function must return 0 if it succeeds.  Returning
  * :macro:`NGTCP2_ERR_CALLBACK_FAILURE` makes the library call return
  * immediately.
  */
 typedef int (*ngtcp2_select_preferred_addr)(ngtcp2_conn *conn,
-                                            ngtcp2_addr *dest,
-                                            void **ppath_user_data,
+                                            ngtcp2_path *dest,
                                             const ngtcp2_preferred_addr *paddr,
                                             void *user_data);
 
@@ -2976,6 +3047,22 @@ typedef int (*ngtcp2_lost_datagram)(ngtcp2_conn *conn, uint64_t dgram_id,
                                     void *user_data);
 
 /**
+ * @functypedef
+ *
+ * :type:`ngtcp2_get_path_challenge_data` is a callback function to
+ * ask an application for new data that is sent in PATH_CHALLENGE
+ * frame.  Application must generate new unpredictable exactly
+ * :macro:`NGTCP2_PATH_CHALLENGE_DATALEN` bytes of random data and
+ * store them into the buffer pointed by |data|.
+ *
+ * The callback function must return 0 if it succeeds.  Returning
+ * :macro:`NGTCP2_ERR_CALLBACK_FAILURE` makes the library call return
+ * immediately.
+ */
+typedef int (*ngtcp2_get_path_challenge_data)(ngtcp2_conn *conn, uint8_t *data,
+                                              void *user_data);
+
+/**
  * @struct
  *
  * :type:`ngtcp2_callbacks` holds a set of callback functions.
@@ -3090,8 +3177,8 @@ typedef struct ngtcp2_callbacks {
   ngtcp2_extend_max_streams extend_max_local_streams_uni;
   /**
    * :member:`rand` is a callback function which is invoked when the
-   * library needs unpredictable sequence of random data.  This
-   * callback function must be specified.
+   * library needs sequence of random data.  This callback function
+   * must be specified.
    */
   ngtcp2_rand rand;
   /**
@@ -3194,6 +3281,12 @@ typedef struct ngtcp2_callbacks {
    * when a packet containing DATAGRAM frame is declared lost.
    */
   ngtcp2_lost_datagram lost_datagram;
+  /**
+   * :member:`get_path_challenge_data` is a callback function which is
+   * invoked when the library needs new PATH_CHALLENGE data.  This
+   * callback must be specified.
+   */
+  ngtcp2_get_path_challenge_data get_path_challenge_data;
 } ngtcp2_callbacks;
 
 /**
@@ -4008,6 +4101,12 @@ NGTCP2_EXTERN ngtcp2_ssize ngtcp2_conn_write_stream(
  * This function must not be called from inside the callback
  * functions.
  *
+ * If pacing is enabled, `ngtcp2_conn_update_pkt_tx_time` must be
+ * called after this function.  Application may call this function
+ * multiple times before calling `ngtcp2_conn_update_pkt_tx_time`.
+ * Packet pacing is enabled if BBR congestion controller algorithm is
+ * used.
+ *
  * This function returns the number of bytes written in |dest| if it
  * succeeds, or one of the following negative error codes:
  *
@@ -4770,6 +4869,29 @@ NGTCP2_EXTERN int ngtcp2_conn_set_stream_user_data(ngtcp2_conn *conn,
 /**
  * @function
  *
+ * `ngtcp2_conn_update_pkt_tx_time` sets the time instant of the next
+ * packet transmission.  This function is noop if packet pacing is
+ * disabled.  If packet pacing is enabled, this function must be
+ * called after (multiple invocation of) `ngtcp2_conn_writev_stream`.
+ * If packet aggregation (e.g., packet batching, GSO) is used, call
+ * this function after all aggregated datagrams are sent, which
+ * indicates multiple invocation of `ngtcp2_conn_writev_stream`.
+ */
+NGTCP2_EXTERN void ngtcp2_conn_update_pkt_tx_time(ngtcp2_conn *conn,
+                                                  ngtcp2_tstamp ts);
+
+/**
+ * @function
+ *
+ * `ngtcp2_conn_get_send_quantum` returns the maximum number of bytes
+ * that can be sent in one go without packet spacing.  If packet
+ * pacing is disabled, this function returns UINT64_MAX.
+ */
+NGTCP2_EXTERN size_t ngtcp2_conn_get_send_quantum(ngtcp2_conn *conn);
+
+/**
+ * @function
+ *
  * `ngtcp2_strerror` returns the text representation of |liberr|.
  * |liberr| must be one of ngtcp2 library error codes (which is
  * defined as NGTCP2_ERR_* macro, such as
@@ -4810,6 +4932,20 @@ NGTCP2_EXTERN ngtcp2_addr *ngtcp2_addr_init(ngtcp2_addr *dest,
 /**
  * @function
  *
+ * `ngtcp2_addr_copy_byte` copies |addr| of length |addrlen| into the
+ * buffer pointed by :member:`dest->addr <ngtcp2_addr.addr>`.
+ * :member:`dest->addrlen <ngtcp2_addr.addrlen>` is updated to have
+ * |addrlen|.  This function assumes that :member:`dest->addr
+ * <ngtcp2_addr.addr>` points to a buffer which has a sufficient
+ * capacity to store the copy.
+ */
+NGTCP2_EXTERN void ngtcp2_addr_copy_byte(ngtcp2_addr *dest,
+                                         const struct sockaddr *addr,
+                                         size_t addrlen);
+
+/**
+ * @function
+ *
  * `ngtcp2_path_storage_init` initializes |ps| with the given
  * arguments.  This function copies |local_addr| and |remote_addr|.
  */
@@ -4840,6 +4976,9 @@ NGTCP2_EXTERN void ngtcp2_path_storage_zero(ngtcp2_path_storage *ps);
  * * :type:`initial_rtt <ngtcp2_settings.initial_rtt>` =
  *   :macro:`NGTCP2_DEFAULT_INITIAL_RTT`
  * * :type:`ack_thresh <ngtcp2_settings.ack_thresh>` = 2
+ * * :type:`max_udp_payload_size
+ *   <ngtcp2_settings.max_udp_payload_size>` =
+ *   :macro:`NGTCP2_DEFAULT_MAX_PKTLEN`
  */
 NGTCP2_EXTERN void ngtcp2_settings_default(ngtcp2_settings *settings);
 

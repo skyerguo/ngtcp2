@@ -150,6 +150,9 @@ std::string make_cid_key(const uint8_t *cid, size_t cidlen);
 // straddr stringifies |sa| of length |salen| in a format "[IP]:PORT".
 std::string straddr(const sockaddr *sa, socklen_t salen);
 
+// strccalgo stringifies |cc_algo|.
+std::string_view strccalgo(ngtcp2_cc_algo cc_algo);
+
 template <typename T, size_t N>
 bool streq_l(const T (&a)[N], const nghttp3_vec &b) {
   return N - 1 == b.len && memcmp(a, b.base, N - 1) == 0;
@@ -262,6 +265,11 @@ std::optional<uint64_t> parse_uint_iec(const std::string_view &s);
 // unit is present, the unit "s" is assumed.  If it cannot parse |s|,
 // the return value does not contain a value.
 std::optional<uint64_t> parse_duration(const std::string_view &s);
+
+// generate_secure_random generates a cryptographically secure pseudo
+// random data of |datalen| bytes and stores to the buffer pointed by
+// |data|.
+int generate_secure_random(uint8_t *data, size_t datalen);
 
 // generate_secret generates secret and writes it to the buffer
 // pointed by |secret| of length |secretlen|.  Currently, |secretlen|
