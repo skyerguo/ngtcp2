@@ -2277,12 +2277,26 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
     if (!strncmp(tmp->ifa_name, "router", 6) || !strcmp(tmp->ifa_name, interface) || !strncmp(tmp->ifa_name, "lo", 2)) {
       balancer_interfaces.insert(std::string(tmp->ifa_name));
       fd = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-      if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, sizeof(tmp->ifa_name)) < 0) {
+      // std::cerr << "family: " << family << std::endl;
+      // std::cerr << "IPPROTO_UDP: " << IPPROTO_UDP << std::endl;
+      // std::cerr << "fd: " << fd << std::endl;
+      // std::cerr << "tmp->ifa_name: " << tmp->ifa_name << std::endl;
+      struct ifreq ifr;
+      memset(&ifr, 0, sizeof(ifr));
+      snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), tmp->ifa_name);
+      std::cerr << "ifr.ifr_name: " << ifr.ifr_name << std::endl; 
+      if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
         std::cerr << "Failed to bind on interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
         close(fd);
         tmp = tmp->ifa_next;
         continue;
       }
+      // if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, sizeof(tmp->ifa_name)) < 0) {
+      //   std::cerr << "Failed to bind on interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
+      //   close(fd);
+      //   tmp = tmp->ifa_next;
+      //   continue;
+      // }
       struct sockaddr_in sa;
       memset(&sa, 0, sizeof(sa));
       sa.sin_family = AF_INET;
