@@ -133,7 +133,7 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
   if (params->throughput_sensitive) {
     len += 8;
   }
-  if (params->rtt_sensitive) {
+  if (params->latency_sensitive) {
     len += 8;
   }
   if (params->client_ip) {
@@ -244,12 +244,12 @@ ssize_t ngtcp2_encode_transport_params(uint8_t *dest, size_t destlen,
     p = ngtcp2_put_uint32be(p, params->throughput_sensitive);
   }
 
-  if (params->rtt_sensitive) {
-    // printf("encode params->rtt_sensitive before: %lld %lld\n", p, *p);
-    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE);
+  if (params->latency_sensitive) {
+    // printf("encode params->latency_sensitive before: %lld %lld\n", p, *p);
+    p = ngtcp2_put_uint16be(p, NGTCP2_TRANSPORT_PARAM_LATENCY_SENSITIVE);
     p = ngtcp2_put_uint16be(p, 4);
-    p = ngtcp2_put_uint32be(p, params->rtt_sensitive);
-    // printf("encode params->rtt_sensitive after: %lld %lld\n", p, *p);
+    p = ngtcp2_put_uint32be(p, params->latency_sensitive);
+    // printf("encode params->latency_sensitive after: %lld %lld\n", p, *p);
   }
 
   if (params->client_ip) {
@@ -528,8 +528,8 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
       params->throughput_sensitive = ngtcp2_get_uint32(p);
       p += sizeof(uint32_t);
       break;
-    case NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE:
-      flags |= 1u << NGTCP2_TRANSPORT_PARAM_RTT_SENSITIVE;
+    case NGTCP2_TRANSPORT_PARAM_LATENCY_SENSITIVE:
+      flags |= 1u << NGTCP2_TRANSPORT_PARAM_LATENCY_SENSITIVE;
       if (ngtcp2_get_uint16(p) != sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
@@ -537,7 +537,7 @@ int ngtcp2_decode_transport_params(ngtcp2_transport_params *params,
       if ((size_t)(end - p) < sizeof(uint32_t)) {
         return NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM;
       }
-      params->rtt_sensitive = ngtcp2_get_uint32(p);
+      params->latency_sensitive = ngtcp2_get_uint32(p);
       p += sizeof(uint32_t);
       break;
     case NGTCP2_TRANSPORT_PARAM_CLIENT_IP:

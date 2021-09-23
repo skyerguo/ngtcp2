@@ -517,7 +517,7 @@ void print_transport_params(const ngtcp2_transport_params *params, int type) {
   print_indent();
   fprintf(outfile, "; throughput_sensitive=%u\n", params->throughput_sensitive);
   print_indent();
-  fprintf(outfile, "; rtt_sensitive=%u\n", params->rtt_sensitive);
+  fprintf(outfile, "; latency_sensitive=%u\n", params->latency_sensitive);
   
   print_indent();
   fprintf(outfile, "; client_ip=%lu\n", params->client_ip);

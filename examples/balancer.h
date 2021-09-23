@@ -46,7 +46,6 @@
 
 #include <sys/types.h>
 #include <string.h>
-#include <mysql/mysql.h>
 #include <sstream>
 #include <set>
 
@@ -76,11 +75,10 @@ struct Config {
   uint32_t timeout;
   const char *user = "root";
   const char *password = "root";
-  const char *mysql_ip = "127.0.0.1";
   const char *datacenter = "test";
   uint32_t cpu_sensitive = 0;
   uint32_t throughput_sensitive = 0;
-  uint32_t rtt_sensitive = 0;
+  uint32_t latency_sensitive = 0;
   uint64_t client_ip;
   uint64_t client_process;
   uint64_t time_stamp;
@@ -116,40 +114,6 @@ struct Buffer {
   // occur.
   uint8_t *tail;
 };
-
-// struct LatencyDC {
-//     std::string dc;
-//     double latency;
-
-//     LatencyDC(std::string d, int l) : dc(d), latency(l) {}
-// };
-// struct LatencyDCCmp {
-//     inline bool operator () (const LatencyDC& l1, const LatencyDC& l2) {
-//       return (l1.latency < l2.latency);
-//     }
-// };
-
-// struct CpuDC {
-//   std::string dc;
-//   double cpu;
-//   CpuDC(std::string d, double c) : dc(d), cpu(c) {}
-// };
-// struct CpuDCCmp {
-//     inline bool operator () (const CpuDC& l1, const CpuDC& l2) {
-//       return (l1.cpu > l2.cpu);
-//     }
-// };
-
-// struct ThroughputDC {
-//   std::string dc;
-//   double throughput;
-//   ThroughputDC(std::string d, double t) : dc(d), throughput(t) {}
-// };
-// struct ThroughputDCCmp {
-//     inline bool operator () (const ThroughputDC& l1, const ThroughputDC& l2) {
-//       return (l1.throughput > l2.throughput);
-//     }
-// };
 
 static std::vector<double> best_metrics; // 某个metric的最优值
 struct WeightedDC {
@@ -339,7 +303,7 @@ public:
   Server(struct ev_loop *loop, SSL_CTX *ssl_ctx);
   ~Server();
 
-  int init(int fd, const char *user, const char *password, const char *mysql_ip);
+  int init(int fd, const char *user, const char *password);
   void disconnect();
   void disconnect(int liberr);
   void close();
@@ -370,7 +334,6 @@ private:
   int fd_;
   std::vector<int> fds_;
   std::map<std::string, int> server_fd_map_;
-  MYSQL *mysql_;
   ev_io wev_;
   ev_io rev_;
   ev_signal sigintev_;

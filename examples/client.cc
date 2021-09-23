@@ -1749,9 +1749,9 @@ int read_transport_params(const char *path, ngtcp2_transport_params *params) {
     } else if (util::istarts_with_l(line, "throughput_sensitive=")) {
       params->throughput_sensitive =
           strtoul(line.c_str() + str_size("throughput_sensitive="), nullptr, 10);
-    } else if (util::istarts_with_l(line, "rtt_sensitive=")) {
-      params->rtt_sensitive =
-          strtoul(line.c_str() + str_size("rtt_sensitive="), nullptr, 10);
+    } else if (util::istarts_with_l(line, "latency_sensitive=")) {
+      params->latency_sensitive =
+          strtoul(line.c_str() + str_size("latency_sensitive="), nullptr, 10);
     } 
     else if (util::istarts_with_l(line, "client_ip=")) {
       params->client_ip =
@@ -1886,16 +1886,16 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
   // std::cerr << "config sets params begin." << std::endl;
   if (strcmp(config.website_root_path, "normal_1") == 0 || 
       strcmp(config.website_root_path, "normal_2") == 0) {
-    params.rtt_sensitive = 1;
+    params.latency_sensitive = 1;
     params.throughput_sensitive = 2, params.cpu_sensitive = 2;
   }
   else if (strcmp(config.website_root_path,"video") == 0) {
     params.throughput_sensitive = 1;
-    params.rtt_sensitive = 2, params.cpu_sensitive = 2;
+    params.latency_sensitive = 2, params.cpu_sensitive = 2;
   }
   else if (strcmp(config.website_root_path, "cpu") == 0) {
     params.cpu_sensitive = 1;
-    params.rtt_sensitive = 2, params.throughput_sensitive = 2;
+    params.latency_sensitive = 2, params.throughput_sensitive = 2;
   }
   // std::cerr << "config sets params middle." << std::endl;
 

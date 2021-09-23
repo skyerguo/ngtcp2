@@ -146,9 +146,9 @@ A behavior-aware CDN distribution system.
   ```
   Executing sql all costs 5.31872 milliseconds.
   Logs mysql optimal and suboptimal costs0.149472 milliseconds.
-  user requires rtt_sensitive! # 用户选择某个资源敏感
+  user requires latency_sensitive! # 用户选择某个资源敏感
   =====latency optimized routing and forwarding selecting START=====
-  request rtt_sensitive
+  request latency_sensitive
   count_latencies: 0 # count_* 0表示最优，1表示冗余发包，这个demo暂时没有加冗余逻辑
   Forwarded to server: server
   =====latency optimized routing and forwarding selecting END=====
@@ -165,7 +165,7 @@ A behavior-aware CDN distribution system.
   throughputs-0 usus-wet2, 1.0685
   throughputs-1 eupe-wet1, 1.4015
 
-  request rtt_sensitive
+  request latency_sensitive
   The current dc is the best, choose server to forward. usus-wet2, 50 # 选择了哪个
   ```
   - **注意**
