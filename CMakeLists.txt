@@ -82,7 +82,6 @@ else()
 endif()
 # libev (for examples)
 set(HAVE_LIBEV      ${LIBEV_FOUND})
-set(HAVE_LIBMYSQLCLIENT      ${LIBMYSQLCLIENT_FOUND})
 
 # Checks for header files.
 include(CheckIncludeFile)
@@ -260,5 +259,4 @@ message(STATUS "summary of build options:
     Libs:
       OpenSSL:        ${HAVE_OPENSSL} (LIBS='${OPENSSL_LIBRARIES}')
       Libev:          ${HAVE_LIBEV} (LIBS='${LIBEV_LIBRARIES}')
-      Libmysqlclient: ${HAVE_LIBMYSQLCLIENT} (LIBS='${LIBMYSQLCLIENT_LIBRARIES})
 ")

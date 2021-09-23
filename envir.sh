@@ -1,4 +1,4 @@
-sudo apt install git tmux autoconf libtool pkg-config libev-dev  mysql-client libmysql++-dev mysql-server -y
+sudo apt install git tmux autoconf libtool pkg-config libev-dev -y
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
