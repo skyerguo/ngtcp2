@@ -1879,21 +1879,22 @@ int Server::on_read(int fd, bool forwarded) {
         // std::cerr << config.server_name.size() << std::endl;
         for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
         {
-          std::string redis_key = "cpu_idle_" + config.server_name[server_name_index] + "-server";
+          std::string redis_key = "cpu_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
+          std::cerr << "redis_key" << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_name[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
 
-          redis_key = "throughput_" + config.server_name[server_name_index] + "-server";
+          redis_key = "throughput_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_name[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
           
-          redis_key = "latency_" + config.server_name[server_name_index] + "-server";
+          redis_key = "latency_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_name[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
