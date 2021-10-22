@@ -38,7 +38,7 @@ LDADD = $(top_builddir)/lib/libngtcp2.la \
 	@LIBEV_LIBS@ \
 	@LIBMYSQLCLIENT_LIBS@
 
-noinst_PROGRAMS = client server balancer
+noinst_PROGRAMS = client server dispatcher
 
 client_SOURCES = client.cc client.h \
 	template.h \
@@ -57,7 +57,7 @@ server_SOURCES = server.cc server.h \
 	crypto.cc \
 	http.cc http.h
 
-balancer_SOURCES = balancer.cc balancer.h \
+dispatcher_SOURCES = dispatcher.cc dispatcher.h \
 	template.h \
 	debug.cc debug.h \
 	util.cc util.h \

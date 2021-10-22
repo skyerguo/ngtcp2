@@ -319,11 +319,11 @@ public:
   remove(std::map<uint64_t, std::unique_ptr<Handler>>::const_iterator it);
   void start_wev();
   void add_fd(std::string str, int fd) { server_fd_map_[str] = fd; }
-  void add_balancer_fd(std::string str, int fd) { balancer_fd_map_[str] = fd; balancer_rev_map_[str] = new ev_io(); }
+  void add_dispatcher_fd(std::string str, int fd) { dispatcher_fd_map_[str] = fd; dispatcher_rev_map_[str] = new ev_io(); }
   int fd() { return fd_; }
 
-  std::map<std::string, int> balancer_fd_map_;
-  std::map<std::string, ev_io*> balancer_rev_map_;
+  std::map<std::string, int> dispatcher_fd_map_;
+  std::map<std::string, ev_io*> dispatcher_rev_map_;
   struct ev_loop *loop_;
 
 private:

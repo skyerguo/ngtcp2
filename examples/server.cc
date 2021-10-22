@@ -57,7 +57,7 @@ auto randgen = util::make_mt19937();
 
 namespace {
 Config config{};
-std::set<std::string> balancer_interfaces;
+std::set<std::string> dispatcher_interfaces;
 } // namespace
 
 namespace {
@@ -1753,7 +1753,7 @@ int Server::on_write(int fd) {
 
 namespace {
 void arp_add(sockaddr* sa) {
-  for (auto interface: balancer_interfaces) {
+  for (auto interface: dispatcher_interfaces) {
     struct arpreq req;
     struct sockaddr_in *sin;
     bzero(&req, sizeof(req));
@@ -2275,7 +2275,7 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       continue;
     }
     if (!strncmp(tmp->ifa_name, "router", 6) || !strcmp(tmp->ifa_name, interface) || !strncmp(tmp->ifa_name, "lo", 2)) {
-      balancer_interfaces.insert(std::string(tmp->ifa_name));
+      dispatcher_interfaces.insert(std::string(tmp->ifa_name));
       fd = socket(family, SOCK_DGRAM, IPPROTO_UDP);
       // std::cerr << "family: " << family << std::endl;
       // std::cerr << "IPPROTO_UDP: " << IPPROTO_UDP << std::endl;

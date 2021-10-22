@@ -41,7 +41,7 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 
-#include "balancer.h"
+#include "dispatcher.h"
 #include "network.h"
 #include "debug.h"
 #include "util.h"
@@ -1851,7 +1851,7 @@ int Server::on_read(int fd, bool forwarded) {
       std::cerr << "Parsing QUIC packet costs " << time_span3.count() << " milliseconds." << std::endl;
 
             
-      /* select balancer */
+      /* select dispatcher */
       std::map<std::string, std::string> dcs;
       
 
@@ -1982,12 +1982,12 @@ int Server::on_read(int fd, bool forwarded) {
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
           // std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
           auto interface = dcs[ldc.dc];
-          auto fd = balancer_fd_map_[interface];
+          auto fd = dispatcher_fd_map_[interface];
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            log_file << "Forwarded to balancer: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
+            log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
           }
         } else {
           log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
@@ -2013,7 +2013,7 @@ int Server::on_read(int fd, bool forwarded) {
       log_file << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
 
       if (!forwarded) {
-        log_file << "Failed to find server/balancer to forward" << std::endl;
+        log_file << "Failed to find server/dispatcher to forward" << std::endl;
       }
       log_file.close();
       
@@ -2513,14 +2513,14 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         tmp = tmp->ifa_next;
         continue;
       }
-      s.add_balancer_fd(tmp->ifa_name, fd);
-      printf("Registered interface: %s as balancer, %d\n", tmp->ifa_name, fd);
+      s.add_dispatcher_fd(tmp->ifa_name, fd);
+      printf("Registered interface: %s as dispatcher, %d\n", tmp->ifa_name, fd);
     }
     tmp = tmp->ifa_next;
   }
 
-  for (auto const& item : s.balancer_fd_map_) {
-    auto rev = s.balancer_rev_map_[item.first];
+  for (auto const& item : s.dispatcher_fd_map_) {
+    auto rev = s.dispatcher_rev_map_[item.first];
     ev_io_init(rev, freadcb, 0, EV_READ);
     auto server_wrapper = new ServerWrapper(item.second, &s);
     rev->data = server_wrapper;
