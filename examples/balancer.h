@@ -85,6 +85,7 @@ struct Config {
   std::vector<std::string> server_ip;
   std::vector<std::string> server_name;
   uint32_t redundancy;
+  const char *dispatcher_name = "";
 };
 
 struct Buffer {

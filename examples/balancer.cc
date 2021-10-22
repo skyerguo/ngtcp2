@@ -764,9 +764,9 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
   case AF_INET:
     max_pktlen_ = NGTCP2_MAX_PKTLEN_IPV4;
     break;
-  case AF_INET6:
-    max_pktlen_ = NGTCP2_MAX_PKTLEN_IPV6;
-    break;
+  // case AF_INET6:
+  //   max_pktlen_ = NGTCP2_MAX_PKTLEN_IPV6;
+  //   break;
   default:
     return -1;
   }
@@ -1694,11 +1694,12 @@ void Server::close() {
 }
 
 int Server::init(int fd, const char *user, const char *password) {
+  fd_ = fd;
   // read servers ip from machine.json
   config.server_ip.clear();
   config.server_name.clear();
 
-  std::ifstream in("mininet-polygon/json-files/machine_server.json");
+  std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_server.json");
   std::ostringstream tmp;
   tmp << in.rdbuf();
   std::string machines = tmp.str();
@@ -1880,21 +1881,21 @@ int Server::on_read(int fd, bool forwarded) {
         {
           std::string redis_key = "cpu_idle_" + config.server_name[server_name_index] + "-server";
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors for cpu" << std::endl;
+            std::cerr << config.server_name[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
 
           redis_key = "throughput_" + config.server_name[server_name_index] + "-server";
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors for throughput" << std::endl;
+            std::cerr << config.server_name[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
           
           redis_key = "latency_" + config.server_name[server_name_index] + "-server";
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << "server " <<  config.server_name[server_name_index] << " has measurement errors for latency" << std::endl;
+            std::cerr << config.server_name[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
@@ -2448,10 +2449,11 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
                 s, maxlen);
       break;
 
-    case AF_INET6:
-      inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
-                s, maxlen);
-      break;
+    // ipv6
+    // case AF_INET6:
+    //   inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+    //             s, maxlen);
+    //   break;
 
     case AF_PACKET:
       sprintf(s, "AF_PACKET");
@@ -2467,6 +2469,7 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 namespace {
 int serve(const char *interface, Server &s, const char *addr, const char *port, int family, const char *user, const char *password) {
   auto fd = create_sock(interface, addr, port, family);
+  std::cerr << "fd: " << fd << std::endl;
   if (fd == -1) {
     return -1;
   }
@@ -2745,19 +2748,23 @@ int main(int argc, char **argv) {
 
   auto ready = false;
 
+  // std::cerr << AF_INET << std::endl;
+  // std::cerr << AF_INET6 << std::endl;
+
   Server s4(EV_DEFAULT, ssl_ctx);
-  if (!util::numeric_host(addr, AF_INET6)) {
+  // if (!util::numeric_host(addr, AF_INET6)) {
     if (serve(interface, s4, addr, port, AF_INET, config.user, config.password) == 0) {
       ready = true;
     }
-  }
+  // }
 
-  Server s6(EV_DEFAULT, ssl_ctx);
-  if (!util::numeric_host(addr, AF_INET)) {
-    if (serve(interface, s6, addr, port, AF_INET6, config.user, config.password) == 0) {
-      ready = true;
-    }
-  }
+  // ipv6
+  // Server s6(EV_DEFAULT, ssl_ctx);
+  // if (!util::numeric_host(addr, AF_INET)) {
+  //   if (serve(interface, s6, addr, port, AF_INET6, config.user, config.password) == 0) {
+  //     ready = true;
+  //   }
+  // }
 
   if (!ready) {
     exit(EXIT_FAILURE);
@@ -2765,7 +2772,7 @@ int main(int argc, char **argv) {
 
   ev_run(EV_DEFAULT, 0);
 
-  close(s6);
+  // close(s6);
   close(s4);
 
   return EXIT_SUCCESS;
