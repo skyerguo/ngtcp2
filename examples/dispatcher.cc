@@ -2607,6 +2607,8 @@ Options:
             << R"(
   --redundancy input the number of redundancy. 
                Default 0.
+  --dispatcher_name input the name of dispatcher_name. 
+              Default empty char*.
   -h, --help  Display this help and exit.
 )";
 }
@@ -2630,6 +2632,7 @@ int main(int argc, char **argv) {
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
         {"redundancy", required_argument, &flag, 4},
+        {"dispatcher_name", required_argument, &flag, 5},        
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2698,6 +2701,10 @@ int main(int argc, char **argv) {
         // --redundancy
         config.redundancy = strtol(optarg, nullptr, 10);
         break;
+      case 5:
+        // --dispatcher_name
+        config.dispatcher_name = optarg;
+        break;
       default:
         break;
       }
@@ -2747,9 +2754,6 @@ int main(int argc, char **argv) {
   }
 
   auto ready = false;
-
-  // std::cerr << AF_INET << std::endl;
-  // std::cerr << AF_INET6 << std::endl;
 
   Server s4(EV_DEFAULT, ssl_ctx);
   // if (!util::numeric_host(addr, AF_INET6)) {
