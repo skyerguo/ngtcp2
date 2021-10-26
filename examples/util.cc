@@ -250,7 +250,7 @@ std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
 }
 
 std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
-  std::string res = "/home/gtc/experiment_results/";
+  std::string res = "/data/result-logs/dispatcher/";
   res += getUinque(a, b, c);
   res += ".txt";
   return res;

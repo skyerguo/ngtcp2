@@ -1696,8 +1696,9 @@ void Server::close() {
 int Server::init(int fd, const char *user, const char *password) {
   fd_ = fd;
   // read servers ip from machine.json
-  config.server_ip.clear();
-  config.server_name.clear();
+  config.server_ips.clear();
+  config.server_names.clear();
+  config.server_zones.clear();
 
   std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_server.json");
   std::ostringstream tmp;
@@ -1715,12 +1716,12 @@ int Server::init(int fd, const char *user, const char *password) {
     std::string server_ip;
     oJson[machine_key].Get("external_ip1", server_ip);
     
-    config.server_ip.push_back(server_ip);
-    config.server_name.push_back(server_name);
+    config.server_ips.push_back(server_ip);
+    config.server_names.push_back(server_name);
   }
-  // for (int i = 0; i < config.server_ip.size(); i++) {
-  //   std::cerr << "server_ip: " << config.server_ip[i] << std::endl;
-  //   std::cerr << "server_name: " << config.server_name[i] << std::endl;
+  // for (int i = 0; i < config.server_ips.size(); i++) {
+  //   std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
+  //   std::cerr << "server_name: " << config.server_names[i] << std::endl;
   // }
   
   ev_io_set(&wev_, fd_, EV_WRITE);
@@ -1852,8 +1853,6 @@ int Server::on_read(int fd, bool forwarded) {
 
             
       /* select dispatcher */
-      std::map<std::string, std::string> dcs;
-      
 
       /* get all metrics */
       std::ofstream log_file;
@@ -1865,7 +1864,32 @@ int Server::on_read(int fd, bool forwarded) {
       best_metrics.resize(0);  //清空
       auto len_best_metrics = 0;
       std::vector<WeightedDC> weighted_dcs;
-      
+      std::map<std::string, std::string> dcs;
+
+      std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_dispatcher.json");
+      std::ostringstream tmp;
+      tmp << in.rdbuf();
+      std::string machines = tmp.str();
+      // std::cerr << "machines: " << machines << std::endl;
+      neb::CJsonObject oJson;
+      oJson.Parse(machines);
+      std::string machine_key;
+      while (oJson.GetKey(machine_key)) 
+      {  
+        std::cerr << "dispatcher_name: " << machine_key << std::endl;
+        // std::string dispatcher_name = machine_key;
+
+        std::string dispatcher_zone;
+        oJson[machine_key].Get("zone", dispatcher_zone);
+        
+        config.zones.push_back(dispatcher_zone);
+
+        if (strcmp(machine_key.c_str(), config.current_dispatcher_name) == 0)
+          config.current_dispatcher_zone = dispatcher_zone.c_str();
+        // config.server_names.push_back(server_name);
+      }
+      std::cerr << "current_dispatcher_zone: " << config.current_dispatcher_zone << std::endl;
+
       /* get latencies, cpus and throughputs from redis */
 
       /* search measures using redis */
@@ -1876,39 +1900,53 @@ int Server::on_read(int fd, bool forwarded) {
         best_metrics.push_back(0); len_best_metrics ++;
         best_metrics.push_back(0); len_best_metrics ++;
         best_metrics.push_back(0); len_best_metrics ++;
-        // std::cerr << config.server_name.size() << std::endl;
-        for (int server_name_index = 0; server_name_index < config.server_name.size(); ++server_name_index)
+        // std::cerr << config.server_names.size() << std::endl;
+        for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
-          std::string redis_key = "cpu_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
-          std::cerr << "redis_key" << redis_key << std::endl;
+          std::string redis_key = "cpu_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          std::cerr << "redis_key1: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_name[server_name_index] << " has measurement errors for cpu" << std::endl;
+            std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
+          std::cerr << "redis_value_cpu1: " << redis_value_cpu << std::endl;
 
-          redis_key = "throughput_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
+          redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          std::cerr << "redis_key2: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_name[server_name_index] << " has measurement errors for throughput" << std::endl;
+            std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
           
-          redis_key = "latency_" + config.server_name[server_name_index] + "_" + config.dispatcher_name;
+          redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          std::cerr << "redis_key3: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_name[server_name_index] << " has measurement errors for latency" << std::endl;
+            std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
           
-          auto temp_name = util::getStdLocation(config.server_name[server_name_index]);
           for (int j = 0; j < weighted_dcs.size(); ++j) {
-            if (weighted_dcs[j].dc == temp_name) {
+            std::cerr << weighted_dcs[j].dc << std::endl;
+          }
+
+          // std::cerr << "before_location: " << config.server_names[server_name_index] << std::endl;
+          // auto temp_name = util::getStdLocation(config.server_names[server_name_index]);
+          // std::cerr << temp_name << std::endl;
+          
+          for (int j = 0; j < weighted_dcs.size(); ++j) {
+            if (weighted_dcs[j].dc == config.server_zones[server_name_index]) {
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_latency, config.latency_sensitive));
               break;
             }
+          }
+
+          for (int j = 0; j < len_best_metrics; ++j) {
+            std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
           }
 
           best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
@@ -1920,6 +1958,18 @@ int Server::on_read(int fd, bool forwarded) {
         std::cerr << "redis connect error!\n" << std::endl;
       }
       delete r1;
+
+      std::cerr << "before_weighted_dcs" << std::endl;
+      for (int j = 0; j < weighted_dcs.size(); ++j) {
+        weighted_dcs[j].debug_output();
+      }
+      std::cerr << "after_weighted_dcs" << std::endl;
+
+      std::cerr << "before_best_metrics" << std::endl;
+      for (int j = 0; j < len_best_metrics; ++j) {
+        std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+      }
+      std::cerr << "after_best_metrics" << std::endl;
 
       std::chrono::high_resolution_clock::time_point end_log2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log2 = end_log2 - start_log1;
@@ -2608,7 +2658,7 @@ Options:
             << R"(
   --redundancy input the number of redundancy. 
                Default 0.
-  --dispatcher_name input the name of dispatcher_name. 
+  --current_dispatcher_name input the name of current_dispatcher_name. 
               Default empty char*.
   -h, --help  Display this help and exit.
 )";
@@ -2633,7 +2683,7 @@ int main(int argc, char **argv) {
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
         {"redundancy", required_argument, &flag, 4},
-        {"dispatcher_name", required_argument, &flag, 5},        
+        {"current_dispatcher_name", required_argument, &flag, 5},        
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2703,8 +2753,8 @@ int main(int argc, char **argv) {
         config.redundancy = strtol(optarg, nullptr, 10);
         break;
       case 5:
-        // --dispatcher_name
-        config.dispatcher_name = optarg;
+        // --current_dispatcher_name
+        config.current_dispatcher_name = optarg;
         break;
       default:
         break;

@@ -82,10 +82,13 @@ struct Config {
   uint64_t client_ip;
   uint64_t client_process;
   uint64_t time_stamp;
-  std::vector<std::string> server_ip;
-  std::vector<std::string> server_name;
+  std::vector<std::string> server_ips;
+  std::vector<std::string> server_names;
+  std::vector<std::string> server_zones;
   uint32_t redundancy;
-  const char *dispatcher_name = "";
+  const char *current_dispatcher_name = "";
+  const char *current_dispatcher_zone = "";
+  std::vector<std::string> zones;
 };
 
 struct Buffer {
