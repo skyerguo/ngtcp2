@@ -1714,10 +1714,13 @@ int Server::init(int fd, const char *user, const char *password) {
     std::string server_name = machine_key;
 
     std::string server_ip;
+    std::string server_zone;
     oJson[machine_key].Get("external_ip1", server_ip);
+    oJson[machine_key].Get("zone", server_zone);
     
     config.server_ips.push_back(server_ip);
     config.server_names.push_back(server_name);
+    config.server_zones.push_back(server_zone);
   }
   // for (int i = 0; i < config.server_ips.size(); i++) {
   //   std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
@@ -1864,7 +1867,7 @@ int Server::on_read(int fd, bool forwarded) {
       best_metrics.resize(0);  //清空
       auto len_best_metrics = 0;
       std::vector<WeightedDC> weighted_dcs;
-      std::map<std::string, std::string> dcs;
+      // std::map<std::string, std::string> dcs;
 
       std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_dispatcher.json");
       std::ostringstream tmp;
@@ -1876,7 +1879,7 @@ int Server::on_read(int fd, bool forwarded) {
       std::string machine_key;
       while (oJson.GetKey(machine_key)) 
       {  
-        std::cerr << "dispatcher_name: " << machine_key << std::endl;
+        // std::cerr << "dispatcher_name: " << machine_key << std::endl;
         // std::string dispatcher_name = machine_key;
 
         std::string dispatcher_zone;
@@ -1887,6 +1890,9 @@ int Server::on_read(int fd, bool forwarded) {
         if (strcmp(machine_key.c_str(), config.current_dispatcher_name) == 0)
           config.current_dispatcher_zone = dispatcher_zone.c_str();
         // config.server_names.push_back(server_name);
+        WeightedDC temp_new;
+        temp_new.dc = dispatcher_zone;
+        weighted_dcs.push_back(temp_new);
       }
       std::cerr << "current_dispatcher_zone: " << config.current_dispatcher_zone << std::endl;
 
@@ -1929,7 +1935,7 @@ int Server::on_read(int fd, bool forwarded) {
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
           
           for (int j = 0; j < weighted_dcs.size(); ++j) {
-            std::cerr << weighted_dcs[j].dc << std::endl;
+            std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
           }
 
           // std::cerr << "before_location: " << config.server_names[server_name_index] << std::endl;
@@ -1937,7 +1943,10 @@ int Server::on_read(int fd, bool forwarded) {
           // std::cerr << temp_name << std::endl;
           
           for (int j = 0; j < weighted_dcs.size(); ++j) {
+            std::cerr << weighted_dcs[j].dc << std::endl;
+            std::cerr << config.server_zones[server_name_index] << std::endl;
             if (weighted_dcs[j].dc == config.server_zones[server_name_index]) {
+              std::cerr << "111" << std::endl;
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_latency, config.latency_sensitive));
@@ -2020,10 +2029,10 @@ int Server::on_read(int fd, bool forwarded) {
         if (!config.quiet) {
           ldc.debug_output();
         }
-        if (dcs.find(ldc.dc) == dcs.end()) {
-          std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
-          continue;
-        }
+        // if (dcs.find(ldc.dc) == dcs.end()) {
+        //   std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
+        //   continue;
+        // }
         if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0].first)) continue;
 
         // log_file << "count_routings: " << count_routings << std::endl;
@@ -2036,8 +2045,11 @@ int Server::on_read(int fd, bool forwarded) {
         sa.sin_addr.s_addr = iph->daddr;
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
           // std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
-          auto interface = dcs[ldc.dc];
+          // auto interface = dcs[ldc.dc];
+          auto interface = ldc.dc;
           auto fd = dispatcher_fd_map_[interface];
+          std::cerr << "!!interface: " << interface << std::endl;
+          std::cerr << "!!fd: " << fd << std::endl;
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
