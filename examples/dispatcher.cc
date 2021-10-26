@@ -1855,9 +1855,9 @@ int Server::on_read(int fd, bool forwarded) {
       /* select dispatcher */
 
       /* get all metrics */
-      std::ofstream log_file;
-      std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);      
-      log_file.open(unique_log_file, std::ofstream::app);
+      // std::ofstream log_file;
+      // std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);      
+      // log_file.open(unique_log_file, std::ofstream::app);
 
       std::chrono::high_resolution_clock::time_point start_log1 = std::chrono::high_resolution_clock::now();
       
@@ -1973,7 +1973,8 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point end_log2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log2 = end_log2 - start_log1;
-      log_file << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
+      // log_file << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
+      std::cerr << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
 
       /* 根据已有的最优结果，计算每个dc的实际权重，并排序 */ 
       for (int i = 0; i < weighted_dcs.size(); ++i) 
@@ -1982,7 +1983,8 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
-      log_file << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
+      // log_file << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
+      std::cerr << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
 
       /* forward */
       bool forwarded = false;
@@ -2005,7 +2007,8 @@ int Server::on_read(int fd, bool forwarded) {
         if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
           perror("Failed to forward ip packet");
         } else {
-          log_file << "Forwarded to local dc: "<< std::endl;
+          // log_file << "Forwarded to local dc: "<< std::endl;
+          std::cerr << "Forwarded to local dc: "<< std::endl;
         }
       }
       
@@ -2023,7 +2026,8 @@ int Server::on_read(int fd, bool forwarded) {
         }
         if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0].first)) continue;
 
-        log_file << "count_routings: " << count_routings << std::endl;
+        // log_file << "count_routings: " << count_routings << std::endl;
+        std::cerr << "count_routings: " << count_routings << std::endl;
 
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
@@ -2038,10 +2042,12 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
+            // log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
+            std::cerr << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
           }
         } else {
-          log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
+          // log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
+          std::cerr << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
           
           /* select server */
           auto fd = server_fd_map_["server"];
@@ -2061,12 +2067,14 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point end_log4 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log4 = end_log4 - start_log1;
-      log_file << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
+      // log_file << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
+      std::cerr << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
 
       if (!forwarded) {
-        log_file << "Failed to find server/dispatcher to forward" << std::endl;
+        // log_file << "Failed to find server/dispatcher to forward" << std::endl;
+        std::cerr << "Failed to find server/dispatcher to forward" << std::endl;
       }
-      log_file.close();
+      // log_file.close();
       
 
       rv = h->on_write();
