@@ -1798,7 +1798,7 @@ int Server::on_read(int fd, bool forwarded) {
   if (udph->dest != htons(config.port)) {
     return 0;
   }
-  // std::cerr << "iph->saddr: " << iph->saddr << std::endl;
+  std::cerr << "iph->saddr: " << iph->saddr << std::endl;
   if (!config.quiet) {
     std::cerr << "Got packet of size: " << udp_size << " from " << sender_ip << std::endl;
   }
@@ -1965,6 +1965,7 @@ int Server::on_read(int fd, bool forwarded) {
       }
       else {
         std::cerr << "redis connect error!\n" << std::endl;
+        weighted_dcs.resize(0);
       }
       delete r1;
 
@@ -1999,25 +2000,51 @@ int Server::on_read(int fd, bool forwarded) {
       bool forwarded = false;
 
       if (weighted_dcs.empty()) {
+        std::cerr << "weighted_dcs.empty()" << std::endl;
 
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
-        sa.sin_port = udph->dest;
-        sa.sin_addr.s_addr = iph->daddr;
+        // sa.sin_port = udph->dest;
+        // sa.sin_addr.s_addr = iph->daddr;
+        sa.sin_port = htons(4434);
+        sa.sin_addr.s_addr = inet_addr("10.0.0.3");
+        std::cerr << "sin_port: " << "\tudph->dest: " <<  udph->dest << "\thtons(4434): " << htons(4434) << std::endl;
+        std::cerr << "sin_addr.s_addr: " << "\tiph->daddr: " << iph->daddr << "\tinet_addr('10.0.0.3')" << inet_addr("10.0.0.3") << std::endl;
+        std::cerr << "!!!sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << sa.sin_port << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
+
+        char test_message[2000];
+        memset(test_message, '\0', sizeof(test_message));
+        test_message[0] = 'a';
+        test_message[1] = 'b';
+        test_message[2] = 'c';
+
+        auto temp_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        std::cerr << "temp_fd: " << temp_fd << std::endl;
+        std::cerr << "sendto: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+        if (sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+          perror("Failed to forward ip packet");
+        }
+        std::cerr << "done!" << std::endl;
+        exit(0);
+
         // std::cerr << "throughputs vector is empty. forward to local data center" << std::endl;
         std::map<std::string, int>::iterator iter;
+        std::cerr << "server_fd_map_ size:" << server_fd_map_.size() << std::endl;
         iter = server_fd_map_.begin();
         while(iter != server_fd_map_.end()) {
+            std::cerr << "server_fd_map_: " << iter->first << "\t" << iter->second << std::endl;
             iter++;
         }
-        auto fd = server_fd_map_["server"];
+        // auto fd = server_fd_map_["d0-eth0"];
+        auto fd=6;
+        std::cerr << "forward_first_fd: " << fd << std::endl;
         forwarded = true;
         if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
           perror("Failed to forward ip packet");
         } else {
           // log_file << "Forwarded to local dc: "<< std::endl;
-          std::cerr << "Forwarded to local dc: "<< std::endl;
+          std::cerr << "Forwarded to local dc: artificial_set "<< std::endl;
         }
       }
       
@@ -2026,9 +2053,10 @@ int Server::on_read(int fd, bool forwarded) {
       double min_latency = best_metrics[0];
       
       for (auto ldc : weighted_dcs) {
-        if (!config.quiet) {
+        std::cerr << "use_weighted_dcs" << std::endl;
+        // if (!config.quiet) {
           ldc.debug_output();
-        }
+        // }
         // if (dcs.find(ldc.dc) == dcs.end()) {
         //   std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
         //   continue;
@@ -2043,6 +2071,11 @@ int Server::on_read(int fd, bool forwarded) {
         sa.sin_family = AF_INET;
         sa.sin_port = udph->dest;
         sa.sin_addr.s_addr = iph->daddr;
+        
+        // sa.sin_port = htons(4434);
+        // sa.sin_addr.s_addr = inet_addr("10.0.0.3");
+
+        std::cerr << "sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << sa.sin_port << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
           // std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
           // auto interface = dcs[ldc.dc];
@@ -2494,6 +2527,7 @@ fail:
 namespace {
 int create_sock(const char *interface, const char *addr, const char *port, int family) {
   int fd = -1;
+  std::cerr << "create fd: " << " ETHER_TYPE: "<< ETHER_TYPE << " " << htons(ETHER_TYPE) << std::endl;
   if ((fd = socket(PF_PACKET, SOCK_RAW, htons(ETHER_TYPE))) == -1) {
     std::cerr << "Could not bind" << std::endl;
     return -1;
@@ -2506,7 +2540,7 @@ int create_sock(const char *interface, const char *addr, const char *port, int f
   if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, interface, sizeof(interface)) == -1) {
     return -1;
   }
-  std::cerr << "listening on " << interface << std::endl;
+  std::cerr << "listening on interface: " << interface << std::endl;
   return fd;
 }
 
@@ -2539,6 +2573,7 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 
 namespace {
 int serve(const char *interface, Server &s, const char *addr, const char *port, int family, const char *user, const char *password) {
+  std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr" << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
   auto fd = create_sock(interface, addr, port, family);
   std::cerr << "fd: " << fd << std::endl;
   if (fd == -1) {
@@ -2555,13 +2590,16 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
   while (tmp) {
     char* address = (char *)calloc(1024, sizeof(char));
     get_ip_str(tmp->ifa_addr, address, 1024);
-    printf("ifa_name: %s, %s\n", tmp->ifa_name, address);
+    printf("ifa_name: %s, %s %d\n", tmp->ifa_name, address, tmp->ifa_addr->sa_family);
     delete(address);
     if (tmp->ifa_addr->sa_family != AF_INET) {
       tmp = tmp->ifa_next;
       continue;
     }
-    if (!strncmp(tmp->ifa_name, "server", 6)) {
+    std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
+    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '0') { // 判断是不是d0-eth0
+      std::cerr << tmp->ifa_name << " is d0-eth0" << std::endl;
+      std::cerr << "family: " << family << "\tSOCK_RAW: " << SOCK_RAW << "\tIPPROTO_RAW: " << IPPROTO_RAW << std::endl;
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
 
@@ -2571,10 +2609,17 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         tmp = tmp->ifa_next;
         continue;
       }
+
+      
       s.add_fd(tmp->ifa_name, fd);
+
+
+
       std::cerr << tmp->ifa_name << " " << fd << std:: endl;
-      printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
+      // printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
+      std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
     } else {
+      std::cerr << tmp->ifa_name << " is not d0-eth0" << std::endl;
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
 
@@ -2585,7 +2630,8 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         continue;
       }
       s.add_dispatcher_fd(tmp->ifa_name, fd);
-      printf("Registered interface: %s as dispatcher, %d\n", tmp->ifa_name, fd);
+      // printf("Registered interface: %s as dispatcher, %d\n", tmp->ifa_name, fd);
+      std::cerr << "Registered interface:" << tmp->ifa_name << " as dispatcher. using fd " << fd << std::endl;
     }
     tmp = tmp->ifa_next;
   }
