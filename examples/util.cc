@@ -262,6 +262,145 @@ std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const 
   res += ".txt";
   return res;
 }
+
+unsigned short compute_ip_checksum(unsigned short *addr, unsigned int count) {
+  register unsigned long sum = 0;
+  while (count > 1) {
+    sum += * addr++;
+    count -= 2;
+  }
+  //if any bytes left, pad the bytes and add
+  if(count > 0) {
+    sum += ((*addr)&htons(0xFF00));
+  }
+  //Fold sum to 16 bits: add carrier to result
+  while (sum>>16) {
+      sum = (sum & 0xffff) + (sum >> 16);
+  }
+  //one's complement
+  sum = ~sum;
+  return ((unsigned short)sum);
+}
+
+// /* set tcp checksum: given IP header and UDP datagram */
+// void compute_udp_checksum(struct iphdr *pIph, unsigned short *ipPayload) {
+//     register unsigned long sum = 0;
+//     struct udphdr *udphdrp = (struct udphdr*)(ipPayload);
+//     unsigned short udpLen = htons(udphdrp->len);
+//     //printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~udp len=%dn", udpLen);
+//     //add the pseudo header 
+//     //printf("add pseudo headern");
+//     //the source ip
+//     sum += (pIph->saddr>>16)&0xFFFF;
+//     sum += (pIph->saddr)&0xFFFF;
+//     //the dest ip
+//     sum += (pIph->daddr>>16)&0xFFFF;
+//     sum += (pIph->daddr)&0xFFFF;
+//     //protocol and reserved: 17
+//     sum += htons(IPPROTO_UDP);
+//     //the length
+//     sum += udphdrp->len;
+ 
+//     //add the IP payload
+//     //printf("add ip payloadn");
+//     //initialize checksum to 0
+//     udphdrp->check = 0;
+//     while (udpLen > 1) {
+//         sum += * ipPayload++;
+//         udpLen -= 2;
+//     }
+//     //if any bytes left, pad the bytes and add
+//     if(udpLen > 0) {
+//         //printf("+++++++++++++++padding: %dn", udpLen);
+//         sum += ((*ipPayload)&htons(0xFF00));
+//     }
+//       //Fold sum to 16 bits: add carrier to result
+//     //printf("add carriern");
+//       while (sum>>16) {
+//           sum = (sum & 0xffff) + (sum >> 16);
+//       }
+//     //printf("one's complementn");
+//       sum = ~sum;
+//     //set computation result
+//     udphdrp->check = ((unsigned short)sum == 0x0000)?0xFFFF:(unsigned short)sum;
+
+//     return udphdrp->check;
+// }
+
+
+/*
+* in_cksum --
+* Checksum routine for Internet Protocol
+* family headers (C Version)
+*/
+unsigned short in_cksum(unsigned short *addr, int len)
+{
+  register int sum = 0;
+  u_short answer = 0;
+  register u_short *w = addr;
+  register int nleft = len;
+  /*
+  * Our algorithm is simple, using a 32 bit accumulator (sum), we add
+  * sequential 16 bit words to it, and at the end, fold back all the
+  * carry bits from the top 16 bits into the lower 16 bits.
+  */
+  while (nleft > 1)
+  {
+    sum += *w++;
+    nleft -= 2;
+  }
+  /* mop up an odd byte, if necessary */
+  if (nleft == 1)
+  {
+    *(u_char *) (&answer) = *(u_char *) w;
+    sum += answer;
+  }
+  /* add back carry outs from top 16 bits to low 16 bits */
+  sum = (sum >> 16) + (sum & 0xffff); /* add hi 16 to low 16 */
+  sum += (sum >> 16); /* add carry */
+  answer = ~sum; /* truncate to 16 bits */
+  return (answer);
+}
+
+uint16_t udp_checksum(const uint16_t *buff, size_t len, uint32_t src_addr, uint32_t dest_addr)
+{
+  const uint16_t *buf=buff;
+  uint16_t *ip_src=(uint16_t *)&src_addr, *ip_dst=(uint16_t *)&dest_addr;
+uint32_t sum;
+size_t length=len;
+
+      // Calculate the sum                                            //
+  sum = 0;
+  while (len > 1)
+        {
+                 sum += *buf++;
+                 if (sum & 0x80000000)
+                         sum = (sum & 0xFFFF) + (sum >> 16);
+                len -= 2;
+         }
+
+        if ( len & 1 )
+               // Add the padding if the packet lenght is odd          //
+                 sum += *((uint8_t *)buf);
+
+        // Add the pseudo-header                                        //
+       sum += *(ip_src++);
+        sum += *ip_src;
+
+        sum += *(ip_dst++);
+       sum += *ip_dst;
+ 
+         sum += htons(IPPROTO_UDP);
+         sum += htons(length);
+
+      // Add the carries                                              //
+     while (sum >> 16)
+               sum = (sum & 0xFFFF) + (sum >> 16);
+
+      // Return the one's complement of sum                           //
+        return ( (uint16_t)(~sum)  );
+}
+
 } // namespace util
 
 } // namespace ngtcp2

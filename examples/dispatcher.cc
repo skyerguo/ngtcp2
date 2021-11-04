@@ -1779,8 +1779,9 @@ int Server::on_read(int fd, bool forwarded) {
     return 0;
   }
 
+  // 重新打包转发出去的包头，保证server收到通信后能直接和client连接
   uint8_t *data = buf.data();
-  // std::cerr << "data " << *data << std::endl;
+  std::cerr << "buf data: " << *data << std::endl;
   ether_header *eh = (ether_header *) data;
   iphdr *iph = (iphdr *) (data + sizeof(ether_header));
   udphdr *udph = (udphdr *) (data + sizeof(iphdr) + sizeof(ether_header));
@@ -2021,12 +2022,11 @@ int Server::on_read(int fd, bool forwarded) {
 
         auto temp_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         std::cerr << "temp_fd: " << temp_fd << std::endl;
-        std::cerr << "sendto: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
-        if (sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-          perror("Failed to forward ip packet");
-        }
-        std::cerr << "done!" << std::endl;
-        exit(0);
+        // std::cerr << "sendto 'abc' packet using temp_fd: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+        // if (sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+        //   perror("Failed to forward ip packet");
+        // }
+        std::cerr << "temp_fd done!" << std::endl;
 
         // std::cerr << "throughputs vector is empty. forward to local data center" << std::endl;
         std::map<std::string, int>::iterator iter;
@@ -2036,10 +2036,48 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "server_fd_map_: " << iter->first << "\t" << iter->second << std::endl;
             iter++;
         }
-        // auto fd = server_fd_map_["d0-eth0"];
-        auto fd=6;
+        auto fd = server_fd_map_["d0-eth0"];
+        // auto fd=7;
         std::cerr << "forward_first_fd: " << fd << std::endl;
         forwarded = true;
+
+        // std::cerr << "sendto 'abc' packet using temp_fd: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+        // std::cerr << "sendto QUIC packet using temp_fd: " << sendto(temp_fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+
+        std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+        std::cerr << "iph->daddr_old: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+        std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
+        std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
+
+        std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
+        std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
+        
+        iph->daddr = inet_addr("10.0.0.3"); // 改IP包头的desitination IP地址
+
+        iph->check = 0; // 修改对应的IP包头的checksum
+        iph->check = util::in_cksum((unsigned short *)iph, sizeof(struct iphdr));
+
+        udph->check = 0; // 修改对应的UDP包头的checksum
+        udph->check = util::udp_checksum((uint16_t *)udph, htons(udph->len), iph->saddr, iph->daddr);
+
+        std::cerr << "iph->saddr_new: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+        std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+        std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
+        std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
+
+        std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
+        std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
+       
+
+        // std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+        
+        // std::cerr << "sendto 'abc' packet using first_fd: " << sendto(fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+        std::cerr << "iph->daddr: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+        // std::cerr << "udp->daddr: " << iph->daddr << " " << inet_ntoa(*`(in_addr*)&iph->daddr) << std::endl;
+
+        std::cerr << "sendto QUIC packet using first_fd: " << sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
+
+        exit(0);
         if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
           perror("Failed to forward ip packet");
         } else {
@@ -2528,6 +2566,7 @@ namespace {
 int create_sock(const char *interface, const char *addr, const char *port, int family) {
   int fd = -1;
   std::cerr << "create fd: " << " ETHER_TYPE: "<< ETHER_TYPE << " " << htons(ETHER_TYPE) << std::endl;
+  // 这里fd绑定的是监听的，监听原始的ethernet包
   if ((fd = socket(PF_PACKET, SOCK_RAW, htons(ETHER_TYPE))) == -1) {
     std::cerr << "Could not bind" << std::endl;
     return -1;
@@ -2574,6 +2613,7 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 namespace {
 int serve(const char *interface, Server &s, const char *addr, const char *port, int family, const char *user, const char *password) {
   std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr" << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
+  // 创建用来监听的socket
   auto fd = create_sock(interface, addr, port, family);
   std::cerr << "fd: " << fd << std::endl;
   if (fd == -1) {
@@ -2583,7 +2623,8 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
   if (s.init(fd, user, password) != 0) {
     return -1;
   }
-
+  
+  // 创建发送出去的socket
   struct ifaddrs *addrs, *tmp;
   getifaddrs(&addrs);
   tmp = addrs;
@@ -2609,13 +2650,10 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
         tmp = tmp->ifa_next;
         continue;
       }
-
       
       s.add_fd(tmp->ifa_name, fd);
 
-
-
-      std::cerr << tmp->ifa_name << " " << fd << std:: endl;
+      std::cerr << tmp->ifa_name << " " << fd << std::endl;
       // printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
       std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
     } else {

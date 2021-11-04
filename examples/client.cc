@@ -2092,7 +2092,9 @@ int create_sock(Address &remote_addr, const char *remote_ip, const char *addr, c
   int fd = -1;
 
   for (rp = res; rp; rp = rp->ai_next) {
+    std::cerr << "client create socket: " << "\trp->ai_family: " << rp->ai_family << "\trp->ai_socktype: " << rp->ai_socktype << "\trp->ai_protocol: " << rp->ai_protocol << std::endl;
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    std::cerr << "fd: " << fd << std::endl;
     if (fd == -1) {
       continue;
     }

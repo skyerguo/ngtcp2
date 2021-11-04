@@ -69,6 +69,11 @@ std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c); 
 std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 
+unsigned short compute_ip_checksum(unsigned short *addr, unsigned int count); // 计算IP包的checksum
+// unsigned short compute_udp_checksum(struct iphdr *pIph, unsigned short *ipPayload); // 计算UDP包的checksum
+unsigned short in_cksum(unsigned short *addr, int len); // 计算IP包的checksum
+uint16_t udp_checksum(const uint16_t *buff, size_t len, uint32_t src_addr, uint32_t dest_addr); // 计算UDP包的checksum
+
 inline char lowcase(char c) {
   constexpr static unsigned char tbl[] = {
       0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,

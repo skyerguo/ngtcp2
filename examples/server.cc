@@ -396,6 +396,7 @@ void Stream::send_redirect_response(unsigned int status_code,
   std::string hdrs = "Location: ";
   hdrs += path;
   hdrs += "\r\n";
+  std::cerr << "send_redirect_response!!" << std::endl;
   send_status_response(status_code, hdrs);
 }
 
@@ -1801,6 +1802,8 @@ int Server::on_read(int fd) {
     arp_add(&(su.sa));
   }
 
+  std::cerr << "unicast_fd_: " << unicast_fd_ << std::endl;
+
   if (debug::packet_lost(config.rx_loss_prob)) {
     if (!config.quiet) {
       std::cerr << "** Simulated incoming packet loss **" << std::endl;
@@ -1808,6 +1811,7 @@ int Server::on_read(int fd) {
     return 0;
   }
 
+  std::cerr << "received buf.data(): " <<  buf.data()  << std::endl;
   rv = ngtcp2_pkt_decode_hd(&hd, buf.data(), nread);
   if (rv < 0) {
     std::cerr << "Could not decode QUIC packet header: " << ngtcp2_strerror(rv)
@@ -2278,10 +2282,10 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
     {
       dispatcher_interfaces.insert(std::string(tmp->ifa_name));
       fd = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-      // std::cerr << "family: " << family << std::endl;
-      // std::cerr << "IPPROTO_UDP: " << IPPROTO_UDP << std::endl;
-      // std::cerr << "fd: " << fd << std::endl;
-      // std::cerr << "tmp->ifa_name: " << tmp->ifa_name << std::endl;
+      std::cerr << "family: " << family << std::endl;
+      std::cerr << "IPPROTO_UDP: " << IPPROTO_UDP << std::endl;
+      std::cerr << "fd: " << fd << std::endl;
+      std::cerr << "tmp->ifa_name: " << tmp->ifa_name << std::endl;
       struct ifreq ifr;
       memset(&ifr, 0, sizeof(ifr));
       snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), tmp->ifa_name);
