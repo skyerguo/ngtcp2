@@ -2006,83 +2006,68 @@ int Server::on_read(int fd, bool forwarded) {
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
-        // sa.sin_port = udph->dest;
-        // sa.sin_addr.s_addr = iph->daddr;
-        sa.sin_port = htons(4434);
-        sa.sin_addr.s_addr = inet_addr("10.0.0.3");
-        std::cerr << "sin_port: " << "\tudph->dest: " <<  udph->dest << "\thtons(4434): " << htons(4434) << std::endl;
-        std::cerr << "sin_addr.s_addr: " << "\tiph->daddr: " << iph->daddr << "\tinet_addr('10.0.0.3')" << inet_addr("10.0.0.3") << std::endl;
-        std::cerr << "!!!sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << sa.sin_port << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
+        sa.sin_port = udph->dest;
+        // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
 
-        char test_message[2000];
-        memset(test_message, '\0', sizeof(test_message));
-        test_message[0] = 'a';
-        test_message[1] = 'b';
-        test_message[2] = 'c';
+        if (!config.quiet) {
+          std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+          std::cerr << "iph->daddr_old: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+          std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
+          std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
 
-        auto temp_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        std::cerr << "temp_fd: " << temp_fd << std::endl;
-        // std::cerr << "sendto 'abc' packet using temp_fd: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
-        // if (sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-        //   perror("Failed to forward ip packet");
-        // }
-        std::cerr << "temp_fd done!" << std::endl;
-
-        // std::cerr << "throughputs vector is empty. forward to local data center" << std::endl;
-        std::map<std::string, int>::iterator iter;
-        std::cerr << "server_fd_map_ size:" << server_fd_map_.size() << std::endl;
-        iter = server_fd_map_.begin();
-        while(iter != server_fd_map_.end()) {
-            std::cerr << "server_fd_map_: " << iter->first << "\t" << iter->second << std::endl;
-            iter++;
+          std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
+          std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
         }
-        auto fd = server_fd_map_["d0-eth0"];
-        // auto fd=7;
-        std::cerr << "forward_first_fd: " << fd << std::endl;
-        forwarded = true;
-
-        // std::cerr << "sendto 'abc' packet using temp_fd: " << sendto(temp_fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
-        // std::cerr << "sendto QUIC packet using temp_fd: " << sendto(temp_fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
-
-        std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
-        std::cerr << "iph->daddr_old: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
-        std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
-        std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
-
-        std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
-        std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
         
-        iph->daddr = inet_addr("10.0.0.3"); // 改IP包头的desitination IP地址
-
+        // iph->daddr = inet_addr("10.0.0.3"); 
+        for (int i = 0; i < config.server_ips.size(); i++) {
+          if (config.server_zones[i] == config.current_dispatcher_zone) {
+            std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
+            iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+            sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+          }
+        }
+        
         iph->check = 0; // 修改对应的IP包头的checksum
-        iph->check = util::in_cksum((unsigned short *)iph, sizeof(struct iphdr));
+        iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
 
         udph->check = 0; // 修改对应的UDP包头的checksum
         udph->check = util::udp_checksum((uint16_t *)udph, htons(udph->len), iph->saddr, iph->daddr);
 
-        std::cerr << "iph->saddr_new: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
-        std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
-        std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
-        std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
+        if (!config.quiet) {
+          std::cerr << "iph->saddr_new: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+          std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+          std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
+          std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
 
-        std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
-        std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
-       
+          std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
+          std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
+        }
 
-        // std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
-        
-        // std::cerr << "sendto 'abc' packet using first_fd: " << sendto(fd, test_message, sizeof(test_message), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
-        std::cerr << "iph->daddr: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
-        // std::cerr << "udp->daddr: " << iph->daddr << " " << inet_ntoa(*`(in_addr*)&iph->daddr) << std::endl;
+        // std::cerr << "throughputs vector is empty. forward to local data center" << std::endl;
+        if (!config.quiet) {
+          std::map<std::string, int>::iterator iter;
+          std::cerr << "server_fd_map_ size:" << server_fd_map_.size() << std::endl;
+          iter = server_fd_map_.begin();
+          while(iter != server_fd_map_.end()) {
+              std::cerr << "server_fd_map_: " << iter->first << "\t" << iter->second << std::endl;
+              iter++;
+          }
+        }
+        std::string dispatcher_interface = config.current_dispatcher_name;
+        dispatcher_interface = dispatcher_interface + "-eth0";
+        std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+        auto fd = server_fd_map_[dispatcher_interface.c_str()];
+        // auto fd=7;
+        std::cerr << "forward_first_fd: " << fd << std::endl;
+        forwarded = true;
 
-        std::cerr << "sendto QUIC packet using first_fd: " << sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) << std::endl;
 
-        exit(0);
         if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
           perror("Failed to forward ip packet");
         } else {
           // log_file << "Forwarded to local dc: "<< std::endl;
-          std::cerr << "Forwarded to local dc: artificial_set "<< std::endl;
+          std::cerr << "Forwarded to local dc: "<< config.current_dispatcher_zone << std::endl;
         }
       }
       
@@ -2092,48 +2077,76 @@ int Server::on_read(int fd, bool forwarded) {
       
       for (auto ldc : weighted_dcs) {
         std::cerr << "use_weighted_dcs" << std::endl;
-        // if (!config.quiet) {
+        if (!config.quiet) {
           ldc.debug_output();
-        // }
-        // if (dcs.find(ldc.dc) == dcs.end()) {
-        //   std::cerr << "dcs.find(ldc.dc) == dcs.end()" << std::endl;
-        //   continue;
-        // }
+        }
         if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0].first)) continue;
 
         // log_file << "count_routings: " << count_routings << std::endl;
         std::cerr << "count_routings: " << count_routings << std::endl;
 
+        std::string remote_dc = ldc.dc.c_str();
+
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port = udph->dest;
-        sa.sin_addr.s_addr = iph->daddr;
-        
-        // sa.sin_port = htons(4434);
-        // sa.sin_addr.s_addr = inet_addr("10.0.0.3");
 
-        std::cerr << "sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << sa.sin_port << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
+        if (!config.quiet) {
+          std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+          std::cerr << "iph->daddr_old: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+          std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
+          std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
+
+          std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
+          std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
+        }
+        
+        for (int i = 0; i < config.server_ips.size(); i++) {
+          if (config.server_zones[i] == remote_dc) {
+            std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
+            iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+            sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+          }
+        }
+        
+        iph->check = 0; // 修改对应的IP包头的checksum
+        iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
+
+        udph->check = 0; // 修改对应的UDP包头的checksum
+        udph->check = util::udp_checksum((uint16_t *)udph, htons(udph->len), iph->saddr, iph->daddr);
+
+        if (!config.quiet) {
+          std::cerr << "iph->saddr_new: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
+          std::cerr << "iph->daddr_new: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
+          std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
+          std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
+
+          std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
+          std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
+        }
+
+        std::string dispatcher_interface = config.current_dispatcher_name;
+        dispatcher_interface = dispatcher_interface + "-eth0";
+        std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+        
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
-          // std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
-          // auto interface = dcs[ldc.dc];
-          auto interface = ldc.dc;
-          auto fd = dispatcher_fd_map_[interface];
-          std::cerr << "!!interface: " << interface << std::endl;
-          std::cerr << "!!fd: " << fd << std::endl;
+          std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
+          auto fd = server_fd_map_[dispatcher_interface];
           forwarded = true;
+
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
             // log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
-            std::cerr << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
+            std::cerr << "Forwarded to dispatcher: " << dispatcher_interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
           }
         } else {
           // log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
           std::cerr << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
           
           /* select server */
-          auto fd = server_fd_map_["server"];
+          auto fd = server_fd_map_[dispatcher_interface];
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
