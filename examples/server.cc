@@ -309,7 +309,9 @@ std::string request_path(const std::string &uri, bool is_connect) {
 
 namespace {
 std::string resolve_path(const std::string &req_path) {
+  // std::cerr << "config.htdocs: " << config.htdocs << std::endl;
   auto raw_path = config.htdocs + req_path;
+  std::cerr << "raw_path: " << std::endl;
   auto malloced_path = realpath(raw_path.c_str(), nullptr);
   if (malloced_path == nullptr) {
     return "";
@@ -406,27 +408,29 @@ int Stream::start_response() {
 
   auto req_path = request_path(uri, htp.method == HTTP_CONNECT);
 
-  std::string unique_log_file_deliver = util::getUniqueLogFileDeliver(config.client_ip, config.client_process, config.time_stamp);
-  std::ofstream log_file;
-  log_file.open(unique_log_file_deliver, std::ofstream::app);
-  log_file << "url: " << req_path << std::endl;
-  log_file.close();
+  // std::string unique_log_file_deliver = util::getUniqueLogFileDeliver(config.client_ip, config.client_process, config.time_stamp);
+  // std::ofstream log_file;
+  // log_file.open(unique_log_file_deliver, std::ofstream::app);
+  // log_file << "url: " << req_path << std::endl;
+  // log_file.close();
 
   if (req_path.find(".py") != std::string::npos) {
       std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
-      std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);
-      // std::string unique_log_file = "test.txt";
+      // std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);
+      std::string unique_log_file = "test.txt";
       str = "nohup python3 ." + str + " >> " + unique_log_file + " &";
+      // str = "python3 ." + str + " &";
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
       system(python_cmd);
   }
 
   // std::cout << "outer!!" << '\n';
-  // std::cerr << req_path << std::endl;
+  std::cerr << "req_path: " << req_path << std::endl;
   auto path = resolve_path(req_path);
+  // std::cerr << "resolve_path: " << path << std::endl;
   if (path.empty() || open_file(path) != 0) {
     send_status_response(404);
     std::cerr << "404" << std::endl;
@@ -2380,7 +2384,7 @@ void config_set_default(Config &config) {
   config.groups = "P-256:X25519:P-384:P-521";
   config.timeout = 30;
   {
-    auto path = realpath(".", nullptr);
+    auto path = realpath("/data/", nullptr);
     config.htdocs = path;
     free(path);
   }

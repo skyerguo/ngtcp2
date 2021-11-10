@@ -1576,7 +1576,7 @@ int Client::start_interactive_input() {
   www_site = messages[num_messages].website_www_opt? "/www.": "/";
   std::string req = "GET /websites/" + messages[num_messages].website_root_path + "/" 
                     + messages[num_messages].prefix + www_site + messages[num_messages].prefix + "/index.html HTTP/1.1\r\n\r\n";
-  // std::cerr << "req_send: " << req << std::endl;
+  std::cerr << "req_send: " << req << std::endl;
   last_stream_id_ = http_resq(&streams_, conn_, req);
   // set connection info into message
   messages[num_messages].streams_ = &streams_;
