@@ -88,6 +88,7 @@ struct Config {
   uint32_t redundancy;
   const char *current_dispatcher_name = "";
   const char *current_dispatcher_zone = "";
+  const char *redis_ip = "";
   std::vector<std::string> zones;
 };
 

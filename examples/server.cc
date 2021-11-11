@@ -1815,7 +1815,6 @@ int Server::on_read(int fd) {
     return 0;
   }
 
-  std::cerr << "received buf.data(): " <<  buf.data()  << std::endl;
   rv = ngtcp2_pkt_decode_hd(&hd, buf.data(), nread);
   if (rv < 0) {
     std::cerr << "Could not decode QUIC packet header: " << ngtcp2_strerror(rv)
@@ -2004,9 +2003,9 @@ int Server::send_packet(int fd, Address &remote_addr, Buffer &buf) {
   char str[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &(remote_addr.su.in.sin_addr), str, INET_ADDRSTRLEN);
   do {
-    if (!config.quiet) {
-        std::cerr << "sendto address: " << str << ":" << ntohs(remote_addr.su.in.sin_port) << ", fd: " << fd << std::endl;
-    }
+    // if (!config.quiet) {
+    std::cerr << "sendto address: " << str << ":" << ntohs(remote_addr.su.in.sin_port) << ", fd: " << fd << std::endl;
+    // }
     nwrite = sendto(fd, buf.rpos(), buf.size(), 0, &remote_addr.su.sa,
                     remote_addr.len);
   } while ((nwrite == -1) && (errno == EINTR) && (eintr_retries-- > 0));
@@ -2182,7 +2181,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   config.time_stamp = params.time_stamp;
 
   
-  // std::cerr << config.client_ip << std::endl;
+  std::cerr << config.client_ip << std::endl;
   // std::cerr << config.client_process << std::endl;
   // std::cerr << config.time_stamp << std::endl;
 

@@ -1781,7 +1781,6 @@ int Server::on_read(int fd, bool forwarded) {
 
   // 重新打包转发出去的包头，保证server收到通信后能直接和client连接
   uint8_t *data = buf.data();
-  std::cerr << "buf data: " << *data << std::endl;
   ether_header *eh = (ether_header *) data;
   iphdr *iph = (iphdr *) (data + sizeof(ether_header));
   udphdr *udph = (udphdr *) (data + sizeof(iphdr) + sizeof(ether_header));
@@ -1901,7 +1900,7 @@ int Server::on_read(int fd, bool forwarded) {
 
       /* search measures using redis */
       Redis *r1 = new Redis();
-      if(r1->connect("127.0.0.1", 6379))
+      if(r1->connect(config.redis_ip, 6379))
       {
         r1->auth("Hestia123456");
         best_metrics.push_back(0); len_best_metrics ++;
@@ -2461,10 +2460,9 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
 
   ngtcp2_transport_params params;
   
-  debug::print_indent();
-  std::cerr << "; TransportParameter received in ClientHello before decode" << std::endl;
-  debug::print_transport_params(&params,
-                                NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  // debug::print_indent();
+  // std::cerr << "; TransportParameter received in ClientHello before decode" << std::endl;
+  // debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
                               
   rv = ngtcp2_decode_transport_params(
       &params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, in, inlen);
@@ -2477,8 +2475,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
 
   debug::print_indent();
   std::cerr << "; TransportParameter received in ClientHello" << std::endl;
-  debug::print_transport_params(&params,
-                                NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
 
   // if (params.cpu_sensitive == 1) 
   //   config.cpu_sensitive = 1;
@@ -2777,6 +2774,8 @@ Options:
                Default 0.
   --current_dispatcher_name input the name of current_dispatcher_name. 
               Default empty char*.
+  --redis_ip input the name ip address of redis database.
+              Default empty char*.
   -h, --help  Display this help and exit.
 )";
 }
@@ -2800,7 +2799,8 @@ int main(int argc, char **argv) {
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
         {"redundancy", required_argument, &flag, 4},
-        {"current_dispatcher_name", required_argument, &flag, 5},        
+        {"current_dispatcher_name", required_argument, &flag, 5}, 
+        {"redis_ip", required_argument, &flag, 6}, 
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2872,6 +2872,10 @@ int main(int argc, char **argv) {
       case 5:
         // --current_dispatcher_name
         config.current_dispatcher_name = optarg;
+        break;
+      case 6:
+        // --redis_ip
+        config.redis_ip = optarg;
         break;
       default:
         break;
