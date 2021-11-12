@@ -1896,6 +1896,10 @@ int Server::on_read(int fd, bool forwarded) {
       }
       std::cerr << "current_dispatcher_zone: " << config.current_dispatcher_zone << std::endl;
 
+      for (int j = 0; j < weighted_dcs.size(); ++j) {
+        std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
+      }
+
       /* get latencies, cpus and throughputs from redis */
 
       /* search measures using redis */
@@ -1933,20 +1937,17 @@ int Server::on_read(int fd, bool forwarded) {
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
-          
-          for (int j = 0; j < weighted_dcs.size(); ++j) {
-            std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
-          }
+
 
           // std::cerr << "before_location: " << config.server_names[server_name_index] << std::endl;
           // auto temp_name = util::getStdLocation(config.server_names[server_name_index]);
           // std::cerr << temp_name << std::endl;
           
           for (int j = 0; j < weighted_dcs.size(); ++j) {
-            std::cerr << weighted_dcs[j].dc << std::endl;
-            std::cerr << config.server_zones[server_name_index] << std::endl;
+            // std::cerr << weighted_dcs[j].dc << std::endl;
+            // std::cerr << config.server_zones[server_name_index] << std::endl;
             if (weighted_dcs[j].dc == config.server_zones[server_name_index]) {
-              std::cerr << "111" << std::endl;
+              // std::cerr << "111" << std::endl;
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_latency, config.latency_sensitive));
@@ -1954,9 +1955,9 @@ int Server::on_read(int fd, bool forwarded) {
             }
           }
 
-          for (int j = 0; j < len_best_metrics; ++j) {
-            std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
-          }
+          // for (int j = 0; j < len_best_metrics; ++j) {
+          //   std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+          // }
 
           best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
           best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
@@ -1969,17 +1970,17 @@ int Server::on_read(int fd, bool forwarded) {
       }
       delete r1;
 
-      std::cerr << "before_weighted_dcs" << std::endl;
-      for (int j = 0; j < weighted_dcs.size(); ++j) {
-        weighted_dcs[j].debug_output();
-      }
-      std::cerr << "after_weighted_dcs" << std::endl;
+      // std::cerr << "before_weighted_dcs" << std::endl;
+      // for (int j = 0; j < weighted_dcs.size(); ++j) {
+      //   weighted_dcs[j].debug_output();
+      // }
+      // std::cerr << "after_weighted_dcs" << std::endl;
 
-      std::cerr << "before_best_metrics" << std::endl;
-      for (int j = 0; j < len_best_metrics; ++j) {
-        std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
-      }
-      std::cerr << "after_best_metrics" << std::endl;
+      // std::cerr << "before_best_metrics" << std::endl;
+      // for (int j = 0; j < len_best_metrics; ++j) {
+      //   std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+      // }
+      // std::cerr << "after_best_metrics" << std::endl;
 
       std::chrono::high_resolution_clock::time_point end_log2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log2 = end_log2 - start_log1;
@@ -2648,8 +2649,8 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
       continue;
     }
     std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
-    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '0') { // 判断是不是d0-eth0
-      std::cerr << tmp->ifa_name << " is d0-eth0" << std::endl;
+    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '0') { // 判断是不是eth0
+      std::cerr << tmp->ifa_name << " is eth0" << std::endl;
       std::cerr << "family: " << family << "\tSOCK_RAW: " << SOCK_RAW << "\tIPPROTO_RAW: " << IPPROTO_RAW << std::endl;
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
@@ -2667,7 +2668,7 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
       // printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
       std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
     } else {
-      std::cerr << tmp->ifa_name << " is not d0-eth0" << std::endl;
+      std::cerr << tmp->ifa_name << " is not eth0" << std::endl;
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
 

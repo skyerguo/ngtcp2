@@ -604,11 +604,11 @@ int message_complete_cb (http_parser *parser) {
   // debug::print_timestamp();
   auto t = debug::ts(start_ts[messages[num_messages].conn_]).count();
   
-  std::cerr << "last_plt_time: " << last_plt_time << std::endl;
+  // std::cerr << "last_plt_time: " << last_plt_time << std::endl;
   std::cerr << "\rPLT: " << t <<  " microseconds" << std::endl;
-  last_plt_cost = t - last_plt_time;
-  last_plt_time = t;
-  std::cerr << "last_plt_cost: " << last_plt_cost << std::endl;
+  // last_plt_cost = t - last_plt_time;
+  // last_plt_time = t;
+  // std::cerr << "last_plt_cost: " << last_plt_cost << std::endl;
   //std::cout.flush();
   // num_messages++;
   return 0;
