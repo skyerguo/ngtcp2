@@ -1886,16 +1886,16 @@ int transport_params_add_cb(SSL *ssl, unsigned int ext_type,
   // std::cerr << "config sets params begin." << std::endl;
   if (strcmp(config.website_root_path, "normal_1") == 0 || 
       strcmp(config.website_root_path, "normal_2") == 0) {
-    params.latency_sensitive = 1;
-    params.throughput_sensitive = 2, params.cpu_sensitive = 2;
+    params.latency_sensitive = 98;
+    params.throughput_sensitive = 1, params.cpu_sensitive = 1;
   }
   else if (strcmp(config.website_root_path,"video") == 0) {
-    params.throughput_sensitive = 1;
-    params.latency_sensitive = 2, params.cpu_sensitive = 2;
+    params.throughput_sensitive = 98;
+    params.latency_sensitive = 1, params.cpu_sensitive = 1;
   }
   else if (strcmp(config.website_root_path, "cpu") == 0) {
-    params.cpu_sensitive = 1;
-    params.latency_sensitive = 2, params.throughput_sensitive = 2;
+    params.cpu_sensitive = 98;
+    params.latency_sensitive = 1, params.throughput_sensitive = 1;
   }
   // std::cerr << "config sets params middle." << std::endl;
 

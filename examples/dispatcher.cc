@@ -1771,6 +1771,10 @@ int Server::on_read(int fd, bool forwarded) {
   }
 
   std::chrono::high_resolution_clock::time_point start_ts = std::chrono::high_resolution_clock::now();
+  char temp_str[50];
+  time_t now = time(NULL);
+  strftime(temp_str, 50, "%Y-%m-%d_%H:%M:%S", localtime(&now));
+  // std::cerr << "current_time: " << temp_str << std::endl;
 
   if (debug::packet_lost(config.rx_loss_prob)) {
     if (!config.quiet) {
@@ -2139,11 +2143,11 @@ int Server::on_read(int fd, bool forwarded) {
             perror("Failed to forward ip packet");
           } else {
             // log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
-            std::cerr << "Forwarded to dispatcher: " << dispatcher_interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
+            std::cerr << "!Forwarded to dispatcher: in ldc " << ldc.dc << " " << ldc.value << std::endl;
           }
         } else {
           // log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
-          std::cerr << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
+          // std::cerr << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
           
           /* select server */
           auto fd = server_fd_map_[dispatcher_interface];
@@ -2151,7 +2155,7 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "Forwarded to server: " << "server" << std::endl;
+            std::cerr << "!Forwarded to server: in ldc " << ldc.dc << " " << ldc.value << std::endl;
           }
         }
         /* rundandant routing */
@@ -2474,22 +2478,38 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
     return -1;
   }
 
-  debug::print_indent();
-  std::cerr << "; TransportParameter received in ClientHello" << std::endl;
-  debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  if (!config.quiet) {
+    debug::print_indent();
+    std::cerr << "; TransportParameter received in ClientHello" << std::endl;
+    debug::print_transport_params(&params, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO);
+  }
 
-  // if (params.cpu_sensitive == 1) 
-  //   config.cpu_sensitive = 1;
-  // else if (params.throughput_sensitive == 1) 
-  //   config.throughput_sensitive = 1;
-  // else 
-  //   config.latency_sensitive = 1;
-  config.cpu_sensitive = params.cpu_sensitive;
-  config.latency_sensitive = params.latency_sensitive;
-  config.throughput_sensitive = params.throughput_sensitive;
+  config.cpu_sensitive = 0;
+  config.throughput_sensitive = 0;
+  config.latency_sensitive = 0;
+  if (params.cpu_sensitive == 98) {
+    config.cpu_sensitive = 1;
+    std::cerr << "sensitive_type: " << "cpu" << std::endl; 
+  }    
+  else if (params.throughput_sensitive == 98) {
+    config.throughput_sensitive = 1;
+    std::cerr << "sensitive_type: " << "throughput" << std::endl;
+  }
+  else {
+    config.latency_sensitive = 1;
+    std::cerr << "sensitive_type: " << "latency" << std::endl;
+  }
+  
+  // 上面这块是不规范的，只有1 0 0 这样的请求，后续改期刊，要改为下面的，不同请求按比例来
+
+  // config.cpu_sensitive = params.cpu_sensitive;
+  // config.latency_sensitive = params.latency_sensitive;
+  // config.throughput_sensitive = params.throughput_sensitive;
   config.client_ip = params.client_ip;
-  config.client_process = params.client_process;
-  config.time_stamp = params.time_stamp;
+  // config.client_process = params.client_process;
+  // config.time_stamp = params.time_stamp;
+
+  std::cerr << "client_ip" << util::int2Address(config.client_ip) << std::endl;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
