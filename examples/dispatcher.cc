@@ -1770,12 +1770,6 @@ int Server::on_read(int fd, bool forwarded) {
     return 0;
   }
 
-  std::chrono::high_resolution_clock::time_point start_ts = std::chrono::high_resolution_clock::now();
-  char temp_str[50];
-  time_t now = time(NULL);
-  strftime(temp_str, 50, "%Y-%m-%d_%H:%M:%S", localtime(&now));
-  // std::cerr << "current_time: " << temp_str << std::endl;
-
   if (debug::packet_lost(config.rx_loss_prob)) {
     if (!config.quiet) {
       std::cerr << "** Simulated incoming packet loss **" << std::endl;
@@ -1849,6 +1843,11 @@ int Server::on_read(int fd, bool forwarded) {
       auto h = std::make_unique<Handler>(loop_, ssl_ctx_, this, client_conn_id);
       h->init(fd_, &su.sa, addrlen, hd.version);
 
+      char temp_str[50];
+      time_t now = time(NULL);
+      strftime(temp_str, 50, "%Y-%m-%d_%H:%M:%S", localtime(&now));
+      std::cerr << "current_time: " << temp_str << std::endl;
+      
       std::chrono::high_resolution_clock::time_point start_ts3 = std::chrono::high_resolution_clock::now();
       if (h->on_read(quic, nread) != 0) {
         return 0;
