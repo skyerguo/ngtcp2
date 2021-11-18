@@ -2509,7 +2509,7 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   // config.client_process = params.client_process;
   // config.time_stamp = params.time_stamp;
 
-  std::cerr << "client_ip" << util::int2Address(config.client_ip) << std::endl;
+  std::cerr << "client_ip: " << util::int2Address(config.client_ip) << std::endl;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
