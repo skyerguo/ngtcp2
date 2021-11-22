@@ -1861,9 +1861,6 @@ int Server::on_read(int fd, bool forwarded) {
       /* select dispatcher */
 
       /* get all metrics */
-      // std::ofstream log_file;
-      // std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);      
-      // log_file.open(unique_log_file, std::ofstream::app);
 
       std::chrono::high_resolution_clock::time_point start_log1 = std::chrono::high_resolution_clock::now();
       

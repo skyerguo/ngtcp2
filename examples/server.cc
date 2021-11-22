@@ -408,19 +408,14 @@ int Stream::start_response() {
 
   auto req_path = request_path(uri, htp.method == HTTP_CONNECT);
 
-  // std::string unique_log_file_deliver = util::getUniqueLogFileDeliver(config.client_ip, config.client_process, config.time_stamp);
-  // std::ofstream log_file;
-  // log_file.open(unique_log_file_deliver, std::ofstream::app);
-  // log_file << "url: " << req_path << std::endl;
-  // log_file.close();
 
   if (req_path.find(".py") != std::string::npos) {
       std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
-      // std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp);
-      std::string unique_log_file = "test.txt";
-      str = "nohup python3 ." + str + " >> " + unique_log_file + " &";
+      std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp, config.respath);
+      // std::string unique_log_file = "test.txt";
+      str = "nohup python3 " + config.htdocs + str + " >> " + unique_log_file + " &";
       // str = "python3 ." + str + " &";
       const char * python_cmd = str.c_str();
       std::cerr << python_cmd << std::endl;
@@ -2449,6 +2444,7 @@ int main(int argc, char **argv) {
         {"ciphers", required_argument, &flag, 1},
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
+        {"respath", required_argument, &flag, 4},
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2511,6 +2507,11 @@ int main(int argc, char **argv) {
       case 3:
         // --timeout
         config.timeout = strtol(optarg, nullptr, 10);
+        break;
+      case 4:
+        // --respath
+        config.respath = optarg;
+        std::cerr << "respath: " << config.respath << std::endl; 
         break;
       }
       break;

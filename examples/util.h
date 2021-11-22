@@ -66,7 +66,7 @@ uint64_t address2Int(const std::string &ip); // IP address to 64-bit unsigned in
 std::string int2Address(uint64_t ip_int); // 64-bit unsigned int to IP address.
 
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c); // IP address + process id + timestamp to identify the specific request.
-std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c);
+std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c, const std::string &respath);
 std::string getUniqueLogFileDeliver(const uint64_t &a, const uint64_t &b, const uint64_t &c);
 
 unsigned short ip_checksum(unsigned short *addr, int len); // 计算IP包的checksum
