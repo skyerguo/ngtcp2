@@ -410,7 +410,7 @@ int Stream::start_response() {
 
 
   if (req_path.find(".py") != std::string::npos) {
-      std::cout << "found python!!" << '\n';
+      // std::cout << "found python!!" << '\n';
       // std::cerr << req_path << std::endl;
       std::string str(req_path);
       std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp, config.respath);
@@ -418,7 +418,7 @@ int Stream::start_response() {
       str = "nohup python3 " + config.htdocs + str + " >> " + unique_log_file + " &";
       // str = "python3 ." + str + " &";
       const char * python_cmd = str.c_str();
-      std::cerr << python_cmd << std::endl;
+      std::cerr << "python_cmd:" << python_cmd << std::endl;
       system(python_cmd);
   }
 
@@ -2177,8 +2177,8 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
 
   
   std::cerr << config.client_ip << std::endl;
-  // std::cerr << config.client_process << std::endl;
-  // std::cerr << config.time_stamp << std::endl;
+  std::cerr << config.client_process << std::endl;
+  std::cerr << config.time_stamp << std::endl;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);

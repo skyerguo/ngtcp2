@@ -244,7 +244,7 @@ std::string int2Address(uint64_t ip_int) {
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
   std::string res = "";
   // res = int2Address(a) + "_";
-  res = std::to_string(a%10) + "_"; // 假设client数量少于10个，用最后一位表示id
+  res = std::to_string((a%10000)/1000) + "_"; // 假设client数量少于10个，用倒数第二位表示id
   res += std::to_string(b) + "_";
   res += std::to_string(c);
   return res;
