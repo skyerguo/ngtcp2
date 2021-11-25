@@ -89,6 +89,7 @@ struct Config {
   const char *current_dispatcher_name = "";
   const char *current_dispatcher_zone = "";
   const char *redis_ip = "";
+  const char *redis_interface = "";
   std::vector<std::string> zones;
 };
 
@@ -131,6 +132,7 @@ struct WeightedDC {
     this->value = 0;
     for (int i = 0; i < n; ++i) {
       this->value += (this->metrics[i].first / best_metrics[i]) * this->metrics[i].second;
+      // std::cerr << "metric i: " << i << "\t" << "current_value"  << (this->metrics[i].first / best_metrics[i]) * this->metrics[i].second << std::endl;
     }
   }
   void debug_output() {

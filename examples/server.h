@@ -79,6 +79,7 @@ struct Config {
     uint64_t client_process;
     uint64_t time_stamp;
     const char *respath = "/data/";
+    const char *redis_interface = "";
 };
 
 struct Buffer {

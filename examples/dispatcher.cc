@@ -819,7 +819,7 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
 
   rv = ngtcp2_conn_server_new(&conn_, conn_id_, version, &callbacks, &settings,
                               this);
-  std::cerr << "connection: " << conn_ << std::endl;
+  // std::cerr << "connection: " << conn_ << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_server_new: " << ngtcp2_strerror(rv) << std::endl;
     return -1;
@@ -1796,8 +1796,8 @@ int Server::on_read(int fd, bool forwarded) {
   if (udph->dest != htons(config.port)) {
     return 0;
   }
-  std::cerr << "iph->saddr: " << iph->saddr << std::endl;
   if (!config.quiet) {
+    std::cerr << "iph->saddr: " << iph->saddr << std::endl;
     std::cerr << "Got packet of size: " << udp_size << " from " << sender_ip << std::endl;
   }
 
@@ -1852,12 +1852,11 @@ int Server::on_read(int fd, bool forwarded) {
       if (h->on_read(quic, nread) != 0) {
         return 0;
       }
-      std::cerr << "hostname: " << h->hostname() << std::endl;
+      // std::cerr << "hostname: " << h->hostname() << std::endl;
       std::chrono::high_resolution_clock::time_point end_ts3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span3 = end_ts3 - start_ts3;
       std::cerr << "Parsing QUIC packet costs " << time_span3.count() << " milliseconds." << std::endl;
 
-            
       /* select dispatcher */
 
       /* get all metrics */
@@ -1896,9 +1895,9 @@ int Server::on_read(int fd, bool forwarded) {
       }
       std::cerr << "current_dispatcher_zone: " << config.current_dispatcher_zone << std::endl;
 
-      for (int j = 0; j < weighted_dcs.size(); ++j) {
-        std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
-      }
+      // for (int j = 0; j < weighted_dcs.size(); ++j) {
+      //   std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
+      // }
 
       /* get latencies, cpus and throughputs from redis */
 
@@ -1914,29 +1913,31 @@ int Server::on_read(int fd, bool forwarded) {
         for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
           std::string redis_key = "cpu_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          std::cerr << "redis_key1: " << redis_key << std::endl;
+          // std::cerr << "redis_key1: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
-          std::cerr << "redis_value_cpu1: " << redis_value_cpu << std::endl;
+          // std::cerr << "redis_value_cpu: " << redis_value_cpu << std::endl;
 
           redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          std::cerr << "redis_key2: " << redis_key << std::endl;
+          // std::cerr << "redis_key2: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
+          // std::cerr << "redis_value_throughput: " << redis_value_throughput << std::endl;
           
           redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          std::cerr << "redis_key3: " << redis_key << std::endl;
+          // std::cerr << "redis_key3: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
+          // std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
 
 
           // std::cerr << "before_location: " << config.server_names[server_name_index] << std::endl;
@@ -1950,7 +1951,7 @@ int Server::on_read(int fd, bool forwarded) {
               // std::cerr << "111" << std::endl;
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
-              weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_latency, config.latency_sensitive));
+              weighted_dcs[j].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
               break;
             }
           }
@@ -1961,7 +1962,7 @@ int Server::on_read(int fd, bool forwarded) {
 
           best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
           best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
-          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_latency);
+          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], 500-redis_value_latency);
         }
       }
       else {
@@ -1984,7 +1985,6 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point end_log2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log2 = end_log2 - start_log1;
-      // log_file << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
       std::cerr << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
 
       /* 根据已有的最优结果，计算每个dc的实际权重，并排序 */ 
@@ -1992,9 +1992,14 @@ int Server::on_read(int fd, bool forwarded) {
         weighted_dcs[i].calc_value();
       sort(weighted_dcs.begin(), weighted_dcs.end());
 
+      // std::cerr << "before_sorted_weighted_dcs" << std::endl;
+      // for (int j = 0; j < weighted_dcs.size(); ++j) {
+      //   weighted_dcs[j].debug_output();
+      // }
+      // std::cerr << "after_sorted_weighted_dcs" << std::endl;
+
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
-      // log_file << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
       std::cerr << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
 
       /* forward */
@@ -2056,7 +2061,7 @@ int Server::on_read(int fd, bool forwarded) {
         }
         std::string dispatcher_interface = config.current_dispatcher_name;
         dispatcher_interface = dispatcher_interface + "-eth0";
-        std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+        // std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
         auto fd = server_fd_map_[dispatcher_interface.c_str()];
         // auto fd=7;
         std::cerr << "forward_first_fd: " << fd << std::endl;
@@ -2128,7 +2133,7 @@ int Server::on_read(int fd, bool forwarded) {
 
         std::string dispatcher_interface = config.current_dispatcher_name;
         dispatcher_interface = dispatcher_interface + "-eth0";
-        std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+        // std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
         
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
           std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
@@ -2664,6 +2669,11 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
       tmp = tmp->ifa_next;
       continue;
     }
+    
+    if (!strcmp(tmp->ifa_name, "lo") || !strcmp(tmp->ifa_name, config.redis_interface)) {// 判断是不是连interface的
+      tmp = tmp->ifa_next;
+      continue;
+    }
     std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
     if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '0') { // 判断是不是eth0
       std::cerr << tmp->ifa_name << " is eth0" << std::endl;
@@ -2793,6 +2803,8 @@ Options:
               Default empty char*.
   --redis_ip input the name ip address of redis database.
               Default empty char*.
+  --redis_interface input the interface ip address of redis database.
+              Default empty char*.
   -h, --help  Display this help and exit.
 )";
 }
@@ -2818,6 +2830,7 @@ int main(int argc, char **argv) {
         {"redundancy", required_argument, &flag, 4},
         {"current_dispatcher_name", required_argument, &flag, 5}, 
         {"redis_ip", required_argument, &flag, 6}, 
+        {"redis_interface", required_argument, &flag, 7},
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2893,6 +2906,10 @@ int main(int argc, char **argv) {
       case 6:
         // --redis_ip
         config.redis_ip = optarg;
+        break;
+      case 7:
+        // --redis_interface
+        config.redis_interface = optarg;
         break;
       default:
         break;

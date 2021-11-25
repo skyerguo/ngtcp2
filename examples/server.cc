@@ -2276,8 +2276,16 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       tmp = tmp->ifa_next;
       continue;
     }
-    if (!strncmp(tmp->ifa_name, "router", 6) || !strcmp(tmp->ifa_name, interface)) //|| !strncmp(tmp->ifa_name, "lo", 2)) 
+    // TODO, 这里的interface试试看有很多个，而不是一个。然后跑一个简单的DNS
+    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '1' || !strcmp(tmp->ifa_name, interface)) // 如果是eth0或者eth1
+    // std::cerr << "??? " << tmp->ifa_name << std::endl;
+    // if (!strcmp(tmp->ifa_name, "lo") || !strcmp(tmp->ifa_name, config.redis_interface)) {// 判断是不是连interface的
+    //   tmp = tmp->ifa_next;
+    //   continue;
+    // }
+    // std::cerr << "!!! " << tmp->ifa_name << std::endl;
     {
+      std::cerr << "!!! " << tmp->ifa_name << std::endl;
       dispatcher_interfaces.insert(std::string(tmp->ifa_name));
       fd = socket(family, SOCK_DGRAM, IPPROTO_UDP);
       if (!config.quiet) {
@@ -2289,7 +2297,7 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       struct ifreq ifr;
       memset(&ifr, 0, sizeof(ifr));
       snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), tmp->ifa_name);
-      std::cerr << "ifr.ifr_name: " << ifr.ifr_name << std::endl; 
+      // std::cerr << "ifr.ifr_name: " << ifr.ifr_name << std::endl; 
       if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
         std::cerr << "Failed to bind on interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
         close(fd);
@@ -2323,7 +2331,7 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       }
       std::cerr << "listen on udp port: " << tmp->ifa_name << ":" << ntohs(sa.sin_port) << ", " << strerror(errno) << std::endl;
       fds->push_back(fd);
-      if (!strcmp(tmp->ifa_name, interface)) {
+      if (!strcmp(tmp->ifa_name, interface)) { // eth0才绑定fd
         std::cerr << "set unicast fd: " << fd << std::endl;
         s.unicast_fd(fd);
       }
@@ -2339,7 +2347,7 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
 namespace {
 int serve(Server &s, const char *interface, const int port, int family) {
   std::vector<int> fds;
-  std::cerr << "create_sock: \n" << "&fds: " << &fds << "\tinterface: " << interface << "\tport: " << port << "\tfamily: " << family << std::endl; 
+  // std::cerr << "create_sock: \n" << "&fds: " << &fds << "\tinterface: " << interface << "\tport: " << port << "\tfamily: " << family << std::endl; 
   create_sock(&fds, interface, port, family, s);
   if (fds.size() == 0) {
     return -1;
@@ -2418,6 +2426,8 @@ Options:
               Specify document root.  If this option is not specified,
               the document root is the current working directory.
   -q, --quiet Suppress debug output.
+  --redis_interface input the interface ip address of redis database.
+              Default empty char*.
   --timeout=<T>
               Specify idle timeout in seconds.
               Default: )" << config.timeout
@@ -2445,6 +2455,7 @@ int main(int argc, char **argv) {
         {"groups", required_argument, &flag, 2},
         {"timeout", required_argument, &flag, 3},
         {"respath", required_argument, &flag, 4},
+        {"redis_interface", required_argument, &flag, 5},
         {nullptr, 0, nullptr, 0}};
 
     auto optidx = 0;
@@ -2511,7 +2522,12 @@ int main(int argc, char **argv) {
       case 4:
         // --respath
         config.respath = optarg;
-        std::cerr << "respath: " << config.respath << std::endl; 
+        // std::cerr << "respath: " << config.respath << std::endl; 
+        break;
+      case 5:
+        // --redis_interface
+        config.redis_interface = optarg;
+        std::cerr << "redis_interface" << config.redis_interface << std::endl;
         break;
       }
       break;
