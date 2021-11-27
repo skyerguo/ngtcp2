@@ -1715,7 +1715,8 @@ int Server::init(int fd, const char *user, const char *password) {
 
     std::string server_ip;
     std::string server_zone;
-    oJson[machine_key].Get("external_ip1", server_ip);
+    // oJson[machine_key].Get("external_ip2", server_ip); // 改成eth1的ip
+    oJson[machine_key].Get("external_ip1", server_ip); // 改成eth0的ip
     oJson[machine_key].Get("zone", server_zone);
     
     config.server_ips.push_back(server_ip);
@@ -2007,11 +2008,6 @@ int Server::on_read(int fd, bool forwarded) {
 
       if (weighted_dcs.empty()) {
         std::cerr << "weighted_dcs.empty()" << std::endl;
-
-        struct sockaddr_in sa;
-        memset(&sa, 0, sizeof(sa));
-        sa.sin_family = AF_INET;
-        sa.sin_port = udph->dest;
         // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
 
         if (!config.quiet) {
@@ -2020,9 +2016,17 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
           std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
 
+          std::cerr << "udph->dest_old: " << ntohs(udph->dest) << std::endl;
           std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
           std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
         }
+
+        struct sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+
+        // udph->dest = htons(14434);
+        sa.sin_port = udph->dest;
         
         // iph->daddr = inet_addr("10.0.0.3"); 
         for (int i = 0; i < config.server_ips.size(); i++) {
@@ -2045,6 +2049,7 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
           std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
 
+          std::cerr << "udph->dest_new: " << ntohs(udph->dest) << std::endl;
           std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
           std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
         }
@@ -2060,10 +2065,11 @@ int Server::on_read(int fd, bool forwarded) {
           }
         }
         std::string dispatcher_interface = config.current_dispatcher_name;
-        dispatcher_interface = dispatcher_interface + "-eth0";
-        // std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+        dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
+        std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
         auto fd = server_fd_map_[dispatcher_interface.c_str()];
-        // auto fd=7;
+        std::cerr << "fd: " << fd << std::endl;
+
         std::cerr << "forward_first_fd: " << fd << std::endl;
         forwarded = true;
 
@@ -2092,20 +2098,23 @@ int Server::on_read(int fd, bool forwarded) {
 
         std::string remote_dc = ldc.dc.c_str();
 
-        struct sockaddr_in sa;
-        memset(&sa, 0, sizeof(sa));
-        sa.sin_family = AF_INET;
-        sa.sin_port = udph->dest;
-
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
           std::cerr << "iph->daddr_old: " << iph->daddr << " " << inet_ntoa(*(in_addr*)&iph->daddr) << std::endl;
           std::cerr << "iph->check_old: " << ntohs(iph->check) << std::endl;
           std::cerr << "iph_size_old: " << sizeof(iphdr) << std::endl;
 
+          std::cerr << "udph->dest_old: " << ntohs(udph->dest) << std::endl;
           std::cerr << "udph->check_old: " << ntohs(udph->check) << std::endl;
           std::cerr << "udph->len_old: " << htons(udph->len) << std::endl;
         }
+
+        struct sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+
+        // udph->dest = htons(14434);
+        sa.sin_port = udph->dest;
         
         for (int i = 0; i < config.server_ips.size(); i++) {
           if (config.server_zones[i] == remote_dc) {
@@ -2127,31 +2136,34 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "iph->check_new: " << ntohs(iph->check) << std::endl;
           std::cerr << "iph_size_new: " << sizeof(iphdr) << std::endl;
 
+          std::cerr << "udph->dest_new: " << ntohs(udph->dest) << std::endl;
           std::cerr << "udph->check_new: " << ntohs(udph->check) << std::endl;
           std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
         }
 
-        std::string dispatcher_interface = config.current_dispatcher_name;
-        dispatcher_interface = dispatcher_interface + "-eth0";
-        // std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
-        
         if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
-          std::cerr << "The current dc is not the best, forward the packet to ldc: " << ldc.dc.c_str() << std::endl; 
-          auto fd = server_fd_map_[dispatcher_interface];
+          /* select dispatcher */
+          std::string dispatcher_interface = config.current_dispatcher_name;
+          dispatcher_interface = dispatcher_interface + "-eth" + ldc.dc.c_str();
+          std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+
+          auto fd = dispatcher_fd_map_[dispatcher_interface.c_str()];
+          std::cerr << "fd: " << fd << std::endl;
           forwarded = true;
 
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            // log_file << "Forwarded to dispatcher: " << interface << " in " << ldc.dc << ", " << ldc.value << std::endl;
             std::cerr << "!Forwarded to dispatcher: in ldc " << ldc.dc << " " << ldc.value << std::endl;
           }
         } else {
-          // log_file << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
-          // std::cerr << "The current dc is the best, choose server to forward. " << ldc.dc << ", " << ldc.value << std::endl;
-          
           /* select server */
-          auto fd = server_fd_map_[dispatcher_interface];
+          std::string dispatcher_interface = config.current_dispatcher_name;
+          dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
+          std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+
+          auto fd = server_fd_map_[dispatcher_interface.c_str()];
+          std::cerr << "fd: " << fd << std::endl;
           forwarded = true;
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
@@ -2644,7 +2656,7 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 
 namespace {
 int serve(const char *interface, Server &s, const char *addr, const char *port, int family, const char *user, const char *password) {
-  std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr" << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
+  std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr: " << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
   // 创建用来监听的socket
   auto fd = create_sock(interface, addr, port, family);
   std::cerr << "fd: " << fd << std::endl;
@@ -2663,20 +2675,20 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
   while (tmp) {
     char* address = (char *)calloc(1024, sizeof(char));
     get_ip_str(tmp->ifa_addr, address, 1024);
-    printf("ifa_name: %s, %s %d\n", tmp->ifa_name, address, tmp->ifa_addr->sa_family);
+    // printf("ifa_name: %s, %s %d\n", tmp->ifa_name, address, tmp->ifa_addr->sa_family);
     delete(address);
     if (tmp->ifa_addr->sa_family != AF_INET) {
       tmp = tmp->ifa_next;
       continue;
     }
     
-    if (!strcmp(tmp->ifa_name, "lo") || !strcmp(tmp->ifa_name, config.redis_interface)) {// 判断是不是连interface的
+    if (!strcmp(tmp->ifa_name, "lo") || !strcmp(tmp->ifa_name, config.redis_interface)) {// 判断是不是连redis_interface的
       tmp = tmp->ifa_next;
       continue;
     }
-    std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
-    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '0') { // 判断是不是eth0
-      std::cerr << tmp->ifa_name << " is eth0" << std::endl;
+    // std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
+    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == config.current_dispatcher_name[1]) { // 判断是不是和当前dispathcer_id对应的server
+      std::cerr << tmp->ifa_name << " is server interface" << std::endl;
       std::cerr << "family: " << family << "\tSOCK_RAW: " << SOCK_RAW << "\tIPPROTO_RAW: " << IPPROTO_RAW << std::endl;
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
@@ -2690,11 +2702,10 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
       
       s.add_fd(tmp->ifa_name, fd);
 
-      std::cerr << tmp->ifa_name << " " << fd << std::endl;
-      // printf("Registered interface: %s as server, %d\n", tmp->ifa_name, fd);
+      // std::cerr << tmp->ifa_name << " " << fd << std::endl;
       std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
-    } else {
-      std::cerr << tmp->ifa_name << " is not eth0" << std::endl;
+    } 
+    else {
       fd = socket(family, SOCK_RAW, IPPROTO_RAW);
       int on = 1;
 
@@ -2902,14 +2913,17 @@ int main(int argc, char **argv) {
       case 5:
         // --current_dispatcher_name
         config.current_dispatcher_name = optarg;
+        // std::cerr << "current_dispatcher_name: " << config.current_dispatcher_name << std::endl;
         break;
       case 6:
         // --redis_ip
         config.redis_ip = optarg;
+        // std::cerr << "redis_ip: " << config.redis_ip << std::endl;
         break;
       case 7:
         // --redis_interface
         config.redis_interface = optarg;
+        // std::cerr << "redis_interface: " << config.redis_interface << std::endl;
         break;
       default:
         break;

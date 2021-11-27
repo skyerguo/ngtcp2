@@ -1278,7 +1278,10 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
 int Handler::on_read(uint8_t *data, size_t datalen) {
   int rv;
 
+  std::cerr << "handler on read!" << std::endl;
+
   rv = feed_data(data, datalen);
+  std::cerr << "handler rv: " << rv << "\tdata: " << data << std::endl;
   if (rv != 0) {
     return rv;
   }
@@ -1639,6 +1642,7 @@ void swritecb(struct ev_loop *loop, ev_io *w, int revents) {
   ev_io_stop(loop, w);
 
   auto s = static_cast<ServerWrapper *>(w->data);
+  std::cerr << "on_write s->fd: " << s->fd_ << std::endl;
 
   auto rv = s->server_->on_write(s->fd_);
   if (rv != 0) {
@@ -1652,6 +1656,7 @@ void swritecb(struct ev_loop *loop, ev_io *w, int revents) {
 namespace {
 void sreadcb(struct ev_loop *loop, ev_io *w, int revents) {
   auto s = static_cast<ServerWrapper *>(w->data);
+  std::cerr << "on_read s->fd: " << s->fd_ << std::endl;
 
   s->server_->on_read(s->fd_);
 }
@@ -1777,6 +1782,7 @@ void arp_add(sockaddr* sa) {
 }}
 
 int Server::on_read(int fd) {
+  std::cerr << "on_read fd: " << fd << std::endl;
   sockaddr_union su;
   socklen_t addrlen = sizeof(su);
   std::array<uint8_t, 64_k> buf;
@@ -2277,13 +2283,10 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       continue;
     }
     // TODO, 这里的interface试试看有很多个，而不是一个。然后跑一个简单的DNS
-    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '1' || !strcmp(tmp->ifa_name, interface)) // 如果是eth0或者eth1
+    
     // std::cerr << "??? " << tmp->ifa_name << std::endl;
-    // if (!strcmp(tmp->ifa_name, "lo") || !strcmp(tmp->ifa_name, config.redis_interface)) {// 判断是不是连interface的
-    //   tmp = tmp->ifa_next;
-    //   continue;
-    // }
     // std::cerr << "!!! " << tmp->ifa_name << std::endl;
+    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '1' || !strcmp(tmp->ifa_name, interface)) // 如果是eth0或者eth1
     {
       std::cerr << "!!! " << tmp->ifa_name << std::endl;
       dispatcher_interfaces.insert(std::string(tmp->ifa_name));
@@ -2319,8 +2322,16 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
       std::cerr << "config.unicast_ip: " << config.unicast_ip << std::endl;
       sa.sin_addr.s_addr = inet_addr(config.unicast_ip); // 把socket改为本机的ip地址 
+      // if (!strcmp(tmp->ifa_name, interface))
+      //   sa.sin_addr.s_addr = inet_addr(config.unicast_ip); // 把socket改为本机的ip地址 
+      // else {
+      //   sa.sin_addr.s_addr = inet_addr("10.0.0.4");
+      //   sa.sin_port = htons(14434);
+      // }
       if (!config.quiet) {
-        std::cerr << "!!!sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << sa.sin_port << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
+        std::cerr << "inet_addr('10.0.0.4'): " << inet_addr("10.0.0.4") << std::endl;
+        std::cerr << "inet_addr('10.0.0.3'): " << inet_addr("10.0.0.3") << std::endl;
+        std::cerr << "!!!sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << ntohs(sa.sin_port) << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
       }
 
       if (bind(fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
@@ -2329,13 +2340,13 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
         tmp = tmp->ifa_next;
         continue;
       }
-      std::cerr << "listen on udp port: " << tmp->ifa_name << ":" << ntohs(sa.sin_port) << ", " << strerror(errno) << std::endl;
+      std::cerr << "listen on udp port: " << tmp->ifa_name << ": " << ntohs(sa.sin_port) << ", " << strerror(errno) << std::endl;
       fds->push_back(fd);
       if (!strcmp(tmp->ifa_name, interface)) { // eth0才绑定fd
         std::cerr << "set unicast fd: " << fd << std::endl;
         s.unicast_fd(fd);
       }
-      printf("listening on interface: %s, port: %d, fd: %d\n", tmp->ifa_name, port, fd);
+      // std::cerr << "listening on interface: " << tmp->ifa_name << ", port: " << port << ", fd: " << fd << std::endl;
     }
     tmp = tmp->ifa_next;
   }
@@ -2354,8 +2365,11 @@ int serve(Server &s, const char *interface, const int port, int family) {
   }
 
   if (s.init(fds) != 0) {
+    std::cerr << "s.init(fds) error!" << std::endl;
     return -1;
   }
+  else std::cerr << "s.init(fds) success!" << std::endl;
+  
   return 0;
 }
 } // namespace
