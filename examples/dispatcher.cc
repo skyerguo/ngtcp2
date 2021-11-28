@@ -1972,17 +1972,19 @@ int Server::on_read(int fd, bool forwarded) {
       }
       delete r1;
 
-      // std::cerr << "before_weighted_dcs" << std::endl;
-      // for (int j = 0; j < weighted_dcs.size(); ++j) {
-      //   weighted_dcs[j].debug_output();
-      // }
-      // std::cerr << "after_weighted_dcs" << std::endl;
+      if (!config.quiet) {
+        std::cerr << "before_weighted_dcs" << std::endl;
+        for (int j = 0; j < weighted_dcs.size(); ++j) {
+          weighted_dcs[j].debug_output();
+        }
+        std::cerr << "after_weighted_dcs" << std::endl;
 
-      // std::cerr << "before_best_metrics" << std::endl;
-      // for (int j = 0; j < len_best_metrics; ++j) {
-      //   std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
-      // }
-      // std::cerr << "after_best_metrics" << std::endl;
+        std::cerr << "before_best_metrics" << std::endl;
+        for (int j = 0; j < len_best_metrics; ++j) {
+          std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+        }
+        std::cerr << "after_best_metrics" << std::endl;
+      }
 
       std::chrono::high_resolution_clock::time_point end_log2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log2 = end_log2 - start_log1;
@@ -1993,11 +1995,13 @@ int Server::on_read(int fd, bool forwarded) {
         weighted_dcs[i].calc_value();
       sort(weighted_dcs.begin(), weighted_dcs.end());
 
-      // std::cerr << "before_sorted_weighted_dcs" << std::endl;
-      // for (int j = 0; j < weighted_dcs.size(); ++j) {
-      //   weighted_dcs[j].debug_output();
-      // }
-      // std::cerr << "after_sorted_weighted_dcs" << std::endl;
+      if (!config.quiet) {
+        std::cerr << "before_sorted_weighted_dcs" << std::endl;
+        for (int j = 0; j < weighted_dcs.size(); ++j) {
+          weighted_dcs[j].debug_output();
+        }
+        std::cerr << "after_sorted_weighted_dcs" << std::endl;
+      }
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
@@ -2215,6 +2219,7 @@ int Server::on_read(int fd, bool forwarded) {
     assert(handler_it != std::end(handlers_));
   }
 
+  // 这里到Terminate connection，是否可以整段注释，及转发后直接断开和client的连接，从而降低error rate。
   auto h = (*handler_it).second.get();
   if (ngtcp2_conn_in_closing_period(h->conn())) {
     // TODO do exponential backoff.
@@ -2252,7 +2257,9 @@ int Server::on_read(int fd, bool forwarded) {
     remove(handler_it);
   }
 
-  // Terminate connection
+  // forward 之后，直接terminate，待测试
+  // Terminate connection 
+  debug::print_timestamp();
   std::cerr << "Terminate connection after forwarding" << std::endl;
   while (!handlers_.empty()) {
     auto it = std::begin(handlers_);

@@ -1281,7 +1281,6 @@ int Handler::on_read(uint8_t *data, size_t datalen) {
   std::cerr << "handler on read!" << std::endl;
 
   rv = feed_data(data, datalen);
-  std::cerr << "handler rv: " << rv << "\tdata: " << data << std::endl;
   if (rv != 0) {
     return rv;
   }
@@ -1656,7 +1655,7 @@ void swritecb(struct ev_loop *loop, ev_io *w, int revents) {
 namespace {
 void sreadcb(struct ev_loop *loop, ev_io *w, int revents) {
   auto s = static_cast<ServerWrapper *>(w->data);
-  std::cerr << "on_read s->fd: " << s->fd_ << std::endl;
+  // std::cerr << "on_read s->fd: " << s->fd_ << std::endl;
 
   s->server_->on_read(s->fd_);
 }
@@ -1782,7 +1781,7 @@ void arp_add(sockaddr* sa) {
 }}
 
 int Server::on_read(int fd) {
-  std::cerr << "on_read fd: " << fd << std::endl;
+  // std::cerr << "on_read fd: " << fd << std::endl;
   sockaddr_union su;
   socklen_t addrlen = sizeof(su);
   std::array<uint8_t, 64_k> buf;
@@ -2286,9 +2285,9 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
     
     // std::cerr << "??? " << tmp->ifa_name << std::endl;
     // std::cerr << "!!! " << tmp->ifa_name << std::endl;
-    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == '1' || !strcmp(tmp->ifa_name, interface)) // 如果是eth0或者eth1
+    if (!strcmp(tmp->ifa_name, interface)) // 如果是eth0
     {
-      std::cerr << "!!! " << tmp->ifa_name << std::endl;
+      // std::cerr << "!!! " << tmp->ifa_name << std::endl;
       dispatcher_interfaces.insert(std::string(tmp->ifa_name));
       fd = socket(family, SOCK_DGRAM, IPPROTO_UDP);
       if (!config.quiet) {
