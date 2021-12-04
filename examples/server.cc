@@ -1278,7 +1278,7 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
 int Handler::on_read(uint8_t *data, size_t datalen) {
   int rv;
 
-  std::cerr << "handler on read!" << std::endl;
+  // std::cerr << "handler on read!" << std::endl;
 
   rv = feed_data(data, datalen);
   if (rv != 0) {
