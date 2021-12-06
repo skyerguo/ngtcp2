@@ -2041,10 +2041,10 @@ int Server::on_read(int fd, bool forwarded) {
           }
         }
         
-        iph->check = 0; // 修改对应的IP包头的checksum
+        iph->check = 0; // 修改对应的IP包头的checksum，需要先清零再计算
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
 
-        udph->check = 0; // 修改对应的UDP包头的checksum
+        udph->check = 0; // 修改对应的UDP包头的checksum，需要先清零再计算
         udph->check = util::udp_checksum((uint16_t *)udph, htons(udph->len), iph->saddr, iph->daddr);
 
         if (!config.quiet) {

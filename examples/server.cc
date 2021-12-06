@@ -2306,12 +2306,7 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
         tmp = tmp->ifa_next;
         continue;
       }
-      // if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, sizeof(tmp->ifa_name)) < 0) {
-      //   std::cerr << "Failed to bind on interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
-      //   close(fd);
-      //   tmp = tmp->ifa_next;
-      //   continue;
-      // }
+      
       struct sockaddr_in sa;
       memset(&sa, 0, sizeof(sa));
       sa.sin_family = AF_INET;
@@ -2321,12 +2316,6 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
       std::cerr << "config.unicast_ip: " << config.unicast_ip << std::endl;
       sa.sin_addr.s_addr = inet_addr(config.unicast_ip); // 把socket改为本机的ip地址 
-      // if (!strcmp(tmp->ifa_name, interface))
-      //   sa.sin_addr.s_addr = inet_addr(config.unicast_ip); // 把socket改为本机的ip地址 
-      // else {
-      //   sa.sin_addr.s_addr = inet_addr("10.0.0.4");
-      //   sa.sin_port = htons(14434);
-      // }
       if (!config.quiet) {
         std::cerr << "inet_addr('10.0.0.4'): " << inet_addr("10.0.0.4") << std::endl;
         std::cerr << "inet_addr('10.0.0.3'): " << inet_addr("10.0.0.3") << std::endl;
