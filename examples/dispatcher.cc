@@ -1693,7 +1693,7 @@ void Server::close() {
   }
 }
 
-int Server::init(int fd, const char *user, const char *password) {
+int Server::init(int fd) {
   fd_ = fd;
   // read servers ip from machine.json
   config.server_ips.clear();
@@ -2662,16 +2662,16 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 }
 
 namespace {
-int serve(const char *interface, Server &s, const char *addr, const char *port, int family, const char *user, const char *password) {
-  std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr: " << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
+int serve(const char *interface, Server &s, const char *addr, const char *port, int family) {
+  // std::cerr << "create_sock: \n" << "interface: " << interface << "\taddr: " << addr << "\tport: " << port << "\tfamily: " << family << std::endl; 
   // 创建用来监听的socket
   auto fd = create_sock(interface, addr, port, family);
-  std::cerr << "fd: " << fd << std::endl;
+  // std::cerr << "fd: " << fd << std::endl;
   if (fd == -1) {
     return -1;
   }
 
-  if (s.init(fd, user, password) != 0) {
+  if (s.init(fd) != 0) {
     return -1;
   }
   
@@ -2838,8 +2838,6 @@ int main(int argc, char **argv) {
         {"tx-loss", required_argument, nullptr, 't'},
         {"rx-loss", required_argument, nullptr, 'r'},
         {"htdocs", required_argument, nullptr, 'd'},
-        {"user", required_argument, nullptr, 'u'},
-        {"password", required_argument, nullptr, 'p'},
         {"datacenter", required_argument, nullptr, 'i'},
         {"quiet", no_argument, nullptr, 'q'},
         {"ciphers", required_argument, &flag, 1},
@@ -2875,14 +2873,6 @@ int main(int argc, char **argv) {
     case 'q':
       // -quiet
       config.quiet = true;
-      break;
-    case 'u':
-      // --user
-      config.user = optarg;
-      break;
-    case 'p':
-      // --password
-      config.password = optarg;
       break;
     case 'i':
       // --datacenter name
@@ -2984,7 +2974,7 @@ int main(int argc, char **argv) {
 
   Server s4(EV_DEFAULT, ssl_ctx);
   // if (!util::numeric_host(addr, AF_INET6)) {
-    if (serve(interface, s4, addr, port, AF_INET, config.user, config.password) == 0) {
+    if (serve(interface, s4, addr, port, AF_INET) == 0) {
       ready = true;
     }
   // }

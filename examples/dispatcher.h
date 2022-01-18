@@ -310,7 +310,7 @@ public:
   Server(struct ev_loop *loop, SSL_CTX *ssl_ctx);
   ~Server();
 
-  int init(int fd, const char *user, const char *password);
+  int init(int fd);
   void disconnect();
   void disconnect(int liberr);
   void close();
