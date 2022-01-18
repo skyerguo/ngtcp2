@@ -1699,18 +1699,17 @@ int Server::init(int fd) {
   config.server_ips.clear();
   config.server_names.clear();
   config.server_zones.clear();
+  config.same_zone_server_ids.clear();
 
   std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_server.json");
   std::ostringstream tmp;
   tmp << in.rdbuf();
   std::string machines = tmp.str();
-  // std::cerr << "machines: " << machines << std::endl;
   neb::CJsonObject oJson;
   oJson.Parse(machines);
   std::string machine_key;
   while (oJson.GetKey(machine_key)) 
   {  
-    // std::cerr << machine_key << std::endl;
     std::string server_name = machine_key;
 
     std::string server_ip;
@@ -1722,11 +1721,16 @@ int Server::init(int fd) {
     config.server_ips.push_back(server_ip);
     config.server_names.push_back(server_name);
     config.server_zones.push_back(server_zone);
+    if (server_zone == config.datacenter) {
+      config.same_zone_server_ids.push_back(server_name.substr(1));
+    }
   }
-  // for (int i = 0; i < config.server_ips.size(); i++) {
-  //   std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
-  //   std::cerr << "server_name: " << config.server_names[i] << std::endl;
-  // }
+
+  if (!config.quiet) {
+    for (int i = 0; i < config.same_zone_server_ids.size(); ++i)
+      std::cerr << "same_zone_server_ids[i]: " << config.same_zone_server_ids[i] << std::endl;
+  } 
+
   
   ev_io_set(&wev_, fd_, EV_WRITE);
   ev_io_set(&rev_, fd_, EV_READ);
@@ -1885,16 +1889,12 @@ int Server::on_read(int fd, bool forwarded) {
         std::string dispatcher_zone;
         oJson[machine_key].Get("zone", dispatcher_zone);
         
-        config.zones.push_back(dispatcher_zone);
+        // config.zones.push_back(dispatcher_zone);
 
-        if (strcmp(machine_key.c_str(), config.current_dispatcher_name) == 0)
-          config.current_dispatcher_zone = dispatcher_zone.c_str();
-        // config.server_names.push_back(server_name);
         WeightedDC temp_new;
         temp_new.dc = dispatcher_zone;
         weighted_dcs.push_back(temp_new);
       }
-      std::cerr << "current_dispatcher_zone: " << config.current_dispatcher_zone << std::endl;
 
       // for (int j = 0; j < weighted_dcs.size(); ++j) {
       //   std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
@@ -1946,14 +1946,11 @@ int Server::on_read(int fd, bool forwarded) {
           // std::cerr << temp_name << std::endl;
           
           for (int j = 0; j < weighted_dcs.size(); ++j) {
-            // std::cerr << weighted_dcs[j].dc << std::endl;
-            // std::cerr << config.server_zones[server_name_index] << std::endl;
             if (weighted_dcs[j].dc == config.server_zones[server_name_index]) {
-              // std::cerr << "111" << std::endl;
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
               weighted_dcs[j].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
-              break;
+              // break;
             }
           }
 
@@ -2029,13 +2026,18 @@ int Server::on_read(int fd, bool forwarded) {
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
 
-        // udph->dest = htons(14434);
         sa.sin_port = udph->dest;
         
-        // iph->daddr = inet_addr("10.0.0.3"); 
+        // for (int i = 0; i < config.server_ips.size(); i++) {
+        //   if (config.server_zones[i] == config.datacenter) {
+        //     iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+        //     sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+        //   }
+        // }
+        
+        int pos = rand() % config.same_zone_server_ids.size();
         for (int i = 0; i < config.server_ips.size(); i++) {
-          if (config.server_zones[i] == config.current_dispatcher_zone) {
-            std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
+          if (config.server_name[i] == "s" + config.same_zone_server_ids[pos]) {
             iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
             sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
           }
@@ -2070,6 +2072,8 @@ int Server::on_read(int fd, bool forwarded) {
         }
         std::string dispatcher_interface = config.current_dispatcher_name;
         dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
+        if (config.current_dispatcher_name[2] != '\0')
+          dispatcher_interface = dispatcher_interface + config.current_dispatcher_name[2];
         std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
         auto fd = server_fd_map_[dispatcher_interface.c_str()];
         std::cerr << "fd: " << fd << std::endl;
@@ -2082,7 +2086,7 @@ int Server::on_read(int fd, bool forwarded) {
           perror("Failed to forward ip packet");
         } else {
           // log_file << "Forwarded to local dc: "<< std::endl;
-          std::cerr << "Forwarded to local dc: "<< config.current_dispatcher_zone << std::endl;
+          std::cerr << "Forwarded to local dc: "<< config.datacenter << std::endl;
         }
       }
       
@@ -2151,7 +2155,8 @@ int Server::on_read(int fd, bool forwarded) {
           dispatcher_interface = dispatcher_interface + "-eth" + ldc.dc.c_str();
           std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
 
-          auto fd = dispatcher_fd_map_[dispatcher_interface.c_str()];
+          // auto fd = dispatcher_fd_map_[dispatcher_interface.c_str()];
+          auto fd = server_fd_map_[dispatcher_interface.c_str()];
           std::cerr << "fd: " << fd << std::endl;
           forwarded = true;
 
@@ -2164,6 +2169,8 @@ int Server::on_read(int fd, bool forwarded) {
           /* select server */
           std::string dispatcher_interface = config.current_dispatcher_name;
           dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
+          if (config.current_dispatcher_name[2] != '\0')
+            dispatcher_interface = dispatcher_interface + config.current_dispatcher_name[2];
           std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
 
           auto fd = server_fd_map_[dispatcher_interface.c_str()];
@@ -2693,50 +2700,68 @@ int serve(const char *interface, Server &s, const char *addr, const char *port, 
       tmp = tmp->ifa_next;
       continue;
     }
-    // std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
-    if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == config.current_dispatcher_name[1]) { // 判断是不是和当前dispathcer_id对应的server
-      std::cerr << tmp->ifa_name << " is server interface" << std::endl;
-      std::cerr << "family: " << family << "\tSOCK_RAW: " << SOCK_RAW << "\tIPPROTO_RAW: " << IPPROTO_RAW << std::endl;
-      fd = socket(family, SOCK_RAW, IPPROTO_RAW);
-      int on = 1;
 
-      if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, strlen(tmp->ifa_name)) < 0 || setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
-        std::cerr << "failed to bind interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
-        close(fd);
-        tmp = tmp->ifa_next;
-        continue;
-      }
+    // 这一块是否不需要再拆分成dispatcher interface和server interface了？
+    // // 判断ifa_name是否和dispatcher在同一个zone，由此判定是server还是dispatcher
+    // int is_ifa_name_same_zone = 0;
+
+    // // std::cerr << "ifa_name: " << tmp->ifa_name << std::endl;
+    // if ((tmp->ifa_name)[strlen(tmp->ifa_name) -1] == config.current_dispatcher_name[1]) { // 判断是不是和当前dispathcer_id对应的server
+    //   std::cerr << tmp->ifa_name << " is server interface" << std::endl;
+    //   std::cerr << "family: " << family << "\tSOCK_RAW: " << SOCK_RAW << "\tIPPROTO_RAW: " << IPPROTO_RAW << std::endl;
+    //   fd = socket(family, SOCK_RAW, IPPROTO_RAW);
+    //   int on = 1;
+
+    //   if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, strlen(tmp->ifa_name)) < 0 || setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+    //     std::cerr << "failed to bind interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
+    //     close(fd);
+    //     tmp = tmp->ifa_next;
+    //     continue;
+    //   }
       
-      s.add_fd(tmp->ifa_name, fd);
+    //   s.add_fd(tmp->ifa_name, fd);
 
-      // std::cerr << tmp->ifa_name << " " << fd << std::endl;
-      std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
-    } 
-    else {
-      fd = socket(family, SOCK_RAW, IPPROTO_RAW);
-      int on = 1;
+    //   std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
+    // } 
+    // else {
+    //   fd = socket(family, SOCK_RAW, IPPROTO_RAW);
+    //   int on = 1;
 
-      if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, strlen(tmp->ifa_name)) < 0 || setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
-        std::cerr << "failed to bind interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
-        close(fd);
-        tmp = tmp->ifa_next;
-        continue;
-      }
-      s.add_dispatcher_fd(tmp->ifa_name, fd);
-      // printf("Registered interface: %s as dispatcher, %d\n", tmp->ifa_name, fd);
-      std::cerr << "Registered interface:" << tmp->ifa_name << " as dispatcher. using fd " << fd << std::endl;
+    //   if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, strlen(tmp->ifa_name)) < 0 || setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+    //     std::cerr << "failed to bind interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
+    //     close(fd);
+    //     tmp = tmp->ifa_next;
+    //     continue;
+    //   }
+    //   s.add_dispatcher_fd(tmp->ifa_name, fd);
+    //   std::cerr << "Registered interface:" << tmp->ifa_name << " as dispatcher. using fd " << fd << std::endl;
+    // }
+
+    fd = socket(family, SOCK_RAW, IPPROTO_RAW);
+    int on = 1;
+
+    if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, tmp->ifa_name, strlen(tmp->ifa_name)) < 0 || setsockopt(fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+      std::cerr << "failed to bind interface: " << tmp->ifa_name << ", " << strerror(errno) << std::endl;
+      close(fd);
+      tmp = tmp->ifa_next;
+      continue;
     }
+
+    s.add_fd(tmp->ifa_name, fd);
+    std::cerr << "Registered interface:" << tmp->ifa_name << " as server. using fd " << fd << std::endl;
+
     tmp = tmp->ifa_next;
   }
 
-  for (auto const& item : s.dispatcher_fd_map_) {
-    auto rev = s.dispatcher_rev_map_[item.first];
-    ev_io_init(rev, freadcb, 0, EV_READ);
-    auto server_wrapper = new ServerWrapper(item.second, &s);
-    rev->data = server_wrapper;
-    ev_io_set(rev, item.second, EV_READ);
-    ev_io_start(s.loop_, rev);
-  }
+  // 这一块是否不需要再拆分成dispatcher interface和server interface了？
+  // for (auto const& item : s.dispatcher_fd_map_) {
+  //   auto rev = s.dispatcher_rev_map_[item.first];
+  //   ev_io_init(rev, freadcb, 0, EV_READ);
+  //   auto server_wrapper = new ServerWrapper(item.second, &s);
+  //   rev->data = server_wrapper;
+  //   ev_io_set(rev, item.second, EV_READ);
+  //   ev_io_start(s.loop_, rev);
+  // }
 
   freeifaddrs(addrs);
 
@@ -2829,6 +2854,7 @@ Options:
 } // namespace
 
 int main(int argc, char **argv) {
+  srand(time(NULL));
   config_set_default(config);
 
   for (;;) {
