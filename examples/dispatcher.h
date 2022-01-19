@@ -84,6 +84,7 @@ struct Config {
   uint64_t time_stamp;
   std::vector<std::string> server_ips;
   std::vector<std::string> server_names;
+  std::vector<std::string> server_ids;
   std::vector<std::string> server_zones;
   std::vector<std::string> same_zone_server_ids;
   uint32_t redundancy;
@@ -123,10 +124,10 @@ struct Buffer {
 };
 
 static std::vector<double> best_metrics; // 某个metric的最优值
-struct WeightedDC {
-  std::string dc;
+struct WeightedServer {
+  std::string server_id;
   std::vector<std::pair<double, double> > metrics; // pair第一维表示测量值，第二维表示权重
-  WeightedDC(){metrics.resize(0);}
+  WeightedServer(){metrics.resize(0);}
   double value;
   void calc_value() {
     int n = this->metrics.size();
@@ -138,11 +139,11 @@ struct WeightedDC {
   }
   void debug_output() {
     int n = this->metrics.size();
-    std::cerr << "weighted_dc info begin: " << this->dc << " " << this->value << std::endl;
+    std::cerr << "weighted_server info begin: " << this->server_id << " " << this->value << std::endl;
     for (int i = 0; i < n; ++i) std::cerr << this->metrics[i].first << " " << this->metrics[i].second << std::endl;
-    std::cerr << "weighted_dc info end. " << std::endl;
+    std::cerr << "weighted_server info end. " << std::endl;
   }
-  bool operator < (const WeightedDC &rhs) const { // value越大越好
+  bool operator < (const WeightedServer &rhs) const { // value越大越好
     return this->value > rhs.value;
   }
 };

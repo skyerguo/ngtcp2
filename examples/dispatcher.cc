@@ -1621,25 +1621,6 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 }
 } // namespace
 
-// namespace {
-// /* 性能差>10%，延迟>30ms都不可以 */
-// bool check_redundant_suitable(const std::string &dc, const double &best_result, const double &now_result, const std::vector<LatencyDC> &latencies) {
-//   if (fabs(best_result) < 1e-7) return false;
-//   if (fabs(best_result - now_result) / best_result > 0.1) return false;
-
-//   double least_latency = 0;
-//   for (auto ldc: latencies) {
-//     if (!least_latency) least_latency = ldc.latency;
-
-//     if (strcmp(ldc.dc.c_str(), dc.c_str()) == 0) {
-//      if (fabs(least_latency - ldc.latency) > 30) return false;
-//      else return true; 
-//     }
-//   }
-//   return false;
-// }
-// } //namespace
-
 namespace {
 /* 性能差>10%，延迟>30ms都不可以 */
 bool check_redundant_suitable(const double &max_value, const double &now_value, const double &min_latency, const double &now_latency) {
@@ -1720,6 +1701,7 @@ int Server::init(int fd) {
     
     config.server_ips.push_back(server_ip);
     config.server_names.push_back(server_name);
+    config.server_ids.push_back(server_name.substr(1));
     config.server_zones.push_back(server_zone);
     if (server_zone == config.datacenter) {
       config.same_zone_server_ids.push_back(server_name.substr(1));
@@ -1870,35 +1852,31 @@ int Server::on_read(int fd, bool forwarded) {
       
       best_metrics.resize(0);  //清空
       auto len_best_metrics = 0;
-      std::vector<WeightedDC> weighted_dcs;
-      // std::map<std::string, std::string> dcs;
+      std::vector<WeightedServer> weighted_servers;
 
-      std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_dispatcher.json");
-      std::ostringstream tmp;
-      tmp << in.rdbuf();
-      std::string machines = tmp.str();
-      // std::cerr << "machines: " << machines << std::endl;
-      neb::CJsonObject oJson;
-      oJson.Parse(machines);
-      std::string machine_key;
-      while (oJson.GetKey(machine_key)) 
-      {  
-        // std::cerr << "dispatcher_name: " << machine_key << std::endl;
-        // std::string dispatcher_name = machine_key;
-
-        std::string dispatcher_zone;
-        oJson[machine_key].Get("zone", dispatcher_zone);
+      // std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_dispatcher.json");
+      // std::ostringstream tmp;
+      // tmp << in.rdbuf();
+      // std::string machines = tmp.str();
+      // neb::CJsonObject oJson;
+      // oJson.Parse(machines);
+      // std::string machine_key;
+      // while (oJson.GetKey(machine_key)) 
+      // {  
+      //   std::string dispatcher_zone;
+      //   oJson[machine_key].Get("zone", dispatcher_zone);
         
-        // config.zones.push_back(dispatcher_zone);
-
-        WeightedDC temp_new;
-        temp_new.dc = dispatcher_zone;
-        weighted_dcs.push_back(temp_new);
-      }
-
-      // for (int j = 0; j < weighted_dcs.size(); ++j) {
-      //   std::cerr << "weighted_dcs[j]" << weighted_dcs[j].dc << std::endl;
+      //   WeightedServer temp_new;
+      //   temp_new.server_id = dispatcher_zone;
+      //   weighted_servers.push_back(temp_new);
       // }
+      
+      // 初始化weighted_servers
+      for (int i = 0; i < config.server_ids.size(); ++i) {
+        WeightedServer temp_new;
+        temp_new.server_id = config.server_ids[i];
+        weighted_servers.push_back(temp_new);
+      }
 
       /* get latencies, cpus and throughputs from redis */
 
@@ -1910,53 +1888,41 @@ int Server::on_read(int fd, bool forwarded) {
         best_metrics.push_back(0); len_best_metrics ++;
         best_metrics.push_back(0); len_best_metrics ++;
         best_metrics.push_back(0); len_best_metrics ++;
-        // std::cerr << config.server_names.size() << std::endl;
+
         for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
           std::string redis_key = "cpu_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          // std::cerr << "redis_key1: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
-          // std::cerr << "redis_value_cpu: " << redis_value_cpu << std::endl;
 
           redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          // std::cerr << "redis_key2: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
-          // std::cerr << "redis_value_throughput: " << redis_value_throughput << std::endl;
           
           redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          // std::cerr << "redis_key3: " << redis_key << std::endl;
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
-          // std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
-
-
-          // std::cerr << "before_location: " << config.server_names[server_name_index] << std::endl;
-          // auto temp_name = util::getStdLocation(config.server_names[server_name_index]);
-          // std::cerr << temp_name << std::endl;
           
-          for (int j = 0; j < weighted_dcs.size(); ++j) {
-            if (weighted_dcs[j].dc == config.server_zones[server_name_index]) {
-              weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
-              weighted_dcs[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
-              weighted_dcs[j].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
-              // break;
-            }
-          }
-
-          // for (int j = 0; j < len_best_metrics; ++j) {
-          //   std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+          // for (int j = 0; j < weighted_servers.size(); ++j) {
+          //   if (weighted_servers[j].server_id == config.server_zones[server_name_index]) {
+          //     weighted_servers[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
+          //     weighted_servers[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
+          //     weighted_servers[j].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
+          //     break;
+          //   }
           // }
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
 
           best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
           best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
@@ -1965,16 +1931,16 @@ int Server::on_read(int fd, bool forwarded) {
       }
       else {
         std::cerr << "redis connect error!\n" << std::endl;
-        weighted_dcs.resize(0);
+        weighted_servers.resize(0);
       }
       delete r1;
 
       if (!config.quiet) {
-        std::cerr << "before_weighted_dcs" << std::endl;
-        for (int j = 0; j < weighted_dcs.size(); ++j) {
-          weighted_dcs[j].debug_output();
+        std::cerr << "before_weighted_servers" << std::endl;
+        for (int j = 0; j < weighted_servers.size(); ++j) {
+          weighted_servers[j].debug_output();
         }
-        std::cerr << "after_weighted_dcs" << std::endl;
+        std::cerr << "after_weighted_servers" << std::endl;
 
         std::cerr << "before_best_metrics" << std::endl;
         for (int j = 0; j < len_best_metrics; ++j) {
@@ -1988,28 +1954,27 @@ int Server::on_read(int fd, bool forwarded) {
       std::cerr << "Executing redis costs " << time_span_log2.count() << " milliseconds." << std::endl;
 
       /* 根据已有的最优结果，计算每个dc的实际权重，并排序 */ 
-      for (int i = 0; i < weighted_dcs.size(); ++i) 
-        weighted_dcs[i].calc_value();
-      sort(weighted_dcs.begin(), weighted_dcs.end());
+      for (int i = 0; i < weighted_servers.size(); ++i) 
+        weighted_servers[i].calc_value();
+      sort(weighted_servers.begin(), weighted_servers.end());
 
       if (!config.quiet) {
-        std::cerr << "before_sorted_weighted_dcs" << std::endl;
-        for (int j = 0; j < weighted_dcs.size(); ++j) {
-          weighted_dcs[j].debug_output();
+        std::cerr << "before_sorted_weighted_servers" << std::endl;
+        for (int j = 0; j < weighted_servers.size(); ++j) {
+          weighted_servers[j].debug_output();
         }
-        std::cerr << "after_sorted_weighted_dcs" << std::endl;
+        std::cerr << "after_sorted_weighted_servers" << std::endl;
       }
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
-      std::cerr << "Sort weighted_dcs costs " << time_span_log3.count() << " milliseconds." << std::endl;
+      std::cerr << "Sort weighted_servers costs " << time_span_log3.count() << " milliseconds." << std::endl;
 
       /* forward */
       bool forwarded = false;
 
-      if (weighted_dcs.empty()) {
-        std::cerr << "weighted_dcs.empty()" << std::endl;
-        // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
+      if (weighted_servers.empty()) {
+        std::cerr << "weighted_servers is empty!" << std::endl;
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -2028,18 +1993,14 @@ int Server::on_read(int fd, bool forwarded) {
 
         sa.sin_port = udph->dest;
         
-        // for (int i = 0; i < config.server_ips.size(); i++) {
-        //   if (config.server_zones[i] == config.datacenter) {
-        //     iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-        //     sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-        //   }
-        // }
-        
         int pos = rand() % config.same_zone_server_ids.size();
+        std::string dispatcher_eth = "";
         for (int i = 0; i < config.server_ips.size(); i++) {
-          if (config.server_name[i] == "s" + config.same_zone_server_ids[pos]) {
+          if (config.server_ids[i] == config.same_zone_server_ids[pos]) {
             iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
             sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+            dispatcher_eth = config.server_ids[i];
+            break;
           }
         }
         
@@ -2060,7 +2021,6 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
         }
 
-        // std::cerr << "throughputs vector is empty. forward to local data center" << std::endl;
         if (!config.quiet) {
           std::map<std::string, int>::iterator iter;
           std::cerr << "server_fd_map_ size:" << server_fd_map_.size() << std::endl;
@@ -2071,40 +2031,34 @@ int Server::on_read(int fd, bool forwarded) {
           }
         }
         std::string dispatcher_interface = config.current_dispatcher_name;
-        dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
-        if (config.current_dispatcher_name[2] != '\0')
-          dispatcher_interface = dispatcher_interface + config.current_dispatcher_name[2];
+        dispatcher_interface = dispatcher_interface + "-eth" + dispatcher_eth;
         std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
         auto fd = server_fd_map_[dispatcher_interface.c_str()];
         std::cerr << "fd: " << fd << std::endl;
 
-        std::cerr << "forward_first_fd: " << fd << std::endl;
         forwarded = true;
-
 
         if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
           perror("Failed to forward ip packet");
         } else {
-          // log_file << "Forwarded to local dc: "<< std::endl;
-          std::cerr << "Forwarded to local dc: "<< config.datacenter << std::endl;
+          std::cerr << "Forwarded to local zone server: "<< dispatcher_eth << std::endl;
         }
       }
       
       auto count_routings = 0;
-      double max_value = weighted_dcs[0].value;
+      double max_value = weighted_servers[0].value;
       double min_latency = best_metrics[0];
       
-      for (auto ldc : weighted_dcs) {
-        std::cerr << "use_weighted_dcs" << std::endl;
-        if (!config.quiet) {
-          ldc.debug_output();
-        }
-        if (count_routings && !check_redundant_suitable(max_value, ldc.value, min_latency, ldc.metrics[0].first)) continue;
+      for (auto w_server : weighted_servers) {
+        std::cerr << "use_weighted_servers" << std::endl;
+        if (!config.quiet) 
+          w_server.debug_output();
+        if (count_routings && !check_redundant_suitable(max_value, w_server.value, min_latency, w_server.metrics[0].first)) 
+          continue;
 
-        // log_file << "count_routings: " << count_routings << std::endl;
         std::cerr << "count_routings: " << count_routings << std::endl;
 
-        std::string remote_dc = ldc.dc.c_str();
+        std::string remote_server_id = w_server.server_id.c_str();
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -2120,18 +2074,20 @@ int Server::on_read(int fd, bool forwarded) {
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
-
-        // udph->dest = htons(14434);
         sa.sin_port = udph->dest;
-        
-        for (int i = 0; i < config.server_ips.size(); i++) {
-          if (config.server_zones[i] == remote_dc) {
-            std::cerr << "server_ip: " << config.server_ips[i] << std::endl;
-            iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-            sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-          }
-        }
-        
+
+
+        std::string dispatcher_eth = "";
+        std::string remote_server_zone = "";
+        for (int i = 0; i < config.server_ips.size(); i++) 
+          if (config.server_ids[i] == remote_server_id) {
+              iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+              sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+              dispatcher_eth = config.server_ids[i];
+              remote_server_zone = config.server_zones[i];
+              break;
+            }
+
         iph->check = 0; // 修改对应的IP包头的checksum
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
 
@@ -2149,13 +2105,12 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
         }
 
-        if (strcmp(config.datacenter, ldc.dc.c_str()) != 0) {
-          /* select dispatcher */
+        if (strcmp(config.datacenter, remote_server_zone.c_str()) != 0) {
+          /* select remote zone server */
           std::string dispatcher_interface = config.current_dispatcher_name;
-          dispatcher_interface = dispatcher_interface + "-eth" + ldc.dc.c_str();
+          dispatcher_interface = dispatcher_interface + "-eth" + dispatcher_eth;
           std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
 
-          // auto fd = dispatcher_fd_map_[dispatcher_interface.c_str()];
           auto fd = server_fd_map_[dispatcher_interface.c_str()];
           std::cerr << "fd: " << fd << std::endl;
           forwarded = true;
@@ -2163,14 +2118,12 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "!Forwarded to dispatcher: in ldc " << ldc.dc << " " << ldc.value << std::endl;
+            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
           }
         } else {
-          /* select server */
+          /* select local zone server */
           std::string dispatcher_interface = config.current_dispatcher_name;
-          dispatcher_interface = dispatcher_interface + "-eth" + config.current_dispatcher_name[1];
-          if (config.current_dispatcher_name[2] != '\0')
-            dispatcher_interface = dispatcher_interface + config.current_dispatcher_name[2];
+          dispatcher_interface = dispatcher_interface + "-eth" + dispatcher_eth;
           std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
 
           auto fd = server_fd_map_[dispatcher_interface.c_str()];
@@ -2179,7 +2132,7 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "!Forwarded to server: in ldc " << ldc.dc << " " << ldc.value << std::endl;
+            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
           }
         }
         /* rundandant routing */
@@ -2191,14 +2144,11 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point end_log4 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log4 = end_log4 - start_log1;
-      // log_file << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
       std::cerr << "Forward total costs " << time_span_log4.count() << " milliseconds." << std::endl;
 
       if (!forwarded) {
-        // log_file << "Failed to find server/dispatcher to forward" << std::endl;
         std::cerr << "Failed to find server/dispatcher to forward" << std::endl;
       }
-      // log_file.close();
       
 
       rv = h->on_write();
