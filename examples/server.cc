@@ -419,7 +419,11 @@ int Stream::start_response() {
       // str = "python3 ." + str + " &";
       const char * python_cmd = str.c_str();
       std::cerr << "python_cmd:" << python_cmd << std::endl;
-      system(python_cmd);
+      // 使用popen的方法跑
+      FILE *fp;
+      fp = popen(python_cmd, "r");
+      pclose(fp);
+      // system(python_cmd);
   }
 
   // std::cout << "outer!!" << '\n';
