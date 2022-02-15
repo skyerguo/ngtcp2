@@ -134,17 +134,16 @@ struct WeightedServer {
     this->value = 0;
     for (int i = 0; i < n; ++i) {
       this->value += (this->metrics[i].first / best_metrics[i]) * this->metrics[i].second;
-      // std::cerr << "metric i: " << i << "\t" << "current_value"  << (this->metrics[i].first / best_metrics[i]) * this->metrics[i].second << std::endl;
     }
   }
   void debug_output() {
     int n = this->metrics.size();
-    std::cerr << "weighted_server info begin: " << this->server_id << " " << this->value << std::endl;
-    for (int i = 0; i < n; ++i) std::cerr << this->metrics[i].first << " " << this->metrics[i].second << std::endl;
-    std::cerr << "weighted_server info end. " << std::endl;
+    std::cerr << "--weighted_server info begin--" << std::endl << "server_id: " << this->server_id << "\tvalue: " << this->value << std::endl;
+    for (int i = 0; i < n; ++i) std::cerr << "metric_measure: " << this->metrics[i].first << "\tmetric_weight: " << this->metrics[i].second << std::endl;
+    std::cerr << "--weighted_server info end--" << std::endl;
   }
-  bool operator < (const WeightedServer &rhs) const { // value越大越好
-    return this->value > rhs.value;
+  bool operator < (const WeightedServer &rhs) const { // value越大越好, value相同的话, delay越小越好
+    return (this->value == rhs->value && this->metrics[0].first < rhs->metrics[0].first)|| this->value > rhs->value;
   }
 };
 

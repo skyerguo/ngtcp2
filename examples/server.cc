@@ -410,13 +410,10 @@ int Stream::start_response() {
 
 
   if (req_path.find(".py") != std::string::npos) {
-      // std::cout << "found python!!" << '\n';
-      // std::cerr << req_path << std::endl;
       std::string str(req_path);
       std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp, config.respath);
-      // std::string unique_log_file = "test.txt";
-      str = "nohup python3 " + config.htdocs + str + " >> " + unique_log_file + " &";
-      // str = "python3 ." + str + " &";
+
+      str = "python3 " + config.htdocs + str + " > " + unique_log_file; // 使用后台方法
       const char * python_cmd = str.c_str();
       std::cerr << "python_cmd:" << python_cmd << std::endl;
       // 使用popen的方法跑

@@ -1626,7 +1626,7 @@ namespace {
 bool check_redundant_suitable(const double &max_value, const double &now_value, const double &min_latency, const double &now_latency) {
   if (fabs(max_value) < 1e-7) return false;
   if ((max_value - now_value) / max_value > 0.1) return false;
-  if (now_latency - min_latency > 30) return false;
+  if (min_latency - now_latency > 30) return false; // 因为这里的latency是(500-实际值)，所以减数和被减数要反过来
 
   return true;
 }
@@ -1924,9 +1924,9 @@ int Server::on_read(int fd, bool forwarded) {
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
 
-          best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
+          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
           best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
-          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], 500-redis_value_latency);
+          best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 1], 500-redis_value_latency); // 0的位置放latency
         }
       }
       else {
