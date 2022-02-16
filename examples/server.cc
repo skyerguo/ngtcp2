@@ -413,7 +413,7 @@ int Stream::start_response() {
       std::string str(req_path);
       std::string unique_log_file = util::getUniqueLogFile(config.client_ip, config.client_process, config.time_stamp, config.respath);
 
-      str = "python3 " + config.htdocs + str + " > " + unique_log_file; // 使用后台方法
+      str = "python3 " + config.htdocs + str + " >> " + unique_log_file; // 使用后台方法
       const char * python_cmd = str.c_str();
       std::cerr << "python_cmd:" << python_cmd << std::endl;
       // 使用popen的方法跑
@@ -422,11 +422,9 @@ int Stream::start_response() {
       pclose(fp);
       // system(python_cmd);
   }
-
-  // std::cout << "outer!!" << '\n';
+  
   std::cerr << "req_path: " << req_path << std::endl;
   auto path = resolve_path(req_path);
-  // std::cerr << "resolve_path: " << path << std::endl;
   if (path.empty() || open_file(path) != 0) {
     send_status_response(404);
     std::cerr << "404" << std::endl;
@@ -2581,17 +2579,10 @@ int main(int argc, char **argv) {
   auto ready = false;
 
   Server s4(EV_DEFAULT, ssl_ctx);
-//  Server s6(EV_DEFAULT, ssl_ctx);
 
-//  if (config.ipv6) {
-//    if (serve(s6, config.interface, config.port, AF_INET6) == 0) {
-//      ready = true;
-//    }
-//  } else {
   if (serve(s4, config.interface, config.port, AF_INET) == 0) {
     ready = true;
   }
-//  }
 
   if (!ready) {
     exit(EXIT_FAILURE);
