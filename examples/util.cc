@@ -243,7 +243,7 @@ std::string int2Address(uint64_t ip_int) {
 
 std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
   std::string res = "";
-  res = std::to_string((a%1000000)/100000 + (a%100000)/10000 + (a%10000)/1000) + "_"; // 假设client数量少于1000个，用三位数表示表示id
+  res = std::to_string((a%1000000)/100000 * 100 + (a%100000)/10000 * 10 + (a%10000)/1000) + "_"; // 假设client数量少于1000个，用三位数表示表示id
   res += std::to_string(b) + "_";
   res += std::to_string(c);
   return res;
