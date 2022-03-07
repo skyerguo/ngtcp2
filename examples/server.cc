@@ -2311,16 +2311,9 @@ void create_sock(std::vector<int> *fds, const char *interface, const int port, i
       memset(&sa, 0, sizeof(sa));
       sa.sin_family = AF_INET;
       sa.sin_port = htons(port);
-      // sa.sin_addr.s_addr = htonl(INADDR_ANY);
-      // sa.sin_port = htons(4434);
-      // sa.sin_addr.s_addr = inet_addr("10.0.0.3"); 
+
       std::cerr << "config.unicast_ip: " << config.unicast_ip << std::endl;
       sa.sin_addr.s_addr = inet_addr(config.unicast_ip); // 把socket改为本机的ip地址 
-      if (!config.quiet) {
-        std::cerr << "inet_addr('10.0.0.4'): " << inet_addr("10.0.0.4") << std::endl;
-        std::cerr << "inet_addr('10.0.0.3'): " << inet_addr("10.0.0.3") << std::endl;
-        std::cerr << "!!!sa: " << "sa.sin_family: " << sa.sin_family << "\tsa.sin_port: " << ntohs(sa.sin_port) << "\tsa.sin_addr.s_addr: " << sa.sin_addr.s_addr << std::endl;
-      }
 
       if (bind(fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         std::cerr << "failed to listen on udp port: " << tmp->ifa_name << ":" << ntohs(sa.sin_port) << ", " << strerror(errno) << std::endl;
