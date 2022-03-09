@@ -143,7 +143,7 @@ struct WeightedServer {
     std::cerr << "--weighted_server info end--" << std::endl;
   }
   bool operator < (const WeightedServer &rhs) const { // value越大越好, value相同的话, delay越小越好
-    return (this->value == rhs.value && this->metrics[0].first < rhs.metrics[0].first)|| this->value > rhs.value;
+    return (this->value == rhs.value && this->metrics[0].first > rhs.metrics[0].first)|| this->value > rhs.value;
   }
 };
 

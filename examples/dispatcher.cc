@@ -1917,13 +1917,13 @@ int Server::on_read(int fd, bool forwarded) {
             std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
           }
           
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
 
-          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_cpu);
-          best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
           best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], 500-redis_value_latency); // 0的位置放latency
+          best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
+          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_cpu);
         }
       }
       else {
