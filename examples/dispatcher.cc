@@ -1834,10 +1834,10 @@ int Server::on_read(int fd, bool forwarded) {
       auto h = std::make_unique<Handler>(loop_, ssl_ctx_, this, client_conn_id);
       h->init(fd_, &su.sa, addrlen, hd.version);
 
-      char temp_str[50];
-      time_t now = time(NULL);
-      strftime(temp_str, 50, "%Y-%m-%d_%H:%M:%S", localtime(&now));
-      std::cerr << "current_time: " << temp_str << std::endl;
+      // char temp_str[50];
+      // time_t now = time(NULL);
+      // strftime(temp_str, 50, "%Y-%m-%d_%H:%M:%S", localtime(&now));
+      // std::cerr << "current_time: " << temp_str << std::endl;
       
       std::chrono::high_resolution_clock::time_point start_ts3 = std::chrono::high_resolution_clock::now();
       if (h->on_read(quic, nread) != 0) {
@@ -1921,9 +1921,9 @@ int Server::on_read(int fd, bool forwarded) {
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
 
-          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 3], redis_value_cpu);
+          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_cpu);
           best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
-          best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 1], 500-redis_value_latency); // 0的位置放latency
+          best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], 500-redis_value_latency); // 0的位置放latency
         }
       }
       else {
@@ -2115,7 +2115,7 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
           }
         } else {
           /* select local zone server */
@@ -2129,7 +2129,7 @@ int Server::on_read(int fd, bool forwarded) {
           if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
             perror("Failed to forward ip packet");
           } else {
-            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
           }
         }
         /* rundandant routing */
@@ -2483,7 +2483,11 @@ int transport_params_parse_cb(SSL *ssl, unsigned int ext_type,
   // config.client_process = params.client_process;
   // config.time_stamp = params.time_stamp;
 
+  std::cerr << "=== request_unique_info begin! === " << std::endl;
   std::cerr << "client_ip: " << util::int2Address(config.client_ip) << std::endl;
+  std::cerr << "client_process: " << params.client_process << std::endl;
+  std::cerr << "client_time_stamp: " << params.time_stamp << std::endl;
+  std::cerr << "=== request_unique_info end! === " << std::endl;
 
   rv = ngtcp2_conn_set_remote_transport_params(
       conn, NGTCP2_TRANSPORT_PARAMS_TYPE_CLIENT_HELLO, &params);
