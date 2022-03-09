@@ -1682,7 +1682,7 @@ int Server::init(int fd) {
   config.server_zones.clear();
   config.same_zone_server_ids.clear();
 
-  std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_server.json");
+  std::ifstream in("/users/myzhou/mininet-polygon/json-files/machine_server.json");
   std::ostringstream tmp;
   tmp << in.rdbuf();
   std::string machines = tmp.str();
@@ -1698,6 +1698,10 @@ int Server::init(int fd) {
     // oJson[machine_key].Get("external_ip2", server_ip); // 改成eth1的ip
     oJson[machine_key].Get("external_ip1", server_ip); // 改成eth0的ip
     oJson[machine_key].Get("zone", server_zone);
+
+    if (!config.quiet) {
+      std::cerr << "!!config from json file " << server_name << " " << server_ip << " " << server_zone << std::endl;
+    }
     
     config.server_ips.push_back(server_ip);
     config.server_names.push_back(server_name);
@@ -1853,23 +1857,6 @@ int Server::on_read(int fd, bool forwarded) {
       best_metrics.resize(0);  //清空
       auto len_best_metrics = 0;
       std::vector<WeightedServer> weighted_servers;
-
-      // std::ifstream in("/home/mininet/mininet-polygon/json-files/machine_dispatcher.json");
-      // std::ostringstream tmp;
-      // tmp << in.rdbuf();
-      // std::string machines = tmp.str();
-      // neb::CJsonObject oJson;
-      // oJson.Parse(machines);
-      // std::string machine_key;
-      // while (oJson.GetKey(machine_key)) 
-      // {  
-      //   std::string dispatcher_zone;
-      //   oJson[machine_key].Get("zone", dispatcher_zone);
-        
-      //   WeightedServer temp_new;
-      //   temp_new.server_id = dispatcher_zone;
-      //   weighted_servers.push_back(temp_new);
-      // }
       
       // 初始化weighted_servers
       for (int i = 0; i < config.server_ids.size(); ++i) {
@@ -1891,35 +1878,45 @@ int Server::on_read(int fd, bool forwarded) {
 
         for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
-          std::string redis_key = "cpu_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          std::string redis_key = "cpu_" + config.server_names[server_name_index];
+          if (!config.quiet) {
+            std::cerr << "redis_key_cpu: " << redis_key << std::endl;
+          }
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
             continue;
           }
           double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
+          if (!config.quiet) {
+            std::cerr << "redis_value_cpu: " << redis_value_cpu << std::endl;
+          }
 
           redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          if (!config.quiet) {
+            std::cerr << "redis_key_throughput: " << redis_key << std::endl;
+          }
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
             continue;
           }
           double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
+          if (!config.quiet) {
+            std::cerr << "redis_value_throughput: " << redis_value_throughput << std::endl;
+          }
           
           redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+          if (!config.quiet) {
+            std::cerr << "redis_key_latency: " << redis_key << std::endl;
+          }
           if (!r1->existsKey(redis_key.c_str())) {
             std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
             continue;
           }
           double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
+          if (!config.quiet) {
+            std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
+          }
           
-          // for (int j = 0; j < weighted_servers.size(); ++j) {
-          //   if (weighted_servers[j].server_id == config.server_zones[server_name_index]) {
-          //     weighted_servers[j].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
-          //     weighted_servers[j].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
-          //     weighted_servers[j].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
-          //     break;
-          //   }
-          // }
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
           weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。

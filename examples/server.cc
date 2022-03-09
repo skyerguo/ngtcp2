@@ -2381,7 +2381,7 @@ void config_set_default(Config &config) {
   config.groups = "P-256:X25519:P-384:P-521";
   config.timeout = 30;
   {
-    auto path = realpath("/data/", nullptr);
+    auto path = realpath("/run/user/20001/data/", nullptr);
     config.htdocs = path;
     free(path);
   }
