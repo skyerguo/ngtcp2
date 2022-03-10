@@ -1707,7 +1707,7 @@ int Server::init(int fd) {
     config.server_names.push_back(server_name);
     config.server_ids.push_back(server_name.substr(1));
     config.server_zones.push_back(server_zone);
-    if (server_zone == config.datacenter) {
+    if (server_zone == config.local_zone) {
       config.same_zone_server_ids.push_back(server_name.substr(1));
     }
   }
@@ -1800,7 +1800,6 @@ int Server::on_read(int fd, bool forwarded) {
   }
 
   auto conn_id = hd.conn_id;
-
   auto handler_it = handlers_.find(conn_id);
   if (handler_it == std::end(handlers_)) {
     auto ctos_it = ctos_.find(conn_id);
@@ -1854,14 +1853,18 @@ int Server::on_read(int fd, bool forwarded) {
 
       std::chrono::high_resolution_clock::time_point start_log1 = std::chrono::high_resolution_clock::now();
       
+      static std::vector<double> local_best_metrics; // 和当前dispatcher同一个地区的server的某个metric的最优值，用来判断是否需要转发
+      local_best_metrics.resize(0);
+
       best_metrics.resize(0);  //清空
-      auto len_best_metrics = 0;
+      auto sensitive_type_number = 3; // 三种sensitive_type
       std::vector<WeightedServer> weighted_servers;
       
       // 初始化weighted_servers
       for (int i = 0; i < config.server_ids.size(); ++i) {
         WeightedServer temp_new;
         temp_new.server_id = config.server_ids[i];
+        temp_new.server_zone = config.server_zones[i];
         weighted_servers.push_back(temp_new);
       }
 
@@ -1872,9 +1875,10 @@ int Server::on_read(int fd, bool forwarded) {
       if(r1->connect(config.redis_ip, 6379))
       {
         r1->auth("Hestia123456");
-        best_metrics.push_back(0); len_best_metrics ++;
-        best_metrics.push_back(0); len_best_metrics ++;
-        best_metrics.push_back(0); len_best_metrics ++;
+        for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { // 按照lantency,throughput,cpu的顺序记录
+          best_metrics.push_back(0); 
+          local_best_metrics.push_back(0);
+        }
 
         for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
@@ -1916,14 +1920,20 @@ int Server::on_read(int fd, bool forwarded) {
           if (!config.quiet) {
             std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
           }
-          
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(500-redis_value_latency, config.latency_sensitive)); // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_throughput, config.throughput_sensitive));
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(redis_value_cpu, config.cpu_sensitive));
 
-          best_metrics[len_best_metrics - 3] = std::max(best_metrics[len_best_metrics - 3], 500-redis_value_latency); // 0的位置放latency
-          best_metrics[len_best_metrics - 2] = std::max(best_metrics[len_best_metrics - 2], redis_value_throughput);
-          best_metrics[len_best_metrics - 1] = std::max(best_metrics[len_best_metrics - 1], redis_value_cpu);
+          double record_value[sensitive_type_number] = {500-redis_value_latency, redis_value_throughput, redis_value_cpu}; // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
+          
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[0], config.latency_sensitive)); 
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[1], config.throughput_sensitive));
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[2], config.cpu_sensitive));
+
+          for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { 
+            best_metrics[sensitive_type_id] = std::max(best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+
+            // 如果是同一个地区，更新当前地区的最优值
+            if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) 
+              local_best_metrics[sensitive_type_id] = std::max(local_best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+          }
         }
       }
       else {
@@ -1940,8 +1950,9 @@ int Server::on_read(int fd, bool forwarded) {
         std::cerr << "after_weighted_servers" << std::endl;
 
         std::cerr << "before_best_metrics" << std::endl;
-        for (int j = 0; j < len_best_metrics; ++j) {
+        for (int j = 0; j < sensitive_type_number; ++j) {
           std::cerr << "best_metrics " << j << " value: " << best_metrics[j] << std::endl;
+          std::cerr << "local_best_metrics " << j << " value: " << local_best_metrics[j] << std::endl;
         }
         std::cerr << "after_best_metrics" << std::endl;
       }
@@ -1957,9 +1968,8 @@ int Server::on_read(int fd, bool forwarded) {
 
       if (!config.quiet) {
         std::cerr << "before_sorted_weighted_servers" << std::endl;
-        for (int j = 0; j < weighted_servers.size(); ++j) {
+        for (int j = 0; j < weighted_servers.size(); ++j) 
           weighted_servers[j].debug_output();
-        }
         std::cerr << "after_sorted_weighted_servers" << std::endl;
       }
 
@@ -1972,6 +1982,17 @@ int Server::on_read(int fd, bool forwarded) {
 
       if (weighted_servers.empty()) {
         std::cerr << "weighted_servers is empty!" << std::endl;
+
+        int pos = rand() % config.same_zone_server_ids.size();
+        std::string dispatcher_eth = config.same_zone_server_ids[pos].c_str();
+        // for (int i = 0; i < config.server_ips.size(); i++) {
+        //   if (config.server_ids[i] == config.same_zone_server_ids[pos]) {
+        //     iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+        //     sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+        //     dispatcher_eth = config.server_ids[i];
+        //     break;
+        //   }
+        // }
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -1987,19 +2008,7 @@ int Server::on_read(int fd, bool forwarded) {
         struct sockaddr_in sa;
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
-
         sa.sin_port = udph->dest;
-        
-        int pos = rand() % config.same_zone_server_ids.size();
-        std::string dispatcher_eth = "";
-        for (int i = 0; i < config.server_ips.size(); i++) {
-          if (config.server_ids[i] == config.same_zone_server_ids[pos]) {
-            iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-            sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-            dispatcher_eth = config.server_ids[i];
-            break;
-          }
-        }
         
         iph->check = 0; // 修改对应的IP包头的checksum，需要先清零再计算
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
@@ -2035,11 +2044,10 @@ int Server::on_read(int fd, bool forwarded) {
 
         forwarded = true;
 
-        if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+        if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
           perror("Failed to forward ip packet");
-        } else {
+        else 
           std::cerr << "Forwarded to local zone server: "<< dispatcher_eth << std::endl;
-        }
       }
       
       auto count_routings = 0;
@@ -2056,6 +2064,16 @@ int Server::on_read(int fd, bool forwarded) {
         std::cerr << "count_routings: " << count_routings << std::endl;
 
         std::string remote_server_id = w_server.server_id.c_str();
+        std::string remote_server_zone = w_server.server_zone.c_str();;
+        std::string dispatcher_eth = remote_server_id;
+        // for (int i = 0; i < config.server_ips.size(); i++) 
+        //   if (config.server_ids[i] == remote_server_id) {
+        //       iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+        //       sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+        //       dispatcher_eth = config.server_ids[i];
+        //       remote_server_zone = config.server_zones[i];
+        //       break;
+        //     }
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -2072,18 +2090,6 @@ int Server::on_read(int fd, bool forwarded) {
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port = udph->dest;
-
-
-        std::string dispatcher_eth = "";
-        std::string remote_server_zone = "";
-        for (int i = 0; i < config.server_ips.size(); i++) 
-          if (config.server_ids[i] == remote_server_id) {
-              iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-              sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-              dispatcher_eth = config.server_ids[i];
-              remote_server_zone = config.server_zones[i];
-              break;
-            }
 
         iph->check = 0; // 修改对应的IP包头的checksum
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
@@ -2102,36 +2108,42 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "udph->len_new: " << htons(udph->len) << std::endl;
         }
 
-        if (strcmp(config.datacenter, remote_server_zone.c_str()) != 0) {
+        if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) {
           /* select remote zone server */
+          // 根据dispatcher_eth确认绑定的fd，即网卡编号
           std::string dispatcher_interface = config.current_dispatcher_name;
           dispatcher_interface = dispatcher_interface + "-eth" + dispatcher_eth;
-          std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
-
           auto fd = server_fd_map_[dispatcher_interface.c_str()];
-          std::cerr << "fd: " << fd << std::endl;
-          forwarded = true;
 
-          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            perror("Failed to forward ip packet");
-          } else {
-            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+          if (!config.quiet) {
+            std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+            std::cerr << "fd: " << fd << std::endl;
           }
-        } else {
+          
+          forwarded = true; // 已转发标志
+          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
+            perror("Failed to forward ip packet");
+          else 
+            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+        } 
+        else {
           /* select local zone server */
           std::string dispatcher_interface = config.current_dispatcher_name;
           dispatcher_interface = dispatcher_interface + "-eth" + dispatcher_eth;
-          std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
-
           auto fd = server_fd_map_[dispatcher_interface.c_str()];
-          std::cerr << "fd: " << fd << std::endl;
-          forwarded = true;
-          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            perror("Failed to forward ip packet");
-          } else {
-            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+
+          if (!config.quiet) {
+            std::cerr << "dispatcher_interface: " << dispatcher_interface << std::endl;
+            std::cerr << "fd: " << fd << std::endl;
           }
+
+          forwarded = true; // 已转发标志
+          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
+            perror("Failed to forward ip packet");
+          else 
+            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
         }
+        
         /* rundandant routing */
         count_routings++;
         if (count_routings > config.redundancy ) {
@@ -2815,7 +2827,7 @@ int main(int argc, char **argv) {
         {"tx-loss", required_argument, nullptr, 't'},
         {"rx-loss", required_argument, nullptr, 'r'},
         {"htdocs", required_argument, nullptr, 'd'},
-        {"datacenter", required_argument, nullptr, 'i'},
+        {"local_zone", required_argument, nullptr, 'i'},
         {"quiet", no_argument, nullptr, 'q'},
         {"ciphers", required_argument, &flag, 1},
         {"groups", required_argument, &flag, 2},
@@ -2852,8 +2864,8 @@ int main(int argc, char **argv) {
       config.quiet = true;
       break;
     case 'i':
-      // --datacenter name
-      config.datacenter = optarg;
+      // --local_zone name
+      config.local_zone = optarg;
       break;
     case 'r':
       // --rx-loss

@@ -75,7 +75,7 @@ struct Config {
   uint32_t timeout;
   const char *user = "root";
   const char *password = "root";
-  const char *datacenter = "test";
+  const char *local_zone = "test";
   uint32_t cpu_sensitive = 0;
   uint32_t throughput_sensitive = 0;
   uint32_t latency_sensitive = 0;
@@ -126,6 +126,7 @@ struct Buffer {
 static std::vector<double> best_metrics; // 某个metric的最优值
 struct WeightedServer {
   std::string server_id;
+  std::string server_zone;
   std::vector<std::pair<double, double> > metrics; // pair第一维表示测量值，第二维表示权重
   WeightedServer(){metrics.resize(0);}
   double value;
