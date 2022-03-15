@@ -1623,7 +1623,7 @@ void siginthandler(struct ev_loop *loop, ev_signal *watcher, int revents) {
 
 namespace {
 /* 性能差>10%，延迟>30ms都不可以 */
-bool check_redundant_suitable(const double &max_value, const double &now_value, const double &min_latency, const double &now_latency) {
+bool check_redundant_suit(const double &max_value, const double &now_value, const double &min_latency, const double &now_latency) {
   if (fabs(max_value) < 1e-7) return false;
   if ((max_value - now_value) / max_value > 0.1) return false;
   if (min_latency - now_latency > 30) return false; // 因为这里的latency是(500-实际值)，所以减数和被减数要反过来
@@ -1865,6 +1865,7 @@ int Server::on_read(int fd, bool forwarded) {
         WeightedServer temp_new;
         temp_new.server_id = config.server_ids[i];
         temp_new.server_zone = config.server_zones[i];
+        temp_new.server_ip = config.server_ips[i];
         weighted_servers.push_back(temp_new);
       }
 
@@ -1966,12 +1967,12 @@ int Server::on_read(int fd, bool forwarded) {
         weighted_servers[i].calc_value();
       sort(weighted_servers.begin(), weighted_servers.end());
 
-      if (!config.quiet) {
-        std::cerr << "before_sorted_weighted_servers" << std::endl;
-        for (int j = 0; j < weighted_servers.size(); ++j) 
-          weighted_servers[j].debug_output();
-        std::cerr << "after_sorted_weighted_servers" << std::endl;
-      }
+      // if (!config.quiet) {
+      std::cerr << "before_sorted_weighted_servers" << std::endl;
+      for (int j = 0; j < weighted_servers.size(); ++j) 
+        weighted_servers[j].debug_output();
+      std::cerr << "after_sorted_weighted_servers" << std::endl;
+      // }
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
@@ -2009,6 +2010,9 @@ int Server::on_read(int fd, bool forwarded) {
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port = udph->dest;
+
+        iph->daddr = inet_addr(config.server_ips[pos].c_str());  // 改IP包头的desitination IP地址
+        sa.sin_addr.s_addr = inet_addr(config.server_ips[pos].c_str()); // 改socket的server IP地址
         
         iph->check = 0; // 修改对应的IP包头的checksum，需要先清零再计算
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
@@ -2051,29 +2055,37 @@ int Server::on_read(int fd, bool forwarded) {
       }
       
       auto count_routings = 0;
-      double max_value = weighted_servers[0].value;
+      int max_value_id = -1;
       double min_latency = best_metrics[0];
+      double local_best_value = local_best_metrics[0] / best_metrics[0] * config.latency_sensitive + \
+                                local_best_metrics[1] / best_metrics[1] * config.throughput_sensitive + \
+                                local_best_metrics[2] / best_metrics[2] * config.cpu_sensitive; // 当前zone所有server的最优值。
+      double cross_rate = 0.05; // 判断，最优值要至少比当前zone的所有server的最优值高过该比例，才允许转发。
+      std::cerr << "local_best_value: " << local_best_value << std::endl;
       
+      int w_server_id = -1;
       for (auto w_server : weighted_servers) {
         std::cerr << "use_weighted_servers" << std::endl;
+        w_server_id++;
         if (!config.quiet) 
           w_server.debug_output();
-        if (count_routings && !check_redundant_suitable(max_value, w_server.value, min_latency, w_server.metrics[0].first)) 
-          continue;
-
-        std::cerr << "count_routings: " << count_routings << std::endl;
-
+        
         std::string remote_server_id = w_server.server_id.c_str();
         std::string remote_server_zone = w_server.server_zone.c_str();;
         std::string dispatcher_eth = remote_server_id;
-        // for (int i = 0; i < config.server_ips.size(); i++) 
-        //   if (config.server_ids[i] == remote_server_id) {
-        //       iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-        //       sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-        //       dispatcher_eth = config.server_ids[i];
-        //       remote_server_zone = config.server_zones[i];
-        //       break;
-        //     }
+
+        // 如果是不同zone的server，需要先判断超出的权值是否超过了20%
+        if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) 
+          if ((w_server.value - local_best_value) / w_server.value < cross_rate)
+            continue;
+
+        if (max_value_id == -1) // 还没记录，记录当前为最优值
+          max_value_id = w_server_id;
+
+        if (count_routings && !check_redundant_suit(weighted_servers[max_value_id].value, w_server.value, min_latency, w_server.metrics[0].first)) 
+          continue;
+          
+        std::cerr << "count_routings: " << count_routings << std::endl;
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -2090,6 +2102,19 @@ int Server::on_read(int fd, bool forwarded) {
         memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port = udph->dest;
+        
+        iph->daddr = inet_addr(w_server.server_ip.c_str());  // 改IP包头的desitination IP地址
+        sa.sin_addr.s_addr = inet_addr(w_server.server_ip.c_str()); // 改socket的server IP地址
+
+        // for (int i = 0; i < config.server_ips.size(); i++) 
+        //   if (config.server_ids[i] == remote_server_id) {
+        //       iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
+        //       sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
+        //       dispatcher_eth = config.server_ids[i];
+        //       remote_server_zone = config.server_zones[i];
+        //       break;
+        //     }
+
 
         iph->check = 0; // 修改对应的IP包头的checksum
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
@@ -2143,7 +2168,7 @@ int Server::on_read(int fd, bool forwarded) {
           else 
             std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
         }
-        
+
         /* rundandant routing */
         count_routings++;
         if (count_routings > config.redundancy ) {

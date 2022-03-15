@@ -127,6 +127,7 @@ static std::vector<double> best_metrics; // 某个metric的最优值
 struct WeightedServer {
   std::string server_id;
   std::string server_zone;
+  std::string server_ip;
   std::vector<std::pair<double, double> > metrics; // pair第一维表示测量值，第二维表示权重
   WeightedServer(){metrics.resize(0);}
   double value;
