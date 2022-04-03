@@ -2522,7 +2522,7 @@ int main(int argc, char **argv) {
       case 5:
         // --redis_interface
         config.redis_interface = optarg;
-        std::cerr << "redis_interface" << config.redis_interface << std::endl;
+        // std::cerr << "redis_interface" << config.redis_interface << std::endl;
         break;
       }
       break;

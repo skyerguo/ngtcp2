@@ -694,9 +694,7 @@ namespace {
 int handshake_completed(ngtcp2_conn *conn, void *user_data) {
   auto c = static_cast<Client *>(user_data);
 
-//  if (!config.quiet) {
-    debug::handshake_completed(&start_ts, conn, user_data);
- // }
+  debug::handshake_completed(&start_ts, conn, user_data);
 
   if (c->setup_crypto_context() != 0) {
     return NGTCP2_ERR_CALLBACK_FAILURE;
@@ -2092,9 +2090,9 @@ int create_sock(Address &remote_addr, const char *remote_ip, const char *addr, c
   int fd = -1;
 
   for (rp = res; rp; rp = rp->ai_next) {
-    std::cerr << "client create socket: " << "\trp->ai_family: " << rp->ai_family << "\trp->ai_socktype: " << rp->ai_socktype << "\trp->ai_protocol: " << rp->ai_protocol << std::endl;
+    // std::cerr << "client create socket: " << "\trp->ai_family: " << rp->ai_family << "\trp->ai_socktype: " << rp->ai_socktype << "\trp->ai_protocol: " << rp->ai_protocol << std::endl;
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    std::cerr << "fd: " << fd << std::endl;
+    // std::cerr << "fd: " << fd << std::endl;
     if (fd == -1) {
       continue;
     }
