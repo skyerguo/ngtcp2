@@ -2292,8 +2292,7 @@ static int conn_ensure_decrypt_buffer(ngtcp2_conn *conn, size_t n) {
   }
 
   len = conn->decrypt_buf.len == 0 ? 2048 : conn->decrypt_buf.len * 2;
-  for (; len < n; len *= 2)
-    ;
+  for (; len < n; len *= 2);
   nbuf = ngtcp2_mem_realloc(conn->mem, conn->decrypt_buf.base, len);
   if (nbuf == NULL) {
     return NGTCP2_ERR_NOMEM;
@@ -2330,12 +2329,21 @@ static ssize_t conn_decrypt_pkt(ngtcp2_conn *conn, uint8_t *dest,
   uint8_t nonce[64];
   ssize_t nwrite;
 
+  // printf("sizeof(nonce) %d\n", sizeof(nonce));
+  // printf("ckm->ivlen %d\n",ckm->ivlen);
   assert(sizeof(nonce) >= ckm->ivlen);
   
+  // printf("pkt_num %lld\n", pkt_num);
   ngtcp2_crypto_create_nonce(nonce, ckm->iv, ckm->ivlen, pkt_num);
   
+  // printf("nonce\n");
+  // for (int i = 0; i < 64; ++i)
+  //   printf("%d ", nonce[i]);`
+  // printf("\n");
   nwrite = decrypt(conn, dest, destlen, payload, payloadlen, ckm->key,
                    ckm->keylen, nonce, ckm->ivlen, ad, adlen, conn->user_data);
+  
+  // printf("nwrite %d\n",nwrite);
   
   if (nwrite < 0) {
     if (nwrite == NGTCP2_ERR_TLS_DECRYPT) {
@@ -2576,7 +2584,7 @@ static int conn_recv_handshake_pkt(ngtcp2_conn *conn, const uint8_t *pkt,
     return rv;
   }
   t2=clock();
-  printf("time before decrypt %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
+  // printf("time before decrypt %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
   nwrite = conn_decrypt_pkt(conn, conn->decrypt_buf.base, payloadlen, payload,
                             payloadlen, hdpkt, hdpktlen, hd.pkt_num,
                             conn->hs_rx_ckm, conn->callbacks.hs_decrypt);
@@ -2588,16 +2596,16 @@ static int conn_recv_handshake_pkt(ngtcp2_conn *conn, const uint8_t *pkt,
   payloadlen = (size_t)nwrite;
   
   t2=clock();
-  printf("time after decrypt %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
+  // printf("time after decrypt %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
   uint8_t *q=payload;
   if (payloadlen>1180)
   { 
-    printf("%d\n",payloadlen);
-    for (size_t i=0;i<payloadlen;i++)
-    { 
-      if (i>=151&&i<171) printf("%c",*q);
-      q++;
-    }
+    printf("payloadlen %ld\n",payloadlen);
+    // for (size_t i=0;i<payloadlen;i++)
+    // { 
+    //   if (i>=151&&i<171) printf("%c",*q);
+    //   q++;
+    // }
     printf("\n");
   }
   //conn->domain_name = *(payload+151);
@@ -2749,7 +2757,7 @@ static int conn_recv_handshake_pkt(ngtcp2_conn *conn, const uint8_t *pkt,
     return rv;
   }
   t2=clock();
-  printf("final time %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
+  // printf("final time %.2lf\n",1000.0*(t2-t1)/CLOCKS_PER_SEC);
 
   return handshake_failed ? NGTCP2_ERR_TLS_HANDSHAKE : 0;
 }
@@ -3772,6 +3780,7 @@ int ngtcp2_conn_recv(ngtcp2_conn *conn, const uint8_t *pkt, size_t pktlen,
   if (pktlen == 0) {
     return NGTCP2_ERR_INVALID_ARGUMENT;
   }
+  // printf("conn->state %d\n", conn->state);
 
   switch (conn->state) {
   case NGTCP2_CS_CLIENT_WAIT_HANDSHAKE:

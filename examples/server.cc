@@ -311,7 +311,7 @@ namespace {
 std::string resolve_path(const std::string &req_path) {
   // std::cerr << "config.htdocs: " << config.htdocs << std::endl;
   auto raw_path = config.htdocs + req_path;
-  std::cerr << "raw_path: " << std::endl;
+  // std::cerr << "raw_path: " << std::endl;
   auto malloced_path = realpath(raw_path.c_str(), nullptr);
   if (malloced_path == nullptr) {
     return "";
@@ -674,9 +674,10 @@ ssize_t do_hs_decrypt(ngtcp2_conn *conn, uint8_t *dest, size_t destlen,
                       size_t noncelen, const uint8_t *ad, size_t adlen,
                       void *user_data) {
   auto h = static_cast<Handler *>(user_data);
-  std::cout<<"decrypt ok"<<std::endl;
+  // std::cout<<"decrypt ok"<<std::endl;
   auto nwrite = h->hs_decrypt_data(dest, destlen, ciphertext, ciphertextlen,
                                    key, keylen, nonce, noncelen, ad, adlen);
+  std::cout<<"do_hs_decrypt nwrite: " << nwrite <<std::endl;
   if (nwrite < 0) {
     return NGTCP2_ERR_TLS_DECRYPT;
   }
@@ -1252,12 +1253,10 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
     
   }
   if (!config.quiet) {
-    std::cout<<"ok"<<std::endl;
+    std::cerr << "conn_: " << conn_ << std::endl;
+    std::cerr << "datalen: " << datalen << std::endl;
+    std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   }
-  // std::cerr << "conn_: " << conn_ << std::endl;
-  // std::cerr << "data: " << *data << std::endl;
-  // std::cerr << "datalen: " << datalen << std::endl;
-  // std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
   // std::cerr << "rv: " << rv << std::endl;
   if (rv != 0) {
@@ -1276,8 +1275,6 @@ int Handler::feed_data(uint8_t *data, size_t datalen) {
 
 int Handler::on_read(uint8_t *data, size_t datalen) {
   int rv;
-
-  // std::cerr << "handler on read!" << std::endl;
 
   rv = feed_data(data, datalen);
   if (rv != 0) {

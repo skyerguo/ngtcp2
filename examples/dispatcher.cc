@@ -804,7 +804,7 @@ int Handler::init(int fd, const sockaddr *sa, socklen_t salen,
 
   settings.max_stream_data = 256_k;
   settings.max_data = 1_m;
-  settings.max_stream_id_bidi = 400;
+  settings.max_stream_id_bidi = 4000;
   settings.max_stream_id_uni = 0;
   settings.idle_timeout = config.timeout;
   settings.omit_connection_id = 0;
@@ -1212,6 +1212,11 @@ ssize_t Handler::decrypt_data(uint8_t *dest, size_t destlen,
 int Handler::feed_data(uint8_t *data, size_t datalen) {
   int rv;
 
+  // if (!config.quiet) {
+    std::cerr << "conn_: " << conn_ << std::endl;
+    std::cerr << "datalen: " << datalen << std::endl;
+    std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
+  // }
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
@@ -1967,12 +1972,12 @@ int Server::on_read(int fd, bool forwarded) {
         weighted_servers[i].calc_value();
       sort(weighted_servers.begin(), weighted_servers.end());
 
-      // if (!config.quiet) {
-      std::cerr << "before_sorted_weighted_servers" << std::endl;
-      for (int j = 0; j < weighted_servers.size(); ++j) 
-        weighted_servers[j].debug_output();
-      std::cerr << "after_sorted_weighted_servers" << std::endl;
-      // }
+      if (!config.quiet) {
+        std::cerr << "before_sorted_weighted_servers" << std::endl;
+        for (int j = 0; j < weighted_servers.size(); ++j) 
+          weighted_servers[j].debug_output();
+        std::cerr << "after_sorted_weighted_servers" << std::endl;
+      }
 
       std::chrono::high_resolution_clock::time_point end_log3 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> time_span_log3 = end_log3 - end_log2;
@@ -2065,10 +2070,12 @@ int Server::on_read(int fd, bool forwarded) {
       
       int w_server_id = -1;
       for (auto w_server : weighted_servers) {
-        std::cerr << "use_weighted_servers" << std::endl;
+        
         w_server_id++;
-        if (!config.quiet) 
+        if (!config.quiet) {
+          std::cerr << "use_weighted_servers" << std::endl;
           w_server.debug_output();
+        }
         
         std::string remote_server_id = w_server.server_id.c_str();
         std::string remote_server_zone = w_server.server_zone.c_str();;

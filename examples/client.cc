@@ -1165,7 +1165,6 @@ int Client::feed_data(uint8_t *data, size_t datalen) {
   int rv;
 
   // std::cerr << "conn_: " << conn_ << std::endl;
-  // std::cerr << "data: " << *data << std::endl;
   // std::cerr << "datalen: " << datalen << std::endl;
   // std::cerr << "util::timestamp(): " << util::timestamp() << std::endl;
   rv = ngtcp2_conn_recv(conn_, data, datalen, util::timestamp());
@@ -2173,7 +2172,7 @@ void config_set_default(Config &config) {
   config.data = nullptr;
   config.datalen = 0;
   config.version = NGTCP2_PROTO_VER_D8;
-  config.timeout = 3;
+  config.timeout = 30;
   config.website = "";
   config.website_root_path = "";
   config.website_www_opt = 1;

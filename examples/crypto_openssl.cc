@@ -144,6 +144,7 @@ ssize_t decrypt(uint8_t *dest, size_t destlen, const uint8_t *ciphertext,
                 const uint8_t *ad, size_t adlen) {
   auto taglen = aead_tag_length(ctx);
 
+  // printf("111\n");
   if (taglen > ciphertextlen || destlen + taglen < ciphertextlen) {
     return -1;
   }
@@ -152,21 +153,25 @@ ssize_t decrypt(uint8_t *dest, size_t destlen, const uint8_t *ciphertext,
   auto tag = ciphertext + ciphertextlen;
 
   auto actx = EVP_CIPHER_CTX_new();
+  // printf("222\n");
   if (actx == nullptr) {
     return -1;
   }
 
   auto actx_d = defer(EVP_CIPHER_CTX_free, actx);
 
+  // printf("333\n");
   if (EVP_DecryptInit_ex(actx, ctx.aead, nullptr, nullptr, nullptr) != 1) {
     return -1;
   }
 
+  // printf("444\n");
   if (EVP_CIPHER_CTX_ctrl(actx, EVP_CTRL_AEAD_SET_IVLEN, noncelen, nullptr) !=
       1) {
     return -1;
   }
 
+  // printf("555\n");
   if (EVP_DecryptInit_ex(actx, nullptr, nullptr, key, nonce) != 1) {
     return -1;
   }
@@ -174,24 +179,38 @@ ssize_t decrypt(uint8_t *dest, size_t destlen, const uint8_t *ciphertext,
   size_t outlen;
   int len;
 
+  // printf("666\n");
   if (EVP_DecryptUpdate(actx, nullptr, &len, ad, adlen) != 1) {
     return -1;
   }
 
+  // printf("777\n");
   if (EVP_DecryptUpdate(actx, dest, &len, ciphertext, ciphertextlen) != 1) {
     return -1;
   }
 
   outlen = len;
 
+  // printf("888\n");
   if (EVP_CIPHER_CTX_ctrl(actx, EVP_CTRL_AEAD_SET_TAG, taglen,
                           const_cast<uint8_t *>(tag)) != 1) {
     return -1;
   }
 
+  // printf("999\n");
+  // printf("%zu %d\n", outlen, len);
+  // printf("ciphertextlen: %zu\n", ciphertextlen);
+  // int a = EVP_DecryptFinal_ex(actx, dest + , &len);
+  // printf("EVP_DecryptFinal_ex: %d\n",a);
+  // if (a != 1) {
+  //   a = EVP_DecryptFinal_ex(actx, dest + ciphertextlen, &len);
+  //   printf("EVP_DecryptFinal_ex: %d\n",a);
+  //   return a;
+  // }
   if (EVP_DecryptFinal_ex(actx, dest + outlen, &len) != 1) {
     return -1;
   }
+  // printf("000\n");
 
   outlen += len;
 
