@@ -2082,9 +2082,13 @@ int Server::on_read(int fd, bool forwarded) {
         std::string dispatcher_eth = remote_server_id;
 
         // 如果是不同zone的server，需要先判断超出的权值是否超过了20%
-        if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) 
-          if ((w_server.value - local_best_value) / w_server.value < cross_rate)
+        if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) {
+          // if ((w_server.value - local_best_value) / w_server.value < cross_rate)
+          if (config.cpu_sensitive == 1 && (w_server.value - local_best_value) / w_server.value < 0.05)
             continue;
+          if (config.throughput_sensitive == 1 && (w_server.value - local_best_value) / w_server.value < 0.2)
+            continue;
+        }
 
         if (max_value_id == -1) // 还没记录，记录当前为最优值
           max_value_id = w_server_id;
