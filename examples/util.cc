@@ -253,7 +253,7 @@ std::string getUinque(const uint64_t &a, const uint64_t &b, const uint64_t &c) {
 std::string getUniqueLogFile(const uint64_t &a, const uint64_t &b, const uint64_t &c, const std::string &respath) {
   std::string res = respath;
   res += getUinque(a, b, c);
-  res += "_2.txt";
+  res += "_3.txt";
   return res;
 }
 

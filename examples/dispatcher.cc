@@ -1937,8 +1937,9 @@ int Server::on_read(int fd, bool forwarded) {
             best_metrics[sensitive_type_id] = std::max(best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
 
             // 如果是同一个地区，更新当前地区的最优值
-            if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) 
+            if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) {
               local_best_metrics[sensitive_type_id] = std::max(local_best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+            }
           }
         }
       }
@@ -2081,12 +2082,12 @@ int Server::on_read(int fd, bool forwarded) {
         std::string remote_server_zone = w_server.server_zone.c_str();;
         std::string dispatcher_eth = remote_server_id;
 
-        // 如果是不同zone的server，需要先判断超出的权值是否超过了20%
+        // 如果是不同zone的server，需要先判断超出的权值是否超过了某个值
         if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) {
           // if ((w_server.value - local_best_value) / w_server.value < cross_rate)
-          if (config.cpu_sensitive == 1 && (w_server.value - local_best_value) / w_server.value < 0.05)
+          if (config.cpu_sensitive == 1 && ((w_server.value - local_best_value) / w_server.value < 0.05))
             continue;
-          if (config.throughput_sensitive == 1 && (w_server.value - local_best_value) / w_server.value < 0.2)
+          if (config.throughput_sensitive == 1 && ((w_server.value - local_best_value) / w_server.value < 0.6))
             continue;
         }
 
@@ -2095,7 +2096,7 @@ int Server::on_read(int fd, bool forwarded) {
 
         if (count_routings && !check_redundant_suit(weighted_servers[max_value_id].value, w_server.value, min_latency, w_server.metrics[0].first)) 
           continue;
-          
+
         std::cerr << "count_routings: " << count_routings << std::endl;
 
         if (!config.quiet) {
@@ -2125,7 +2126,6 @@ int Server::on_read(int fd, bool forwarded) {
         //       remote_server_zone = config.server_zones[i];
         //       break;
         //     }
-
 
         iph->check = 0; // 修改对应的IP包头的checksum
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
