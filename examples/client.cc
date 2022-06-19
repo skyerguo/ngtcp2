@@ -641,7 +641,7 @@ int recv_data(uint8_t fin, const uint8_t *data, size_t datalen) {
   } else if (nread != datalen) {
     std::cerr << "recv_error" << " penalty: " << last_plt_cost / 1000 << "ms" << std::endl;
     sleep(last_plt_cost / 1000);
-    // exit(0);
+    exit(0);
     return -1;
   }
 
@@ -1172,7 +1172,7 @@ int Client::feed_data(uint8_t *data, size_t datalen) {
   // std::cerr << ngtcp2_conn_recv(conn_, data, datalen, util::timestamp()) << std::endl;
   if (rv != 0) {
     std::cerr << "ngtcp2_conn_recv: " << ngtcp2_strerror(rv) << std::endl;
-    // exit(0);
+    exit(0);
     if (rv != NGTCP2_ERR_TLS_DECRYPT) {
       disconnect(rv);
       return -1;
@@ -1241,7 +1241,7 @@ int Client::on_write(bool primary) {
     }
     if (n < 0) {
       std::cerr << "ngtcp2_conn_write_pkt: " << ngtcp2_strerror(n) << std::endl;
-      // exit(0);
+      exit(0);
       disconnect(n);
       return -1;
     }
@@ -1640,7 +1640,7 @@ int Client::handle_error(int liberr) {
   if (n < 0) {
     std::cerr << "ngtcp2_conn_write_connection_close: " << ngtcp2_strerror(n)
               << std::endl;
-    // exit(0);
+    exit(0);
     return -1;
   }
 
