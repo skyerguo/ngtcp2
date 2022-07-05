@@ -1992,14 +1992,6 @@ int Server::on_read(int fd, bool forwarded) {
 
         int pos = rand() % config.same_zone_server_ids.size();
         std::string dispatcher_eth = config.same_zone_server_ids[pos].c_str();
-        // for (int i = 0; i < config.server_ips.size(); i++) {
-        //   if (config.server_ids[i] == config.same_zone_server_ids[pos]) {
-        //     iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-        //     sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-        //     dispatcher_eth = config.server_ids[i];
-        //     break;
-        //   }
-        // }
 
         if (!config.quiet) {
           std::cerr << "iph->saddr_old: " << iph->saddr << " " << inet_ntoa(*(in_addr*)&iph->saddr) << std::endl;
@@ -2070,6 +2062,7 @@ int Server::on_read(int fd, bool forwarded) {
       std::cerr << "local_best_value: " << local_best_value << std::endl;
       
       int w_server_id = -1;
+      int res_server_in_same_zone = config.same_zone_server_ids.size(); // 本地剩余的server数量
       for (auto w_server : weighted_servers) {
         
         w_server_id++;
@@ -2084,11 +2077,24 @@ int Server::on_read(int fd, bool forwarded) {
 
         // 如果是不同zone的server，需要先判断超出的权值是否超过了某个值
         if (strcmp(config.local_zone, remote_server_zone.c_str()) != 0) {
-          // if ((w_server.value - local_best_value) / w_server.value < cross_rate)
+          // continue; // 新逻辑6.28，改成跨域直接不转发。
           if (config.cpu_sensitive == 1 && ((w_server.value - local_best_value) / w_server.value < 0.05))
             continue;
           if (config.throughput_sensitive == 1 && ((w_server.value - local_best_value) / w_server.value < 0.6))
             continue;
+        }
+        // 如果是同一个zone的，按照 1-（1/剩余server数）的比例，大于等于则跳过。这样算下来，是等比例的选取。
+        else {
+          double random_ratio = rand()%100/(float)100; // 随机1个0-1的小数
+          double curr_server_ratio = 1.0 - 1.0 / res_server_in_same_zone; // 当前的比例
+          // std::cerr << "res_server_in_same_zone: " << res_server_in_same_zone << std::endl;
+          // std::cerr << "random_ratio: " << random_ratio << std::endl;
+          // std::cerr << "curr_server_ratio: " << curr_server_ratio << std::endl;
+          if (random_ratio >= curr_server_ratio) {
+            res_server_in_same_zone -= 1;
+            continue;
+          }
+          // 其他情况，则执行
         }
 
         if (max_value_id == -1) // 还没记录，记录当前为最优值
@@ -2117,15 +2123,6 @@ int Server::on_read(int fd, bool forwarded) {
         
         iph->daddr = inet_addr(w_server.server_ip.c_str());  // 改IP包头的desitination IP地址
         sa.sin_addr.s_addr = inet_addr(w_server.server_ip.c_str()); // 改socket的server IP地址
-
-        // for (int i = 0; i < config.server_ips.size(); i++) 
-        //   if (config.server_ids[i] == remote_server_id) {
-        //       iph->daddr = inet_addr(config.server_ips[i].c_str());  // 改IP包头的desitination IP地址
-        //       sa.sin_addr.s_addr = inet_addr(config.server_ips[i].c_str()); // 改socket的server IP地址
-        //       dispatcher_eth = config.server_ids[i];
-        //       remote_server_zone = config.server_zones[i];
-        //       break;
-        //     }
 
         iph->check = 0; // 修改对应的IP包头的checksum
         iph->check = util::ip_checksum((unsigned short *)iph, sizeof(struct iphdr));
