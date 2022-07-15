@@ -2087,10 +2087,12 @@ int Server::on_read(int fd, bool forwarded) {
         else {
           double random_ratio = rand()%100/(float)100; // 随机1个0-1的小数
           double curr_server_ratio = 1.0 - 1.0 / res_server_in_same_zone; // 当前的比例
-          // std::cerr << "res_server_in_same_zone: " << res_server_in_same_zone << std::endl;
-          // std::cerr << "random_ratio: " << random_ratio << std::endl;
-          // std::cerr << "curr_server_ratio: " << curr_server_ratio << std::endl;
-          if (random_ratio >= curr_server_ratio) {
+          if (!config.quiet) {
+            std::cerr << "res_server_in_same_zone: " << res_server_in_same_zone << std::endl;
+            std::cerr << "random_ratio: " << random_ratio << std::endl;
+            std::cerr << "curr_server_ratio: " << curr_server_ratio << std::endl;
+          }
+          if (random_ratio < curr_server_ratio) {
             res_server_in_same_zone -= 1;
             continue;
           }
