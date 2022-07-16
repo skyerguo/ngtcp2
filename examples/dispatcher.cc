@@ -1637,6 +1637,33 @@ bool check_redundant_suit(const double &max_value, const double &now_value, cons
 }
 } //namespace
 
+namespace {
+void pipeLineRedisCmdGet(redisContext* rc, std::vector<std::string> & pipeLineCmd, std::vector<std::string> &pipeLineReq, std::vector<bool> &pipeLineReqStatus)
+{
+    for(int i = 0; i < pipeLineCmd.size(); i++)
+    {
+      redisAppendCommand(rc, "GET %s", pipeLineCmd[i].c_str());
+    }
+    for (int i = 0; i < pipeLineCmd.size(); i++)
+    {
+        bool status = false;
+        std::string resp_str = "";
+        redisReply *reply = 0;
+        if(redisGetReply(rc, (void **)&reply) == REDIS_OK
+                && reply != NULL
+                && reply->type == REDIS_REPLY_STRING)
+        {
+            status = true;
+            resp_str = reply->str;
+        }
+        //free
+        freeReplyObject(reply);
+        pipeLineReqStatus.push_back(status);
+        pipeLineReq.push_back(resp_str);
+    }
+}
+}
+
 Server::Server(struct ev_loop *loop, SSL_CTX *ssl_ctx)
     : loop_(loop), ssl_ctx_(ssl_ctx), fd_(-1) {
   ev_io_init(&wev_, swritecb, 0, EV_WRITE);
@@ -1687,7 +1714,7 @@ int Server::init(int fd) {
   config.server_zones.clear();
   config.same_zone_server_ids.clear();
 
-  std::ifstream in("/users/myzhou/mininet-polygon/json-files/machine_server.json");
+  std::ifstream in("/users/myzhou/mininet-polygon/json-files/machine_server_fake.json");
   std::ostringstream tmp;
   tmp << in.rdbuf();
   std::string machines = tmp.str();
@@ -1716,7 +1743,8 @@ int Server::init(int fd) {
       config.same_zone_server_ids.push_back(server_name.substr(1));
     }
   }
-
+  
+  std::cerr << "config.server_ids.size(): " << config.server_ids.size() << std::endl;
   if (!config.quiet) {
     for (int i = 0; i < config.same_zone_server_ids.size(); ++i)
       std::cerr << "same_zone_server_ids[i]: " << config.same_zone_server_ids[i] << std::endl;
@@ -1874,80 +1902,146 @@ int Server::on_read(int fd, bool forwarded) {
         weighted_servers.push_back(temp_new);
       }
 
+      std::chrono::high_resolution_clock::time_point temp_time_1 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double, std::milli> temp_duration_1 = temp_time_1 - start_log1;
+      std::cerr << "Before redis connection costs " << temp_duration_1.count() << " milliseconds." << std::endl;
+
       /* get latencies, cpus and throughputs from redis */
 
-      /* search measures using redis */
-      Redis *r1 = new Redis();
-      if(r1->connect(config.redis_ip, 6379))
+      // /* search measures using redis，旧方法 */
+      // Redis *r1 = new Redis();
+      // if(r1->connect(config.redis_ip, 6379))
+      // {
+      //   r1->auth("Hestia123456");
+      //   std::chrono::high_resolution_clock::time_point temp_time_2 = std::chrono::high_resolution_clock::now();
+      //   std::chrono::duration<double, std::milli> temp_duration_2 = temp_time_2 - start_log1;
+      //   std::cerr << "Redis connection costs " << temp_duration_2.count() << " milliseconds." << std::endl;
+
+      //   for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { // 按照lantency,throughput,cpu的顺序记录
+      //     best_metrics.push_back(0); 
+      //     local_best_metrics.push_back(0);
+      //   }
+
+      //   for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
+      //   {
+      //     std::string redis_key = "cpu_" + config.server_names[server_name_index];
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_key_cpu: " << redis_key << std::endl;
+      //     }
+      //     if (!r1->existsKey(redis_key.c_str())) {
+      //       std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
+      //       continue;
+      //     }
+      //     double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_value_cpu: " << redis_value_cpu << std::endl;
+      //     }
+
+      //     redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_key_throughput: " << redis_key << std::endl;
+      //     }
+      //     if (!r1->existsKey(redis_key.c_str())) {
+      //       std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
+      //       continue;
+      //     }
+      //     double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_value_throughput: " << redis_value_throughput << std::endl;
+      //     }
+          
+      //     redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_key_latency: " << redis_key << std::endl;
+      //     }
+      //     if (!r1->existsKey(redis_key.c_str())) {
+      //       std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
+      //       continue;
+      //     }
+      //     double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
+      //     if (!config.quiet) {
+      //       std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
+      //     }
+
+      //     double record_value[sensitive_type_number] = {500-redis_value_latency, redis_value_throughput, redis_value_cpu}; // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
+          
+      //     weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[0], config.latency_sensitive)); 
+      //     weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[1], config.throughput_sensitive));
+      //     weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[2], config.cpu_sensitive));
+
+      //     for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { 
+      //       best_metrics[sensitive_type_id] = std::max(best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+
+      //       // 如果是同一个地区，更新当前地区的最优值
+      //       if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) {
+      //         local_best_metrics[sensitive_type_id] = std::max(local_best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+      //       }
+      //     }
+      //   }
+      // }
+      // else {
+      //   std::cerr << "redis connect error!\n" << std::endl;
+      //   weighted_servers.resize(0);
+      // }
+      // delete r1;
+
+      // Redis *r1 = new Redis();
+
+      // 所有的字符串类型都要c_str
+      redisContext *redis_c;
+      redisReply* reply;
+      std::string auth_password = "Hestia123456";
+      // std::cerr << "config.redis_ip: " << config.redis_ip << std::endl;
+      // const char* redis_host_ip = "198.22.255.15";
+
+      redis_c = redisConnect(config.redis_ip, 6379);
+      if (redis_c != NULL && redis_c->err) 
       {
-        r1->auth("Hestia123456");
+        std::cerr << "connect error: " <<  redis_c->errstr << std::endl;
+        weighted_servers.resize(0);
+      }
+      else
+      {
+        std::cerr << "redis_c connection success" << std::endl;
+        // redisReply *reply = (redisReply *)redisCommand(redis_c, "AUTH %s", "Hestia123456");
+        // std::cerr << "!!!!!" << std::endl;
+        // std::cerr << "reply->type: " << reply->type << std::endl;
+        reply = (redisReply*)redisCommand(redis_c, "AUTH %s", auth_password.c_str());
+        if (reply == NULL || reply->type == REDIS_REPLY_ERROR)
+          std::cerr << "Redis认证失败！"<< std::endl;
+        else
+          std::cerr << "Redis认证成功！"<< std::endl;
+        freeReplyObject(reply);
+
+        std::chrono::high_resolution_clock::time_point temp_time_2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> temp_duration_2 = temp_time_2 - start_log1;
+        std::cerr << "Redis connection costs " << temp_duration_2.count() << " milliseconds." << std::endl;
+
         for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { // 按照lantency,throughput,cpu的顺序记录
           best_metrics.push_back(0); 
           local_best_metrics.push_back(0);
         }
 
+        std::vector<std::string> pipeLineCmd;
+        std::vector<std::string> pipeLineReq;
+        std::vector<bool> pipeLineReqStatus;
         for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
         {
-          std::string redis_key = "cpu_" + config.server_names[server_name_index];
-          if (!config.quiet) {
-            std::cerr << "redis_key_cpu: " << redis_key << std::endl;
-          }
-          if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_names[server_name_index] << " has measurement errors for cpu" << std::endl;
-            continue;
-          }
-          double redis_value_cpu = util::stringToDouble(r1->get(redis_key).c_str());
-          if (!config.quiet) {
-            std::cerr << "redis_value_cpu: " << redis_value_cpu << std::endl;
-          }
-
-          redis_key = "throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          if (!config.quiet) {
-            std::cerr << "redis_key_throughput: " << redis_key << std::endl;
-          }
-          if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_names[server_name_index] << " has measurement errors for throughput" << std::endl;
-            continue;
-          }
-          double redis_value_throughput = util::stringToDouble(r1->get(redis_key).c_str());
-          if (!config.quiet) {
-            std::cerr << "redis_value_throughput: " << redis_value_throughput << std::endl;
-          }
-          
-          redis_key = "latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name;
-          if (!config.quiet) {
-            std::cerr << "redis_key_latency: " << redis_key << std::endl;
-          }
-          if (!r1->existsKey(redis_key.c_str())) {
-            std::cerr << config.server_names[server_name_index] << " has measurement errors for latency" << std::endl;
-            continue;
-          }
-          double redis_value_latency = util::stringToDouble(r1->get(redis_key).c_str());
-          if (!config.quiet) {
-            std::cerr << "redis_value_latency: " << redis_value_latency << std::endl;
-          }
-
-          double record_value[sensitive_type_number] = {500-redis_value_latency, redis_value_throughput, redis_value_cpu}; // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
-          
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[0], config.latency_sensitive)); 
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[1], config.throughput_sensitive));
-          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[2], config.cpu_sensitive));
-
-          for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { 
-            best_metrics[sensitive_type_id] = std::max(best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
-
-            // 如果是同一个地区，更新当前地区的最优值
-            if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) {
-              local_best_metrics[sensitive_type_id] = std::max(local_best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
-            }
-          }
+          // std::string current_request_str = "cpu_ " + config.server_names[server_name_index];
+          pipeLineCmd.push_back("cpu_" + config.server_names[server_name_index]); // 这里不能有空格
         }
+        for (int i = 0; i < pipeLineCmd.size(); ++i)
+          std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << std::endl;
+        pipeLineRedisCmdGet(redis_c, pipeLineCmd, pipeLineReq, pipeLineReqStatus);
+        for (int i = 0; i < pipeLineCmd.size(); ++i)
+          std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << " pipeLineReq: " << pipeLineReq[i] << " pipeLineReqStatus: " << pipeLineReqStatus[i] << std::endl;
       }
-      else {
-        std::cerr << "redis connect error!\n" << std::endl;
-        weighted_servers.resize(0);
-      }
-      delete r1;
+
+      redisFree(redis_c);
+
+      std::chrono::high_resolution_clock::time_point temp_time_3 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double, std::milli> temp_duration_3 = temp_time_3 - start_log1;
+      std::cerr << "After redis_connection connection costs " << temp_duration_3.count() << " milliseconds." << std::endl;
 
       if (!config.quiet) {
         std::cerr << "before_weighted_servers" << std::endl;
@@ -2046,10 +2140,10 @@ int Server::on_read(int fd, bool forwarded) {
 
         forwarded = true;
 
-        if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
-          perror("Failed to forward ip packet");
-        else 
-          std::cerr << "Forwarded to local zone server: "<< dispatcher_eth << std::endl;
+        // if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
+        //   perror("Failed to forward ip packet");
+        // else 
+        //   std::cerr << "Forwarded to local zone server: "<< dispatcher_eth << std::endl;
       }
       
       auto count_routings = 0;
@@ -2156,10 +2250,11 @@ int Server::on_read(int fd, bool forwarded) {
           }
           
           forwarded = true; // 已转发标志
-          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
-            perror("Failed to forward ip packet");
-          else 
-            std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+          break; // 假装转发出去了
+          // if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
+          //   perror("Failed to forward ip packet");
+          // else 
+          //   std::cerr << "!Forwarded to remote zone server: " << w_server.server_id << " " << w_server.value << std::endl;
         } 
         else {
           /* select local zone server */
@@ -2173,10 +2268,11 @@ int Server::on_read(int fd, bool forwarded) {
           }
 
           forwarded = true; // 已转发标志
-          if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
-            perror("Failed to forward ip packet");
-          else 
-            std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
+          break;
+          // if (sendto(fd, iph, ntohs(iph->tot_len), 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) 
+          //   perror("Failed to forward ip packet");
+          // else 
+          //   std::cerr << "!Forwarded to local zone server: " << w_server.server_id << " " << w_server.value << std::endl;
         }
 
         /* rundandant routing */

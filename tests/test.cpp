@@ -11,7 +11,18 @@ std::string getStdLocation(std::string dc) {
   int n = dc.size();
   int cnt = 0, last_pos = 0;
   for (int i = 0; i < n; ++i) {
-    if (dc[i] == '-') {
+    if (dc[i] == '-') {#include <iostream>
+
+void foo(int &x) {
+    *x = 2;
+}
+
+int main() {
+    int a = 1;
+    foo(a);
+    printf("%d", a);
+    return 0l
+}
       pre[cnt] = dc.substr(last_pos, i - last_pos);
       last_pos = i + 1;
       if (++cnt > 1) break;
