@@ -1991,8 +1991,6 @@ int Server::on_read(int fd, bool forwarded) {
       redisContext *redis_c;
       redisReply* reply;
       std::string auth_password = "Hestia123456";
-      // std::cerr << "config.redis_ip: " << config.redis_ip << std::endl;
-      // const char* redis_host_ip = "198.22.255.15";
 
       redis_c = redisConnect(config.redis_ip, 6379);
       if (redis_c != NULL && redis_c->err) 
@@ -2003,9 +2001,6 @@ int Server::on_read(int fd, bool forwarded) {
       else
       {
         std::cerr << "redis_c connection success" << std::endl;
-        // redisReply *reply = (redisReply *)redisCommand(redis_c, "AUTH %s", "Hestia123456");
-        // std::cerr << "!!!!!" << std::endl;
-        // std::cerr << "reply->type: " << reply->type << std::endl;
         reply = (redisReply*)redisCommand(redis_c, "AUTH %s", auth_password.c_str());
         if (reply == NULL || reply->type == REDIS_REPLY_ERROR)
           std::cerr << "Redis认证失败！"<< std::endl;
@@ -2013,9 +2008,9 @@ int Server::on_read(int fd, bool forwarded) {
           std::cerr << "Redis认证成功！"<< std::endl;
         freeReplyObject(reply);
 
-        std::chrono::high_resolution_clock::time_point temp_time_2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> temp_duration_2 = temp_time_2 - start_log1;
-        std::cerr << "Redis connection costs " << temp_duration_2.count() << " milliseconds." << std::endl;
+        // std::chrono::high_resolution_clock::time_point temp_time_2 = std::chrono::high_resolution_clock::now();
+        // std::chrono::duration<double, std::milli> temp_duration_2 = temp_time_2 - start_log1;
+        // std::cerr << "Redis connection costs " << temp_duration_2.count() << " milliseconds." << std::endl;
 
         for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) { // 按照lantency,throughput,cpu的顺序记录
           best_metrics.push_back(0); 
@@ -2029,19 +2024,38 @@ int Server::on_read(int fd, bool forwarded) {
         {
           // std::string current_request_str = "cpu_ " + config.server_names[server_name_index];
           pipeLineCmd.push_back("cpu_" + config.server_names[server_name_index]); // 这里不能有空格
+          pipeLineCmd.push_back("throughput_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name); // 这里不能有空格
+          pipeLineCmd.push_back("latency_" + config.server_names[server_name_index] + "_" + config.current_dispatcher_name); // 这里不能有空格
         }
-        for (int i = 0; i < pipeLineCmd.size(); ++i)
-          std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << std::endl;
+        // for (int i = 0; i < pipeLineCmd.size(); ++i)
+          // std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << std::endl;
         pipeLineRedisCmdGet(redis_c, pipeLineCmd, pipeLineReq, pipeLineReqStatus);
-        for (int i = 0; i < pipeLineCmd.size(); ++i)
-          std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << " pipeLineReq: " << pipeLineReq[i] << " pipeLineReqStatus: " << pipeLineReqStatus[i] << std::endl;
+        // for (int i = 0; i < pipeLineCmd.size(); ++i)
+          // std::cerr << "i: " << i << " pipeLineCmd: " << pipeLineCmd[i] << " pipeLineReq: " << pipeLineReq[i] << " pipeLineReqStatus: " << pipeLineReqStatus[i] << std::endl;
+        for (int server_name_index = 0; server_name_index < config.server_names.size(); ++server_name_index)
+        {
+          double record_value[sensitive_type_number] = {500-std::stod(pipeLineReq[server_name_index*3+2]), std::stod(pipeLineReq[server_name_index*3+1]), std::stod(pipeLineReq[server_name_index*3])}; // latency的赋值，用500-实际latency来表示，这样能保证越大越好。
+          // std::cerr << "record_value: " << record_value[0] << " " << record_value[1] << " " << record_value[2] << std::endl;
+
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[0], config.latency_sensitive)); 
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[1], config.throughput_sensitive));
+          weighted_servers[server_name_index].metrics.push_back(std::make_pair(record_value[2], config.cpu_sensitive));
+
+          for (int sensitive_type_id = 0; sensitive_type_id < sensitive_type_number; ++sensitive_type_id) 
+          { 
+            best_metrics[sensitive_type_id] = std::max(best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+          // 如果是同一个地区，更新当前地区的最优值
+            if (strcmp(config.local_zone, config.server_zones[server_name_index].c_str()) == 0) 
+              local_best_metrics[sensitive_type_id] = std::max(local_best_metrics[sensitive_type_id], record_value[sensitive_type_id]);
+          }
+        }
       }
 
       redisFree(redis_c);
 
-      std::chrono::high_resolution_clock::time_point temp_time_3 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> temp_duration_3 = temp_time_3 - start_log1;
-      std::cerr << "After redis_connection connection costs " << temp_duration_3.count() << " milliseconds." << std::endl;
+      // std::chrono::high_resolution_clock::time_point temp_time_3 = std::chrono::high_resolution_clock::now();
+      // std::chrono::duration<double, std::milli> temp_duration_3 = temp_time_3 - start_log1;
+      // std::cerr << "After redis_connection connection costs " << temp_duration_3.count() << " milliseconds." << std::endl;
 
       if (!config.quiet) {
         std::cerr << "before_weighted_servers" << std::endl;
