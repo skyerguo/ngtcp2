@@ -92,6 +92,8 @@ struct Config {
   const char *current_dispatcher_zone = "";
   const char *redis_ip = "";
   const char *redis_interface = "";
+  std::vector<std::string> pipeLineCmd;
+  std::vector<std::string> pipeLineReq;
   // std::vector<std::string> zones;
 };
 
@@ -129,7 +131,7 @@ struct WeightedServer {
   std::string server_zone;
   std::string server_ip;
   std::vector<std::pair<double, double> > metrics; // pair第一维表示测量值，第二维表示权重
-  WeightedServer(){metrics.resize(0);}
+  WeightedServer(){metrics.resize(3);}
   double value;
   void calc_value() {
     int n = this->metrics.size();
